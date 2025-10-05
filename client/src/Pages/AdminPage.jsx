@@ -40,7 +40,7 @@
 
 //     const verifyAdmin = async () => {
 //       try {
-//         const response = await fetch("http://localhost:5000/api/admin/verify", {
+//         const response = await fetch("http://72.60.202.205:5000/api/admin/verify", {
 //           method: "GET",
 //           headers: {
 //             "Content-Type": "application/json",
@@ -144,7 +144,7 @@ export default function AdminPages() {
 
     const verifyAdmin = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/admin/verify", {
+        const response = await fetch("http://72.60.202.205:5000/api/admin/verify", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

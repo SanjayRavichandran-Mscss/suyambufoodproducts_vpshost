@@ -121,7 +121,7 @@ async function generateInvoiceData(orderId) {
     
     // Prepare template data
     const templateData = {
-      baseUrl: process.env.BASE_URL || 'http://localhost:5000',
+      baseUrl: process.env.BASE_URL || 'http://72.60.202.205:5000',
       customerName: order.customer_name,
       customerEmail: order.customer_email,
       customerMobile: order.customer_mobile,

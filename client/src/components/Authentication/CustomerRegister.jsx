@@ -46,7 +46,7 @@
     
 //     try {
 //       const { confirmPassword, ...registerData } = form;
-//       await axios.post("http://localhost:5000/api/customer/register", registerData);
+//       await axios.post("http://72.60.202.205:5000/api/customer/register", registerData);
 //       setSuccess("Registration successful! Please login.");
 //       setTimeout(() => {
 //         setIsClosing(true);
@@ -319,7 +319,7 @@ export default function CustomerRegister({ onLoginClick, onClose }) {
     
     try {
       const { confirmPassword, ...registerData } = form;
-      await axios.post("http://localhost:5000/api/customer/register", registerData);
+      await axios.post("http://72.60.202.205:5000/api/customer/register", registerData);
       setSuccess("Registration successful! Please login.");
       setTimeout(() => {
         setIsClosing(true);

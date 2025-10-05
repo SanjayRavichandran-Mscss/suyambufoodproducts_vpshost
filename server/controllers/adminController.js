@@ -4,7 +4,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-const IMAGE_BASE = "http://localhost:5000";
+const IMAGE_BASE = "http://72.60.202.205:5000";
 
 /* ----------------------- AUTH ----------------------- */
 exports.login = async (req, res) => {

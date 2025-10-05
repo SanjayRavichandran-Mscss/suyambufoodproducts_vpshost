@@ -15,7 +15,7 @@ const MyOrders = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const baseUrl = "http://localhost:5000";
+  const baseUrl = "http://72.60.202.205:5000";
 
   const showMessage = (msg, icon = "success") => {
     Swal.fire({

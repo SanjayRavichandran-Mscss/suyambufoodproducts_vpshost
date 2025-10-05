@@ -11,7 +11,7 @@ const Cart = ({
   showCartModal,
   cartAnimation,
 }) => {
-  const baseUrl = "http://localhost:5000";
+  const baseUrl = "http://72.60.202.205:5000";
   const navigate = useNavigate();
 
   const totalItems = Array.isArray(cartItems)

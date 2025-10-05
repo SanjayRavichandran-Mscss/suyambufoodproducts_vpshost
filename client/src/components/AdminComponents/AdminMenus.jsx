@@ -25,7 +25,7 @@ export default function AdminMenus({ adminId }) {
     if (!adminId) return;
     const fetchProfile = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/admin/profile/${adminId}`);
+        const response = await fetch(`http://72.60.202.205:5000/api/admin/profile/${adminId}`);
         const data = await response.json();
         if (response.ok) {
           setProfile(data);

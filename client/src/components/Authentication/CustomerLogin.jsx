@@ -21,7 +21,7 @@
     
 //     try {
 //       console.log("Submitting login with:", form.login);
-//       const res = await axios.post("http://localhost:5000/api/customer/login", form);
+//       const res = await axios.post("http://72.60.202.205:5000/api/customer/login", form);
       
 //       if (!res.data || !res.data.token || !res.data.customerId) {
 //         console.error("Login response invalid:", res.data);
@@ -200,7 +200,7 @@ export default function CustomerLogin() {
     setLoading(true);
     
     try {
-      const res = await axios.post("http://localhost:5000/api/customer/login", form);
+      const res = await axios.post("http://72.60.202.205:5000/api/customer/login", form);
       
       if (!res.data || !res.data.token || !res.data.customerId) {
         setError("Login failed. Please try again.");

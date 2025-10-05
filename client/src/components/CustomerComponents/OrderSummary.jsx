@@ -12,7 +12,7 @@ const OrderSummary = ({
   updateQuantity,
   handleRemoveItem,
 }) => {
-  const baseUrl = "http://localhost:5000";
+  const baseUrl = "http://72.60.202.205:5000";
   const [showCartModal, setShowCartModal] = useState(false);
   const [cartAnimation, setCartAnimation] = useState("");
 

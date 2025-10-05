@@ -41,7 +41,7 @@
 //   useEffect(() => {
 //     const fetchOrders = async () => {
 //       try {
-//         const response = await fetch("http://localhost:5000/api/admin/orders");
+//         const response = await fetch("http://72.60.202.205:5000/api/admin/orders");
 //         if (!response.ok) {
 //           throw new Error("Failed to fetch orders");
 //         }
@@ -82,7 +82,7 @@
 
 //     const newStatus = orderStatuses[orderId];
 //     try {
-//       const response = await fetch(`http://localhost:5000/api/admin/orders/${orderId}/status`, {
+//       const response = await fetch(`http://72.60.202.205:5000/api/admin/orders/${orderId}/status`, {
 //         method: 'PUT',
 //         headers: { 'Content-Type': 'application/json' },
 //         body: JSON.stringify({ status: newStatus })
@@ -332,7 +332,7 @@
 //                       {order.items.map(item => (
 //                         <div key={item.product_variant_id} className="flex items-start space-x-4 p-3 bg-gray-50 rounded-lg">
 //                           <img
-//                             src={`http://localhost:5000${item.thumbnail_url}`}
+//                             src={`http://72.60.202.205:5000${item.thumbnail_url}`}
 //                             alt={item.name}
 //                             className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
 //                             onError={(e) => {
@@ -415,7 +415,7 @@ const ManageOrders = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/admin/orders");
+        const response = await fetch("http://72.60.202.205:5000/api/admin/orders");
         if (!response.ok) {
           throw new Error("Failed to fetch orders");
         }
@@ -457,7 +457,7 @@ const ManageOrders = () => {
 
     const newStatus = orderStatuses[orderId];
     try {
-      const response = await fetch(`http://localhost:5000/api/admin/orders/${orderId}/status`, {
+      const response = await fetch(`http://72.60.202.205:5000/api/admin/orders/${orderId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
@@ -707,7 +707,7 @@ const ManageOrders = () => {
                       {order.items.map(item => (
                         <div key={item.product_variant_id} className="flex items-start space-x-4 p-3 bg-gray-50 rounded-lg">
                           <img
-                            src={`http://localhost:5000${item.thumbnail_url}`}
+                            src={`http://72.60.202.205:5000${item.thumbnail_url}`}
                             alt={item.name}
                             className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
                             onError={(e) => {

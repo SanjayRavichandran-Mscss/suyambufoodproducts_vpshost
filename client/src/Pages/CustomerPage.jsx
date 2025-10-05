@@ -107,7 +107,7 @@ export default function CustomerPage() {
     const verifyCustomer = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:5000/api/customer/profile?customerId=${storedCustomerId}`,
+          `http://72.60.202.205:5000/api/customer/profile?customerId=${storedCustomerId}`,
           {
             headers: {
               "Content-Type": "application/json",
@@ -136,7 +136,7 @@ export default function CustomerPage() {
     if (!customerId) return [];
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/customer/cart?customerId=${customerId}`,
+        `http://72.60.202.205:5000/api/customer/cart?customerId=${customerId}`,
         { headers: { Origin: "http://localhost:5173" } }
       );
       setCartItems(Array.isArray(response.data) ? response.data : []);
@@ -152,7 +152,7 @@ export default function CustomerPage() {
     if (!customerId) return;
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/customer/wishlist?customerId=${customerId}`,
+        `http://72.60.202.205:5000/api/customer/wishlist?customerId=${customerId}`,
         { headers: { Origin: "http://localhost:5173" } }
       );
       setWishlist(
@@ -172,7 +172,7 @@ export default function CustomerPage() {
     }
     try {
       const response = await axios.post(
-        "http://localhost:5000/api/customer/wishlist",
+        "http://72.60.202.205:5000/api/customer/wishlist",
         { customerId, productId },
         { headers: { "Content-Type": "application/json", Origin: "http://localhost:5173" } }
       );
@@ -246,7 +246,7 @@ export default function CustomerPage() {
     const newQuantity = Math.max(1, item.quantity + change);
     try {
       await axios.put(
-        "http://localhost:5000/api/customer/cart",
+        "http://72.60.202.205:5000/api/customer/cart",
         { customerId, variantId, quantity: newQuantity },
         { headers: { "Content-Type": "application/json", Origin: "http://localhost:5173" } }
       );
@@ -263,7 +263,7 @@ export default function CustomerPage() {
     if (!customerId) return;
     try {
       await axios.delete(
-        `http://localhost:5000/api/customer/cart?customerId=${customerId}&variantId=${variantId}`,
+        `http://72.60.202.205:5000/api/customer/cart?customerId=${customerId}&variantId=${variantId}`,
         { headers: { Origin: "http://localhost:5173" } }
       );
       const updatedCart = await fetchCart();
