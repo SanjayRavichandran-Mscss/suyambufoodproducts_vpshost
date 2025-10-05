@@ -13,7 +13,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 
-const IMAGE_BASE = "http://72.60.202.205:5000";
+const IMAGE_BASE = "http://72.60.202.205:5173";
 
 // Keep the same magnifier CSS (unchanged logic)
 const magnifierStyles = `
@@ -80,7 +80,7 @@ export default function SingleProduct({
     }
 
     axios
-      .get(`http://72.60.202.205:5000/api/admin/products/${idNum}`, {
+      .get(`http://72.60.202.205:5173/api/admin/products/${idNum}`, {
         headers: { Origin: "http://localhost:5173" },
       })
       .then((res) => {
@@ -166,7 +166,7 @@ export default function SingleProduct({
 
     if (item) {
       axios
-        .put("http://72.60.202.205:5000/api/customer/cart", body, {
+        .put("http://72.60.202.205:5173/api/customer/cart", body, {
           headers: { Origin: "http://localhost:5173" },
         })
         .then(() => {
@@ -176,7 +176,7 @@ export default function SingleProduct({
         .catch(() => showMessage("Failed to update cart"));
     } else {
       axios
-        .post("http://72.60.202.205:5000/api/customer/cart", body, {
+        .post("http://72.60.202.205:5173/api/customer/cart", body, {
           headers: { Origin: "http://localhost:5173" },
         })
         .then(() => {
@@ -208,7 +208,7 @@ export default function SingleProduct({
 
     if (!item) {
       axios
-        .post("http://72.60.202.205:5000/api/customer/cart", body, {
+        .post("http://72.60.202.205:5173/api/customer/cart", body, {
           headers: { Origin: "http://localhost:5173" },
         })
         .then(() => {

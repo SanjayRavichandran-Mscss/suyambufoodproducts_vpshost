@@ -15,7 +15,7 @@
 //   PackageCheck,
 // } from "lucide-react";
 
-// const IMAGE_BASE = "http://72.60.202.205:5000";
+// const IMAGE_BASE = "http://72.60.202.205:5173";
 // const BRAND = "#B6895B";
 // const BRAND_HOVER = "#A7784D";
 
@@ -52,7 +52,7 @@
 //   useEffect(() => {
 //     let mounted = true;
 //     axios
-//       .get("http://72.60.202.205:5000/api/admin/products", {
+//       .get("http://72.60.202.205:5173/api/admin/products", {
 //         headers: { Origin: "http://localhost:5173" },
 //       })
 //       .then((res) => {
@@ -447,7 +447,7 @@ import {
   PackageCheck,
 } from "lucide-react";
 
-const IMAGE_BASE = "http://72.60.202.205:5000";
+const IMAGE_BASE = "http://72.60.202.205:5173";
 
 const normalizeImage = (img) => {
   if (!img) return "https://via.placeholder.com/1920x1080";
@@ -482,7 +482,7 @@ export default function Banner() {
   useEffect(() => {
     let mounted = true;
     axios
-      .get("http://72.60.202.205:5000/api/admin/products", {
+      .get("http://72.60.202.205:5173/api/admin/products", {
         headers: { Origin: "http://localhost:5173" },
       })
       .then((res) => {

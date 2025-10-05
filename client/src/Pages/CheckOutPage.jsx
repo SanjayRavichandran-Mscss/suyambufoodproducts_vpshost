@@ -84,7 +84,7 @@ const CheckOutPage = () => {
     const verifyCustomer = async () => {
       try {
         const response = await fetch(
-          `http://72.60.202.205:5000/api/customer/profile?customerId=${storedCustomerId}`,
+          `http://72.60.202.205:5173/api/customer/profile?customerId=${storedCustomerId}`,
           {
             method: "GET",
             headers: {
@@ -123,7 +123,7 @@ const CheckOutPage = () => {
     if (!customerId) return;
     try {
       const token = localStorage.getItem("customerToken");
-      const response = await fetch(`http://72.60.202.205:5000/api/customer/cart?customerId=${customerId}`, {
+      const response = await fetch(`http://72.60.202.205:5173/api/customer/cart?customerId=${customerId}`, {
         headers: {
           "Content-Type": "application/json",
           Origin: "http://localhost:5173",
@@ -153,7 +153,7 @@ const CheckOutPage = () => {
     const newQuantity = Math.max(1, item.quantity + change);
     try {
       const token = localStorage.getItem("customerToken");
-      const response = await fetch(`http://72.60.202.205:5000/api/customer/cart`, {
+      const response = await fetch(`http://72.60.202.205:5173/api/customer/cart`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -213,7 +213,7 @@ const CheckOutPage = () => {
     try {
       const token = localStorage.getItem("customerToken");
       const response = await fetch(
-        `http://72.60.202.205:5000/api/customer/cart?customerId=${customerId}&variantId=${variantId}`,
+        `http://72.60.202.205:5173/api/customer/cart?customerId=${customerId}&variantId=${variantId}`,
         {
           method: "DELETE",
           headers: {
@@ -347,7 +347,7 @@ const CheckOutPage = () => {
 
     try {
       const token = localStorage.getItem("customerToken");
-      const response = await fetch(`http://72.60.202.205:5000/api/customer/orders`, {
+      const response = await fetch(`http://72.60.202.205:5173/api/customer/orders`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
