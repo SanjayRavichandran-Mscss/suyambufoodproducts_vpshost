@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invoice - Suyambu Food Products</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      color: #3C2F2F;
+      font-size: 14px;
+      margin: 0;
+      padding: 0;
+      background: #fff;
+    }
+    .container {
+      max-width: 800px;
+      margin: 20px auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, #FDFCFA 0%, #F0EAD6 100%);
+      color: #2E7D32;
+      padding: 20px 25px;
+      text-align: center;
+      position: relative;
+      border-bottom: 2px solid #4A3728;
+    }
+    .header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><pattern id='grid' width='10' height='10' patternUnits='userSpaceOnUse'><path d='M 10 0 L 0 0 0 10' fill='none' stroke='rgba(74,55,40,0.1)' stroke-width='1'/></pattern></defs><rect width='100' height='100' fill='url(%23grid)'/></svg>");
+      opacity: 0.2;
+    }
+    .header-content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+    .header img {
+      height: 60px;
+      filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2));
+    }
+    .header h1 {
+      font-size: 26px;
+      font-weight: 700;
+      margin: 0;
+      color: #2E7D32;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    .header h2 {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      color: #4A3728;
+      margin: 0;
+    }
+    .invoice-info {
+      padding: 25px 30px;
+      background: linear-gradient(135deg, #E8F5E9 0%, #F0EAD6 100%);
+      border-bottom: 2px solid #2E7D32;
+    }
+    .invoice-info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-bottom: 20px;
+    }
+    .invoice-info h3 {
+      color: #2E7D32;
+      font-size: 16px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #d1fae5;
+      padding-bottom: 6px;
+      font-weight: 600;
+    }
+    .invoice-info p {
+      margin: 6px 0;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .invoice-info p strong {
+      color: #4A3728;
+      font-weight: 600;
+    }
+    .items-section {
+      padding: 30px;
+    }
+    .items-section h2 {
+      color: #2E7D32;
+      font-size: 20px;
+      margin-bottom: 20px;
+      text-align: center;
+      border-bottom: 2px solid #d1fae5;
+      padding-bottom: 10px;
+      font-weight: 600;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 25px;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    th, td {
+      padding: 12px 15px;
+      font-size: 13px;
+    }
+    th {
+      background: linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%);
+      color: white;
+      text-align: left;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    th.quantity, th.unit-price, th.total {
+      text-align: center;
+    }
+    th.total {
+      text-align: right;
+    }
+    tr:nth-child(even) {
+      background-color: #F7FAF2;
+    }
+    tr:nth-child(odd) {
+      background-color: #FDFCFA;
+    }
+    td {
+      border-bottom: 1px solid #E8ECEF;
+      vertical-align: top;
+    }
+    td.quantity {
+      text-align: center;
+    }
+    td.unit-price, td.total {
+      text-align: right;
+    }
+    .total-section {
+      background: linear-gradient(135deg, #E8F5E9 0%, #F0EAD6 100%);
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+      border: 1px solid #2E7D32;
+    }
+    .total-section div {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 8px 0;
+      font-size: 14px;
+      padding: 6px 0;
+    }
+    .total-section div span {
+      color: #4A3728;
+      font-weight: 500;
+    }
+    .total-section div span:last-child {
+      font-weight: 600;
+      color: #3C2F2F;
+    }
+    .total-section .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #2E7D32, transparent);
+      margin: 15px 0;
+    }
+    .total-section .total {
+      border-top: 2px solid #2E7D32;
+      padding-top: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #2E7D32;
+    }
+    .payment-info, .return-policy {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+      border-left: 3px solid #2E7D32;
+      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.1);
+    }
+    .payment-info h3, .return-policy h3 {
+      color: #2E7D32;
+      margin-bottom: 12px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .payment-info p, .return-policy p {
+      margin: 6px 0;
+      font-size: 13px;
+    }
+    .payment-info p strong, .return-policy p strong {
+      color: #3C2F2F;
+    }
+    .footer {
+      background: linear-gradient(135deg, #4A3728 0%, #3C2F2F 100%);
+      color: white;
+      padding: 25px 30px;
+      text-align: center;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 15px;
+    }
+    .footer h4 {
+      color: #E8F5E9;
+      margin-bottom: 10px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .footer p {
+      font-size: 12px;
+      opacity: 0.9;
+      margin: 4px 0;
+      line-height: 1.4;
+    }
+    .footer .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #2E7D32, transparent);
+      margin: 15px 0;
+    }
+    .footer .thank-you {
+      font-size: 16px;
+      color: #E8F5E9;
+      font-weight: 700;
+      margin-top: 15px;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+    .footer .copyright {
+      margin-top: 10px;
+      font-size: 11px;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="invoice-content-{{orderId}}">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-content">
+        <!-- <img src="../public/Assets/Suyambu_Eng_logo.png" alt="Suyambu Food Products Logo"> -->
+        <div>
+          <h1>Suyambu Food Products</h1>
+          <h2>INVOICE</h2>
+        </div>
+      </div>
+    </div>
+
+    <!-- Invoice Information -->
+    <div class="invoice-info">
+      <div class="invoice-info-grid">
+        <div>
+          <h3>📧 Bill To:</h3>
+          <p><strong>{{full_name}}</strong></p>
+          <p>{{email}}</p>
+          <p>{{phone}}</p>
+          <p>{{street}}, {{city}}, {{state}} {{zip_code}}, {{country}}</p>
+        </div>
+        <div>
+          <h3>📄 Invoice Details:</h3>
+          <p><strong>Invoice Number:</strong> {{invoiceNumber}}</p>
+          <p><strong>Order Date:</strong> {{orderDate}}</p>
+          <p><strong>Payment Method:</strong> {{paymentMethod}}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Items Section -->
+    <div class="items-section">
+      <h2>📦 Order Items</h2>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 50%;">Item Details</th>
+            <th class="quantity" style="width: 15%;">Quantity</th>
+            <th class="unit-price" style="width: 17.5%;">Unit Price</th>
+            <th class="total" style="width: 17.5%;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#if items}}
+            {{#each items}}
+              <tr>
+                <td>{{name}}</td>
+                <td class="quantity">{{quantity}}</td>
+                <td class="unit-price">₹{{unitPrice}}</td>
+                <td class="total"><strong>₹{{subtotal}}</strong></td>
+              </tr>
+            {{/each}}
+          {{else}}
+            <tr>
+              <td colspan="4" style="text-align: center;">No items available</td>
+            </tr>
+          {{/if}}
+        </tbody>
+      </table>
+
+      <!-- Total Section -->
+      <div class="total-section">
+        <div>
+          <span>💰 Subtotal:</span>
+          <span>₹{{subtotal}}</span>
+        </div>
+        <div>
+          <span>🚚 Shipping:</span>
+          <span>{{#if freeShipping}}FREE 🎉{{else}}₹{{shipping}}{{/if}}</span>
+        </div>
+        <div>
+          <span>📊 Tax (GST 18%):</span>
+          <span>₹{{tax}}</span>
+        </div>
+        <div class="divider"></div>
+        <div class="total">
+          <span>💎 Total Amount:</span>
+          <span>₹{{totalAmount}}</span>
+        </div>
+      </div>
+
+      <!-- Payment Information -->
+      <div class="payment-info">
+        <h3>💳 Payment Information</h3>
+        <p><strong>Payment Method:</strong> {{paymentMethod}} </p>
+        <p><strong>Payment Status:</strong> {{paymentStatus}} ✅</p>
+        {{#if trackingNumber}}
+          <p><strong>Tracking Number:</strong> {{trackingNumber}} 📦</p>
+        {{/if}}
+        <p><strong>Transaction Date:</strong> {{transactionDate}}</p>
+      </div>
+
+      <!-- Return Policy -->
+      <div class="return-policy">
+        <h3>🔄 Return Policy</h3>
+        <p>✅ 7-day hassle-free returns on unused items in original condition.</p>
+        <p>🆓 Free returns for defective products with full refund or replacement.</p>
+        <p>💯 Your satisfaction is our priority!</p>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footer-grid">
+        <div>
+          <h4>📞 Contact Us</h4>
+          <p>Email: Suyambufoodstores@gmail.com</p>
+          <p>Phone: +91 9965162714 | +91 9345872342</p>
+          <p>Address: Sirumugai, Mettupalayam Taluk, Coimbatore</p>
+        </div>
+        <div>
+          <h4>🔄 Return Policy</h4>
+          <p>✅ 7-day hassle-free returns</p>
+          <p>📦 Items must be in original condition</p>
+          <p>💯 100% satisfaction guaranteed</p>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="thank-you">🌿 Thank You for Choosing Suyambu Food Products!</div>
+      <p class="copyright">© 2025 Suyambu Food Products. All rights reserved. | GSTIN: 33DCXPM6228L1ZV</p>
+    </div>
+  </div>
+</body>
+</html>
