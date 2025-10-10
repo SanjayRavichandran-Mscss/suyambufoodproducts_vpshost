@@ -1,3 +1,5 @@
+
+
 import React, { useEffect, useState } from "react";
 import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import AdminMenus from "../components/AdminComponents/AdminMenus";
@@ -82,9 +84,9 @@ export default function AdminPages() {
 
   return (
     <div className="min-h-screen bg-[#F4F6F8] flex flex-col">
-      <AdminMenus adminId={btoa(storedAdminId)} />
-      <main className="flex-1 pt-20 p-2">
-        <div className="bg-white rounded-xl shadow-sm p-8">
+      <AdminMenus adminId={storedAdminId} />
+      <main className="flex-1 pt-16 pb-20 sm:pb-0 p-2 lg:p-0">
+        <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 lg:p-8 mx-2 sm:mx-4 lg:mx-0">
           <Routes>
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="customers" element={<ManageCustomers />} />
