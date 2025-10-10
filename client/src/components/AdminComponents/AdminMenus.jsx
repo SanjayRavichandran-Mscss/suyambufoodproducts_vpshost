@@ -22,7 +22,7 @@ export default function AdminMenus({ adminId }) {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await fetch(`http://72.60.202.205/api/admin/profile/${adminId}`);
+        const response = await fetch(`http://suyambufoods.com/api/api/admin/profile/${adminId}`);
         const data = await response.json();
         if (response.ok) {
           setProfile(data);

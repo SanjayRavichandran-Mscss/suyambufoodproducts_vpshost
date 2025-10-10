@@ -4,7 +4,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { Heart, Plus, Minus } from "lucide-react";
 
-const IMAGE_BASE = "http://72.60.202.205";
+const IMAGE_BASE = "http://suyambufoods.com/api";
 const BRAND = "#B6895B";
 
 export default function Products({
@@ -45,7 +45,7 @@ export default function Products({
     if (!customerId) return [];
     try {
       const response = await axios.get(
-        `http://72.60.202.205/api/customer/cart?customerId=${customerId}`,
+        `http://suyambufoods.com/api/api/customer/cart?customerId=${customerId}`,
         { headers: { Origin: "http://localhost:5173" } }
       );
       return Array.isArray(response.data) ? response.data : [];
@@ -75,14 +75,14 @@ export default function Products({
   // Fetch products + UOMs
   useEffect(() => {
     axios
-      .get("http://72.60.202.205/api/admin/uoms", {
+      .get("http://suyambufoods.com/api/api/admin/uoms", {
         headers: { Origin: "http://localhost:5173" },
       })
       .then((res) => setUoms(res.data || []))
       .catch(() => {});
 
     axios
-      .get("http://72.60.202.205/api/admin/products", {
+      .get("http://suyambufoods.com/api/api/admin/products", {
         headers: { Origin: "http://localhost:5173" },
       })
       .then((res) => {
@@ -214,7 +214,7 @@ export default function Products({
     }
     try {
       await axios.post(
-        "http://72.60.202.205/api/customer/cart",
+        "http://suyambufoods.com/api/api/customer/cart",
         { customerId, variantId, quantity },
         { headers: { Origin: "http://localhost:5173" } }
       );
@@ -244,7 +244,7 @@ export default function Products({
     const newQuantity = Math.max(1, item.quantity + change);
     try {
       await axios.put(
-        "http://72.60.202.205/api/customer/cart",
+        "http://suyambufoods.com/api/api/customer/cart",
         { customerId, variantId, quantity: newQuantity },
         { headers: { Origin: "http://localhost:5173" } }
       );

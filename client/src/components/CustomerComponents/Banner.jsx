@@ -15,7 +15,7 @@ import {
   PackageCheck,
 } from "lucide-react";
 
-const IMAGE_BASE = "http://72.60.202.205";
+const IMAGE_BASE = "http://suyambufoods.com/api";
 
 const normalizeImage = (img) => {
   if (!img) return "https://via.placeholder.com/1920x1080";
@@ -50,7 +50,7 @@ export default function Banner() {
   useEffect(() => {
     let mounted = true;
     axios
-      .get("http://72.60.202.205/api/admin/products", {
+      .get("http://suyambufoods.com/api/api/admin/products", {
         headers: { Origin: "http://localhost:5173" },
       })
       .then((res) => {

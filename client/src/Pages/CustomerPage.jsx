@@ -100,7 +100,7 @@ export default function CustomerPage() {
     const verifyCustomer = async () => {
       try {
         const response = await axios.get(
-          `http://72.60.202.205/api/customer/profile?customerId=${storedCustomerId}`,
+          `http://suyambufoods.com/api/api/customer/profile?customerId=${storedCustomerId}`,
           {
             headers: {
               "Content-Type": "application/json",
@@ -131,7 +131,7 @@ export default function CustomerPage() {
 
     try {
       const response = await axios.get(
-        `http://72.60.202.205/api/customer/cart?customerId=${customerId}`,
+        `http://suyambufoods.com/api/api/customer/cart?customerId=${customerId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setCartItems(Array.isArray(response.data) ? response.data : []);
@@ -150,7 +150,7 @@ export default function CustomerPage() {
 
     try {
       const response = await axios.get(
-        `http://72.60.202.205/api/customer/wishlist?customerId=${customerId}`,
+        `http://suyambufoods.com/api/api/customer/wishlist?customerId=${customerId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setWishlist(
@@ -171,7 +171,7 @@ export default function CustomerPage() {
     const token = localStorage.getItem("customerToken");
     try {
       const response = await axios.post(
-        "http://72.60.202.205/api/customer/wishlist",
+        "http://suyambufoods.com/api/api/customer/wishlist",
         { customerId, productId },
         { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
       );
@@ -246,7 +246,7 @@ export default function CustomerPage() {
     const token = localStorage.getItem("customerToken");
     try {
       await axios.put(
-        "http://72.60.202.205/api/customer/cart",
+        "http://suyambufoods.com/api/api/customer/cart",
         { customerId, variantId, quantity: newQuantity },
         { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
       );
@@ -264,7 +264,7 @@ export default function CustomerPage() {
     const token = localStorage.getItem("customerToken");
     try {
       await axios.delete(
-        `http://72.60.202.205/api/customer/cart?customerId=${customerId}&variantId=${variantId}`,
+        `http://suyambufoods.com/api/api/customer/cart?customerId=${customerId}&variantId=${variantId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const updatedCart = await fetchCart();

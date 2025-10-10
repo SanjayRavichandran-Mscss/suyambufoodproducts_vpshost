@@ -40,7 +40,7 @@ export default function AdminPages() {
 
     const verifyAdmin = async () => {
       try {
-        const response = await fetch("http://72.60.202.205/api/admin/verify", {
+        const response = await fetch("http://suyambufoods.com/api/api/admin/verify", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
