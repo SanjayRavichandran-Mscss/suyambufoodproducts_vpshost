@@ -510,7 +510,7 @@ const Invoice = ({ invoiceData }) => {
               📞 Contact Us
             </h4>
             <p style={{ fontSize: '12px', opacity: '0.9', margin: '4px 0', lineHeight: '1.4' }}>
-              Email: suyambufoodstores@gmail.com
+              Email: Suyambufoodstores@gmail.com
             </p>
             <p style={{ fontSize: '12px', opacity: '0.9', margin: '4px 0', lineHeight: '1.4' }}>
               Phone: +91 9965162714 | +91 9345872342

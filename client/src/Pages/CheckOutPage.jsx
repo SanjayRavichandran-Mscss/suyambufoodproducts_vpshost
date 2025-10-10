@@ -1,3 +1,4 @@
+// src/pages/CheckOutPage.jsx
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import Swal from "sweetalert2";
@@ -6,6 +7,11 @@ import PaymentMethod from "../components/CustomerComponents/PaymentMethod";
 import OrderSummary from "../components/CustomerComponents/OrderSummary";
 import Header from "../components/CustomerComponents/Header";
 import Cart from "../components/CustomerComponents/Cart";
+
+// --- RAZORPAY INTEGRATION: START ---
+// Your public Razorpay Key ID
+const RAZORPAY_KEY_ID = 'rzp_test_R9s2JfWDP6FAjl';
+// --- RAZORPAY INTEGRATION: END ---
 
 function decodeCustomerId(encodedId) {
   try {
@@ -84,7 +90,7 @@ const CheckOutPage = () => {
     const verifyCustomer = async () => {
       try {
         const response = await fetch(
-          `http://72.60.202.205:5173/api/customer/profile?customerId=${storedCustomerId}`,
+          `http://72.60.202.205/api/customer/profile?customerId=${storedCustomerId}`,
           {
             method: "GET",
             headers: {
@@ -123,7 +129,7 @@ const CheckOutPage = () => {
     if (!customerId) return;
     try {
       const token = localStorage.getItem("customerToken");
-      const response = await fetch(`http://72.60.202.205:5173/api/customer/cart?customerId=${customerId}`, {
+      const response = await fetch(`http://72.60.202.205/api/customer/cart?customerId=${customerId}`, {
         headers: {
           "Content-Type": "application/json",
           Origin: "http://localhost:5173",
@@ -153,7 +159,7 @@ const CheckOutPage = () => {
     const newQuantity = Math.max(1, item.quantity + change);
     try {
       const token = localStorage.getItem("customerToken");
-      const response = await fetch(`http://72.60.202.205:5173/api/customer/cart`, {
+      const response = await fetch(`http://72.60.202.205/api/customer/cart`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -199,8 +205,8 @@ const CheckOutPage = () => {
         timer: 2000,
         showConfirmButton: false,
         showClass: {
-          popup: "animate__animated animate__slideInUp",
-        },
+            popup: "animate__animated animate__slideInUp",
+          },
       });
     }
   };
@@ -213,7 +219,7 @@ const CheckOutPage = () => {
     try {
       const token = localStorage.getItem("customerToken");
       const response = await fetch(
-        `http://72.60.202.205:5173/api/customer/cart?customerId=${customerId}&variantId=${variantId}`,
+        `http://72.60.202.205/api/customer/cart?customerId=${customerId}&variantId=${variantId}`,
         {
           method: "DELETE",
           headers: {
@@ -260,8 +266,8 @@ const CheckOutPage = () => {
         timer: 2000,
         showConfirmButton: false,
         showClass: {
-          popup: "animate__animated animate__slideInUp",
-        },
+            popup: "animate__animated animate__slideInUp",
+          },
       });
     }
   };
@@ -322,9 +328,7 @@ const CheckOutPage = () => {
         position: "bottom-end",
         timer: 2000,
         showConfirmButton: false,
-        showClass: {
-          popup: "animate__animated animate__slideInUp",
-        },
+        showClass: { popup: "animate__animated animate__slideInUp" },
       });
       return;
     }
@@ -333,77 +337,176 @@ const CheckOutPage = () => {
       Swal.fire({
         icon: "error",
         title: "No Items",
-        text: "No items to place order. Please add items to your cart or select a product.",
+        text: "No items to place order.",
         toast: true,
         position: "bottom-end",
         timer: 2000,
         showConfirmButton: false,
-        showClass: {
-          popup: "animate__animated animate__slideInUp",
-        },
+        showClass: { popup: "animate__animated animate__slideInUp" },
       });
       return;
     }
 
-    try {
-      const token = localStorage.getItem("customerToken");
-      const response = await fetch(`http://72.60.202.205:5173/api/customer/orders`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          Origin: "http://localhost:5173",
-        },
-        body: JSON.stringify({
-          customerId,
-          addressId: selectedAddressId,
-          paymentMethodId: selectedPaymentMethodId,
-          orderMethod,
-          items: items.map((item) => ({
-            variantId: item.variant_id || item.product_variant_id,
-            quantity: item.quantity,
-          })),
-          totalAmount: subtotal,
-        }),
-      });
+    const token = localStorage.getItem("customerToken");
+    const orderPayload = {
+      customerId,
+      addressId: selectedAddressId,
+      paymentMethodId: selectedPaymentMethodId,
+      orderMethod,
+      items: items.map((item) => ({
+        variantId: item.variant_id || item.product_variant_id,
+        quantity: item.quantity,
+      })),
+      totalAmount: total, 
+    };
+    
+    if (selectedPaymentMethodId === 1) {
+      try {
+        const response = await fetch(`http://72.60.202.205/api/customer/orders`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            Origin: "http://localhost:5173",
+          },
+          body: JSON.stringify(orderPayload),
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to place order");
-      }
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to place order");
+        }
 
-      if (!isBuyNow) {
-        await fetchCart();
-      }
+        if (!isBuyNow) { await fetchCart(); }
 
-      if (selectedPaymentMethodId === 1) {
         Swal.fire({
           icon: "success",
           title: "Order Placed",
-          text: "Your order has been placed and an invoice has been sent to your mail.",
+          text: "Your order has been placed successfully!",
         }).then(() => {
           navigate(`/customer?customerId=${btoa(customerId)}`);
         });
-      } else if (selectedPaymentMethodId === 2) {
+
+      } catch (error) {
+        console.error("Place order error (COD):", error);
         Swal.fire({
-          icon: "warning",
-          title: "Payment Required",
-          text: "Please complete the online payment to place your order.",
+          icon: "error",
+          text: `Failed to place order: ${error.message}`,
+          toast: true,
+          position: "bottom-end",
+          timer: 3000,
+          showConfirmButton: false,
+          showClass: { popup: "animate__animated animate__slideInUp" },
         });
       }
-    } catch (error) {
-      console.error("Place order error:", error);
-      Swal.fire({
-        icon: "error",
-        text: `Failed to place order: ${error.message}`,
-        toast: true,
-        position: "bottom-end",
-        timer: 2000,
-        showConfirmButton: false,
-        showClass: {
-          popup: "animate__animated animate__slideInUp",
-        },
-      });
+    } 
+    else if (selectedPaymentMethodId === 2) {
+
+        if (!window.Razorpay) {
+            Swal.fire({
+            icon: 'error',
+            title: 'Payment Gateway Error',
+            text: 'Razorpay script could not be loaded. Please check your internet connection and try again.',
+            });
+            return;
+        }
+
+      try {
+        const createOrderResponse = await fetch(`http://72.60.202.205/api/customer/payment/create-order`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            Origin: "http://localhost:5173",
+          },
+          body: JSON.stringify({ amount: total }),
+        });
+
+        if (!createOrderResponse.ok) throw new Error("Could not create payment order.");
+        const order = await createOrderResponse.json();
+
+        const options = {
+          key: RAZORPAY_KEY_ID,
+          amount: order.amount,
+          currency: order.currency,
+          name: "SS Food Products",
+          description: "Order Payment",
+          order_id: order.id,
+          handler: async function (response) {
+            const verifyResponse = await fetch(`http://72.60.202.205/api/customer/payment/verify`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                  Origin: "http://localhost:5173",
+                },
+                body: JSON.stringify({
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    razorpay_order_id: response.razorpay_order_id,
+                    razorpay_signature: response.razorpay_signature,
+                }),
+            });
+
+            const verification = await verifyResponse.json();
+            if (verification.success) {
+                const finalOrderPayload = {
+                    ...orderPayload,
+                    paymentDetails: {
+                        razorpay_payment_id: response.razorpay_payment_id,
+                        razorpay_order_id: response.razorpay_order_id,
+                        razorpay_signature: response.razorpay_signature,
+                    }
+                };
+
+                const placeOrderResponse = await fetch(`http://72.60.202.205/api/customer/orders`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                        Origin: "http://localhost:5173",
+                    },
+                    body: JSON.stringify(finalOrderPayload),
+                });
+
+                if (!placeOrderResponse.ok) throw new Error("Failed to save order after payment.");
+
+                if (!isBuyNow) { await fetchCart(); }
+
+                Swal.fire({
+                    icon: "success",
+                    title: "Payment Successful!",
+                    text: "Your order has been placed.",
+                }).then(() => {
+                    navigate(`/customer?customerId=${btoa(customerId)}`);
+                });
+
+            } else {
+                Swal.fire({ icon: "error", title: "Payment Failed", text: "Payment verification failed. Please contact support." });
+            }
+          },
+          prefill: {
+            name: customerData?.name || "",
+            email: customerData?.email || "",
+            contact: customerData?.phone || "",
+          },
+          theme: { color: "#B6895B" },
+        };
+
+        const paymentObject = new window.Razorpay(options);
+        paymentObject.open();
+
+        paymentObject.on('payment.failed', function (response){
+            Swal.fire({
+                icon: 'error',
+                title: 'Payment Failed',
+                text: response.error.description || 'Something went wrong.',
+            });
+        });
+
+      } catch (error) {
+        console.error("Razorpay flow error:", error);
+        Swal.fire({ icon: "error", text: `Error: ${error.message}` });
+      }
     }
   };
 
