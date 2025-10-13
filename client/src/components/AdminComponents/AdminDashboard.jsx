@@ -67,7 +67,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const response = await fetch("http://suyambufoods.com/api/api/admin/dashboard");
+        const response = await fetch("https://suyambufoods.com/api/admin/dashboard");
         if (!response.ok) {
           throw new Error("Failed to fetch dashboard data");
         }

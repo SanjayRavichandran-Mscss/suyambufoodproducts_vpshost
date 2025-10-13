@@ -46,7 +46,7 @@ export default function CustomerRegister({ onLoginClick, onClose }) {
     
     try {
       const { confirmPassword, ...registerData } = form;
-      await axios.post("http://suyambufoods.com/api/api/customer/register", registerData);
+      await axios.post("https://suyambufoods.com/api/customer/register", registerData);
       setSuccess("Registration successful! Please login.");
       setTimeout(() => {
         setIsClosing(true);

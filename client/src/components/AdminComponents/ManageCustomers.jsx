@@ -21,7 +21,7 @@ const ManageCustomers = () => {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await fetch("http://suyambufoods.com/api/api/admin/customers");
+        const response = await fetch("https://suyambufoods.com/api/admin/customers");
         if (!response.ok) throw new Error("Failed to fetch customers");
         const data = await response.json();
         setCustomers(data);
@@ -82,7 +82,7 @@ const ManageCustomers = () => {
     setLoadingOrders(true);
     setErrorOrders(null);
     try {
-      const response = await fetch(`http://suyambufoods.com/api/api/customer/orders?customerId=${customerId}`);
+      const response = await fetch(`https://suyambufoods.com/api/customer/orders?customerId=${customerId}`);
       if (!response.ok) throw new Error("Failed to fetch orders");
       const data = await response.json();
       setOrders(data);

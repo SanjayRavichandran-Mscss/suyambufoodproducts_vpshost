@@ -45,7 +45,7 @@ export default function Products({
     if (!customerId) return [];
     try {
       const response = await axios.get(
-        `http://suyambufoods.com/api/api/customer/cart?customerId=${customerId}`,
+        `https://suyambufoods.com/api/customer/cart?customerId=${customerId}`,
         { headers: { Origin: "http://localhost:5173" } }
       );
       return Array.isArray(response.data) ? response.data : [];
@@ -75,14 +75,14 @@ export default function Products({
   // Fetch products + UOMs
   useEffect(() => {
     axios
-      .get("http://suyambufoods.com/api/api/admin/uoms", {
+      .get("https://suyambufoods.com/api/admin/uoms", {
         headers: { Origin: "http://localhost:5173" },
       })
       .then((res) => setUoms(res.data || []))
       .catch(() => {});
 
     axios
-      .get("http://suyambufoods.com/api/api/admin/products", {
+      .get("https://suyambufoods.com/api/admin/products", {
         headers: { Origin: "http://localhost:5173" },
       })
       .then((res) => {
@@ -214,7 +214,7 @@ export default function Products({
     }
     try {
       await axios.post(
-        "http://suyambufoods.com/api/api/customer/cart",
+        "https://suyambufoods.com/api/customer/cart",
         { customerId, variantId, quantity },
         { headers: { Origin: "http://localhost:5173" } }
       );
@@ -244,7 +244,7 @@ export default function Products({
     const newQuantity = Math.max(1, item.quantity + change);
     try {
       await axios.put(
-        "http://suyambufoods.com/api/api/customer/cart",
+        "https://suyambufoods.com/api/customer/cart",
         { customerId, variantId, quantity: newQuantity },
         { headers: { Origin: "http://localhost:5173" } }
       );

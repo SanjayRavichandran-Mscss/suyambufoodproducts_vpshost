@@ -50,7 +50,7 @@ export default function Banner() {
   useEffect(() => {
     let mounted = true;
     axios
-      .get("http://suyambufoods.com/api/api/admin/products", {
+      .get("https://suyambufoods.com/api/admin/products", {
         headers: { Origin: "http://localhost:5173" },
       })
       .then((res) => {

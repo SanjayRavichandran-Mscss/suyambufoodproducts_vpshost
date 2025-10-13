@@ -80,7 +80,7 @@ export default function SingleProduct({
     }
 
     axios
-      .get(`http://suyambufoods.com/api/api/admin/products/${idNum}`, {
+      .get(`https://suyambufoods.com/api/admin/products/${idNum}`, {
         headers: { Origin: "http://localhost:5173" },
       })
       .then((res) => {
@@ -166,7 +166,7 @@ export default function SingleProduct({
 
     if (item) {
       axios
-        .put("http://suyambufoods.com/api/api/customer/cart", body, {
+        .put("https://suyambufoods.com/api/customer/cart", body, {
           headers: { Origin: "http://localhost:5173" },
         })
         .then(() => {
@@ -176,7 +176,7 @@ export default function SingleProduct({
         .catch(() => showMessage("Failed to update cart"));
     } else {
       axios
-        .post("http://suyambufoods.com/api/api/customer/cart", body, {
+        .post("https://suyambufoods.com/api/customer/cart", body, {
           headers: { Origin: "http://localhost:5173" },
         })
         .then(() => {
@@ -208,7 +208,7 @@ export default function SingleProduct({
 
     if (!item) {
       axios
-        .post("http://suyambufoods.com/api/api/customer/cart", body, {
+        .post("https://suyambufoods.com/api/customer/cart", body, {
           headers: { Origin: "http://localhost:5173" },
         })
         .then(() => {

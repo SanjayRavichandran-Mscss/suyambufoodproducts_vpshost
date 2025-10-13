@@ -25,7 +25,7 @@ export default function AdminMenus({ adminId }) {
     if (!adminId) return;
     const fetchProfile = async () => {
       try {
-        const response = await fetch(`http://suyambufoods.com/api/api/admin/profile/${adminId}`);
+        const response = await fetch(`https://suyambufoods.com/api/admin/profile/${adminId}`);
         const data = await response.json();
         if (response.ok) {
           setProfile(data);

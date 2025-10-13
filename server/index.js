@@ -16,7 +16,7 @@ console.log("🚀 Starting server...");
 app.use('/productImages', express.static(path.join(__dirname, 'public/productImages')));
 
 app.use(cors({
-  origin: ['http://localhost:5173','https://suyambufoodproducts-demohost.vercel.app'],
+  origin: ['http://localhost:5173','https://suyambufoodproducts-demohost.vercel.app','https://suyambufoods.com','https://www.suyambufoods.com'],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
@@ -24,15 +24,15 @@ app.use(cors({
 app.use(express.json());
 
 // Test API
-app.get('/api/test', (req, res) => {
+app.get('/test', (req, res) => {
   console.log("✅ /api/test called");
   res.status(200).json({ message: 'Server is running successfully' });
 });
 
 // Routes
 console.log("✅ Mounting routes...");
-app.use('/api/admin', adminRoutes);
-app.use('/api/customer', customerRoutes);
+app.use('/admin', adminRoutes);
+app.use('/customer', customerRoutes);
 
 // DB check
 async function checkDbConnection() {

@@ -41,7 +41,7 @@ const ManageOrders = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const response = await fetch("http://suyambufoods.com/api/api/admin/orders");
+        const response = await fetch("https://suyambufoods.com/api/admin/orders");
         if (!response.ok) {
           throw new Error("Failed to fetch orders");
         }
@@ -83,7 +83,7 @@ const ManageOrders = () => {
 
     const newStatus = orderStatuses[orderId];
     try {
-      const response = await fetch(`http://suyambufoods.com/api/api/admin/orders/${orderId}/status`, {
+      const response = await fetch(`https://suyambufoods.com/api/admin/orders/${orderId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
