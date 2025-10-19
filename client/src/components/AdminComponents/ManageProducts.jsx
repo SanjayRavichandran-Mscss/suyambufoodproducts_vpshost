@@ -2,8 +2,8 @@
 // import Swal from "sweetalert2";
 // import Select from 'react-select';
 
-// const API_BASE = "http://localhost:5000/admin";
-// const IMAGE_BASE = "http://localhost:5000";
+// const API_BASE = "https://suyambufoods.com/api/admin";
+// const IMAGE_BASE = "https://suyambufoods.com/api";
 // const FALLBACK_IMAGE = `${IMAGE_BASE}/fallback-image.png`;
 
 // const ManageProducts = () => {
@@ -879,8 +879,8 @@ import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import Select from 'react-select';
 
-const API_BASE = "http://localhost:5000/admin";
-const IMAGE_BASE = "http://localhost:5000";
+const API_BASE = "https://suyambufoods.com/api/admin";
+const IMAGE_BASE = "https://suyambufoods.com/api";
 const FALLBACK_IMAGE = `${IMAGE_BASE}/fallback-image.png`;
 
 const ManageProducts = () => {
