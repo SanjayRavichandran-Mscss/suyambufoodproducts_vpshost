@@ -874,13 +874,12 @@
 // export default ManageProducts;
 
 
-
 import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import Select from 'react-select';
 
 const API_BASE = "https://suyambufoods.com/api/admin";
-const IMAGE_BASE = "https://suyambufoods.com/api";
+const IMAGE_BASE = "https://suyambufoods.com/api/admin";
 const FALLBACK_IMAGE = `${IMAGE_BASE}/fallback-image.png`;
 
 const ManageProducts = () => {
@@ -915,38 +914,67 @@ const ManageProducts = () => {
     loadProducts();
   }, []);
 
+  const fetchWithErrorHandling = async (url, options = {}) => {
+    const res = await fetch(url, options);
+    if (!res.ok) {
+      let errorMessage = `HTTP error! status: ${res.status}`;
+      try {
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const errorData = await res.json();
+          errorMessage = errorData.error || errorMessage;
+        } else {
+          const errorText = await res.text();
+          console.error("Non-JSON error response:", errorText);
+          errorMessage = `Server returned non-JSON response: ${res.status}`;
+        }
+      } catch (parseErr) {
+        console.error("Failed to parse error response:", parseErr);
+      }
+      throw new Error(errorMessage);
+    }
+    const contentType = res.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      const text = await res.text();
+      console.error("Expected JSON but got:", text.substring(0, 200));
+      throw new Error("Server returned non-JSON response");
+    }
+    return await res.json();
+  };
+
   const loadCategories = async () => {
     try {
-      const res = await fetch(`${API_BASE}/categories`);
-      const data = await res.json();
+      const data = await fetchWithErrorHandling(`${API_BASE}/categories`);
       setCategories(data);
     } catch (error) {
       console.error("Failed to load categories", error);
+      Swal.fire("Error", "Failed to load categories. Please try refreshing.", "error");
     }
   };
 
   const loadUoms = async () => {
     try {
-      const res = await fetch(`${API_BASE}/uoms`);
-      setUoms(await res.json());
+      const data = await fetchWithErrorHandling(`${API_BASE}/uoms`);
+      setUoms(data);
     } catch (error) {
       console.error("Failed to load UOMs", error);
+      Swal.fire("Error", "Failed to load units. Please try refreshing.", "error");
     }
   };
 
   const loadStockStatuses = async () => {
     try {
-      const res = await fetch(`${API_BASE}/stock-statuses`);
-      setStockStatuses(await res.json());
+      const data = await fetchWithErrorHandling(`${API_BASE}/stock-statuses`);
+      setStockStatuses(data);
     } catch (error) {
       console.error("Failed to load stock statuses", error);
+      Swal.fire("Error", "Failed to load stock statuses. Please try refreshing.", "error");
     }
   };
 
   const loadProducts = async () => {
     try {
-      const res = await fetch(`${API_BASE}/products`);
-      const data = await res.json();
+      const data = await fetchWithErrorHandling(`${API_BASE}/products`);
       const updatedProducts = data.map((product) => {
         let additionalImages = [];
         if (typeof product.additional_images === "string") {
@@ -980,6 +1008,7 @@ const ManageProducts = () => {
       setProducts(updatedProducts);
     } catch (error) {
       console.error("Failed to load products", error);
+      Swal.fire("Error", "Failed to load products. Please try refreshing.", "error");
     }
   };
 
@@ -1112,14 +1141,9 @@ const ManageProducts = () => {
 
       if (result.isConfirmed) {
         try {
-          const res = await fetch(`${API_BASE}/products/${formData.id}/variants/${variant.id}`, {
+          await fetchWithErrorHandling(`${API_BASE}/products/${formData.id}/variants/${variant.id}`, {
             method: "DELETE",
           });
-
-          if (!res.ok) {
-            const errorData = await res.json();
-            throw new Error(errorData.error || "Failed to delete variant");
-          }
 
           const updatedVariants = formData.variants.filter((_, i) => i !== index);
           setFormData((prev) => ({ ...prev, variants: updatedVariants }));
@@ -1207,11 +1231,7 @@ const ManageProducts = () => {
 
       payload.append("stock_status_id", formData.stock_status_id);
 
-      const res = await fetch(url, { method, body: payload });
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Operation failed");
-      }
+      await fetchWithErrorHandling(url, { method, body: payload });
       Swal.fire(
         "Success",
         formData.id ? "Product updated successfully" : "Product added successfully",
@@ -1238,13 +1258,9 @@ const ManageProducts = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          const res = await fetch(`${API_BASE}/products/${product.id}`, {
+          await fetchWithErrorHandling(`${API_BASE}/products/${product.id}`, {
             method: "DELETE",
           });
-          if (!res.ok) {
-            const errorData = await res.json();
-            throw new Error(errorData.error || "Failed to delete");
-          }
           Swal.fire("Deleted!", "Product has been deleted.", "success");
           loadProducts();
         } catch (error) {
