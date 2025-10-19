@@ -926,7 +926,11 @@ const ManageProducts = () => {
         } else {
           const errorText = await res.text();
           console.error("Non-JSON error response:", errorText);
-          errorMessage = `Server returned non-JSON response: ${res.status}`;
+          if (res.status === 413) {
+            errorMessage = "Payload too large. Please check file sizes (recommended: under 5MB per image) and try again. If issue persists, contact support to increase server limits.";
+          } else {
+            errorMessage = `Server returned non-JSON response: ${res.status}`;
+          }
         }
       } catch (parseErr) {
         console.error("Failed to parse error response:", parseErr);
@@ -1240,7 +1244,11 @@ const ManageProducts = () => {
       closeModal();
       loadProducts();
     } catch (error) {
-      Swal.fire("Error", error.message, "error");
+      let errorMsg = error.message;
+      if (errorMsg.includes("413")) {
+        errorMsg = "Upload failed: Payload too large. Please use smaller images (under 5MB each) or fewer files. On VPS server, increase 'client_max_body_size' in nginx.conf if needed.";
+      }
+      Swal.fire("Error", errorMsg, "error");
     } finally {
       setLoading(false);
     }
@@ -1644,7 +1652,7 @@ const ManageProducts = () => {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                               </svg>
                               <p className="text-sm text-gray-600">Click to upload thumbnail</p>
-                              <p className="text-xs text-gray-500 mt-1">Main product image</p>
+                              <p className="text-xs text-gray-500 mt-1">Main product image (max 5MB)</p>
                             </div>
                           )}
                         </label>
@@ -1693,7 +1701,7 @@ const ManageProducts = () => {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                   </svg>
                                   <p className="text-sm text-gray-600">Click to upload banner</p>
-                                  <p className="text-xs text-gray-500 mt-1">Optional banner image</p>
+                                  <p className="text-xs text-gray-500 mt-1">Optional banner image (max 5MB)</p>
                                 </div>
                               )}
                             </label>
@@ -1705,7 +1713,7 @@ const ManageProducts = () => {
                     {/* Additional Images */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-3">
-                        Additional Images (Max 5)
+                        Additional Images (Max 5, each under 5MB)
                       </label>
                       <div className="grid grid-cols-5 gap-2">
                         {[0, 1, 2, 3, 4].map((index) => (
