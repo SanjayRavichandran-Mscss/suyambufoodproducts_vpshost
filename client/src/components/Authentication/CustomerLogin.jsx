@@ -25,7 +25,7 @@ export default function CustomerLogin({ onClose }) {
     setLoading(true);
     
     try {
-      const res = await axios.post("https://suyambufoods.com/api/customer/login", form);
+      const res = await axios.post("https://suyambufoods.com/customer/login", form);
       
       if (!res.data || !res.data.token || !res.data.customerId) {
         setError("Login failed. Please try again.");
