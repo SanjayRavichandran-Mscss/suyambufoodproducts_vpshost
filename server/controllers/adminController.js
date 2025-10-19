@@ -152,28 +152,24 @@
   };
 
   /* ----------------------- HELPERS ----------------------- */
-  const parseAdditionalImages = (images) => {
+ const parseAdditionalImages = (images) => {
+  if (!images) return [];
+  if (Array.isArray(images)) return images;
+  if (typeof images === "string") {
     try {
-      if (!images) return [];
-      if (Array.isArray(images)) return images;
-      if (typeof images === "string") {
-        try {
-          return JSON.parse(images);
-        } catch {
-          return images.split(",").map((img) => img.trim());
-        }
-      }
-      return [];
+      return JSON.parse(images);
     } catch {
-      return [];
+      return images.split(",").map((img) => img.trim());
     }
-  };
+  }
+  return [];
+};
 
-  const stringifyAdditionalImages = (arr) =>
-    Array.isArray(arr) ? JSON.stringify(arr) : "[]";
+ const stringifyAdditionalImages = (arr) =>
+  Array.isArray(arr) ? JSON.stringify(arr) : "[]";
 
-  /* ----------------------- PRODUCT UPLOAD ----------------------- */
- const productImageStorage = multer.diskStorage({
+// Multer storage
+const productImageStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadPath = path.join(__dirname, "../public/productImages");
     fs.mkdirSync(uploadPath, { recursive: true });
@@ -184,90 +180,49 @@
 });
 
   // Accept broad image types (including webp, avif) using mimetype + extension check
+// Allowed image extensions
 const allowedExtensions = [".jpeg", ".jpg", ".png", ".gif", ".webp", ".avif", ".svg"];
 const productUpload = multer({
   storage: productImageStorage,
   limits: { fileSize: 15 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    try {
-      const mimetypeOk = typeof file.mimetype === "string" && file.mimetype.toLowerCase().startsWith("image/");
-      const ext = path.extname(file.originalname).toLowerCase();
-      const extOk = allowedExtensions.includes(ext);
-      if (mimetypeOk && extOk) {
-        return cb(null, true);
-      }
-      return cb(new Error("Only image files are allowed (jpeg, jpg, png, gif, webp, avif, svg)"));
-    } catch (err) {
-      return cb(new Error("Invalid file"));
-    }
+    const mimetypeOk = file.mimetype.startsWith("image/");
+    const extOk = allowedExtensions.includes(path.extname(file.originalname).toLowerCase());
+    if (mimetypeOk && extOk) return cb(null, true);
+    return cb(new Error("Only image files are allowed (jpeg, jpg, png, gif, webp, avif, svg)"));
   },
 }).fields([
   { name: "thumbnail", maxCount: 1 },
   { name: "banner", maxCount: 1 },
   { name: "additional_images", maxCount: 5 },
 ]);
-
 // Wrapper to ensure multer errors return JSON (avoids HTML error pages)
 const productUploadWrapper = (req, res, next) => {
   productUpload(req, res, (err) => {
-    if (err) {
-      console.error("❌ Multer upload error:", err);
-      // Multer errors often are instances of multer.MulterError
-      if (err instanceof multer.MulterError) {
-        return res.status(400).json({ error: err.message });
-      }
-      return res.status(400).json({ error: err.message || "File upload error" });
-    }
+    if (err) return res.status(400).json({ error: err.message || "File upload error" });
     next();
   });
 };
 /* ----------------------- PRODUCTS ----------------------- */
-/* ----------------------- PRODUCTS ----------------------- */
-/* ----------------------- PRODUCTS ----------------------- */
 exports.addProduct = [
   productUploadWrapper,
   async (req, res) => {
-    console.log("🟢 addProduct called with body:", req.body, "files:", req.files);
     try {
       const { name, description, category_id, stock_status_id, isBanner = "0" } = req.body;
-      const quantity = req.body['quantity[]'];  // ✅ Fix: Access bracketed array fields
+      const quantity = req.body['quantity[]'];
       const uom_id = req.body['uom_id[]'];
       const price = req.body['price[]'];
-      
+
       if (!name || !category_id || !stock_status_id) {
-        console.log("❌ Issue: Missing required fields", { name, category_id, stock_status_id });
         return res.status(400).json({ error: "Missing required fields" });
       }
 
-      let thumbnail_url = null;
-      let bannerimg = null;
-      let additional_images = [];
-      if (req.files?.thumbnail?.[0]) {  // ✅ Safer: Check [0] exists
-        thumbnail_url = `/productImages/${req.files.thumbnail[0].filename}`;
-      } else {
-        console.log("⚠️ No thumbnail uploaded—product will save without image");
-      }
-      if (req.files?.banner?.[0]) {
-        bannerimg = `/productImages/${req.files.banner[0].filename}`;
-      } else if (isBanner === "true") {
-        console.log("⚠️ Banner enabled but no file—saving without banner image");
-      }
-      if (req.files?.additional_images?.length > 0) {
-        additional_images = req.files.additional_images.map((f) => `/productImages/${f.filename}`);
-      }
-
-      console.log("🟢 Inserting product with params:", { 
-        name, 
-        category_id, 
-        stock_status_id, 
-        isBanner, 
-        thumbnail_url: !!thumbnail_url, 
-        bannerimg: !!bannerimg, 
-        additional_images_count: additional_images.length 
-      });
+      let thumbnail_url = req.files?.thumbnail?.[0] ? `/productImages/${req.files.thumbnail[0].filename}` : null;
+      let bannerimg = req.files?.banner?.[0] ? `/productImages/${req.files.banner[0].filename}` : null;
+      let additional_images = req.files?.additional_images?.map(f => `/productImages/${f.filename}`) || [];
 
       const sql = `
-        INSERT INTO products (name, description, thumbnail_url, additional_images, category_id, admin_id, created_at, updated_at, stock_status_id, isBanner, bannerimg) 
+        INSERT INTO products (name, description, thumbnail_url, additional_images, category_id, admin_id, created_at, updated_at, stock_status_id, isBanner, bannerimg)
         VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?, ?)
       `;
       const [result] = await db.query(sql, [
@@ -276,14 +231,13 @@ exports.addProduct = [
         thumbnail_url,
         stringifyAdditionalImages(additional_images),
         category_id,
-        1,  // Hardcoded admin_id—consider dynamic from JWT
+        1, // admin_id, ideally from JWT
         stock_status_id,
         isBanner === "true" ? 1 : 0,
         bannerimg,
       ]);
 
       const productId = result.insertId;
-      console.log("🟢 Product inserted successfully with ID:", productId);
 
       // Handle variants
       if (quantity && uom_id && price) {
@@ -291,71 +245,49 @@ exports.addProduct = [
         const uArr = Array.isArray(uom_id) ? uom_id : [uom_id];
         const pArr = Array.isArray(price) ? price : [price];
 
-        console.log("🟢 Handling variants with arrays lengths:", { qArr: qArr.length, uArr: uArr.length, pArr: pArr.length });
-
         for (let i = 0; i < qArr.length; i++) {
           if (qArr[i] && uArr[i] && pArr[i]) {
-            try {
-              await db.query(
-                "INSERT INTO product_variants (product_id, variant_quantity, uom_id, price, created_at, updated_at) VALUES (?, ?, ?, ?, NOW(), NOW())",
-                [productId, qArr[i], uArr[i], pArr[i]]
-              );
-              console.log("🟢 Variant inserted for index:", i, "with values:", { quantity: qArr[i], uom_id: uArr[i], price: pArr[i] });
-            } catch (variantError) {
-              console.error("❌ Issue inserting variant at index", i, ":", variantError);
-            }
-          } else {
-            console.log("⚠️ Skipping invalid variant at index", i, "missing values:", { quantity: !!qArr[i], uom_id: !!uArr[i], price: !!pArr[i] });
+            await db.query(
+              "INSERT INTO product_variants (product_id, variant_quantity, uom_id, price, created_at, updated_at) VALUES (?, ?, ?, ?, NOW(), NOW())",
+              [productId, qArr[i], uArr[i], pArr[i]]
+            );
           }
         }
-      } else {
-        console.log("⚠️ No variants data provided—product saved without variants");
       }
 
-      return res.status(201).json({ message: "Product added", id: productId });
+      res.status(201).json({ message: "Product added", id: productId });
     } catch (error) {
-      console.error("❌ Error adding product:", error.message, error.stack);
-      return res.status(500).json({ error: "Internal server error", details: error.message });
+      console.error("Error adding product:", error);
+      res.status(500).json({ error: "Internal server error", details: error.message });
     }
   },
 ];
 
+
+// Update product
 exports.updateProduct = [
   productUploadWrapper,
   async (req, res) => {
-    console.log("🟢 updateProduct called with params:", req.params, "body:", req.body);
     try {
       const { id } = req.params;
       const { name, description, category_id, stock_status_id, isBanner = "0" } = req.body;
-      const quantity = req.body['quantity[]'];  // ✅ Fix: Access bracketed array fields
+      const quantity = req.body['quantity[]'];
       const uom_id = req.body['uom_id[]'];
       const price = req.body['price[]'];
 
       const [existing] = await db.query("SELECT * FROM products WHERE id = ?", [id]);
-      if (existing.length === 0) return res.status(404).json({ error: "Product not found" });
+      if (!existing.length) return res.status(404).json({ error: "Product not found" });
 
-      const existingProduct = existing[0];
-      let thumbnail_url = existingProduct.thumbnail_url;
-      let bannerimg = existingProduct.bannerimg;
-      let additional_images = parseAdditionalImages(existingProduct.additional_images);
-
-      if (req.files?.thumbnail?.[0]) {
-        thumbnail_url = `/productImages/${req.files.thumbnail[0].filename}`;
-      }
-      if (req.files?.banner?.[0]) {
-        bannerimg = `/productImages/${req.files.banner[0].filename}`;
-      }
-      if (req.files?.additional_images?.length > 0) {
-        additional_images = [
-          ...additional_images,
-          ...req.files.additional_images.map((f) => `/productImages/${f.filename}`),
-        ];
-      }
+      let product = existing[0];
+      let thumbnail_url = req.files?.thumbnail?.[0] ? `/productImages/${req.files.thumbnail[0].filename}` : product.thumbnail_url;
+      let bannerimg = req.files?.banner?.[0] ? `/productImages/${req.files.banner[0].filename}` : product.bannerimg;
+      let additional_images = [
+        ...parseAdditionalImages(product.additional_images),
+        ...(req.files?.additional_images?.map(f => `/productImages/${f.filename}`) || [])
+      ];
 
       await db.query(
-        `UPDATE products 
-         SET name=?, description=?, thumbnail_url=?, additional_images=?, category_id=?, stock_status_id=?, updated_at=NOW(), isBanner=?, bannerimg=? 
-         WHERE id=?`,
+        `UPDATE products SET name=?, description=?, thumbnail_url=?, additional_images=?, category_id=?, stock_status_id=?, updated_at=NOW(), isBanner=?, bannerimg=? WHERE id=?`,
         [
           name,
           description || null,
@@ -369,10 +301,8 @@ exports.updateProduct = [
         ]
       );
 
-      // Reset variants
+      // Reset and insert variants
       await db.query("DELETE FROM product_variants WHERE product_id=?", [id]);
-
-      // Re-insert variants
       if (quantity && uom_id && price) {
         const qArr = Array.isArray(quantity) ? quantity : [quantity];
         const uArr = Array.isArray(uom_id) ? uom_id : [uom_id];
@@ -388,23 +318,10 @@ exports.updateProduct = [
         }
       }
 
-      return res.status(200).json({
-        message: "Product updated",
-        product: {
-          id,
-          name,
-          description,
-          category_id,
-          stock_status_id,
-          thumbnail_url,
-          additional_images,
-          isBanner: isBanner === "true" ? 1 : 0,
-          bannerimg,
-        },
-      });
+      res.status(200).json({ message: "Product updated" });
     } catch (error) {
-      console.error("❌ Error updating product:", error);
-      return res.status(500).json({ error: "Internal server error", details: error.message });
+      console.error("Error updating product:", error);
+      res.status(500).json({ error: "Internal server error", details: error.message });
     }
   },
 ];
