@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
+import { Edit, Trash2 } from "lucide-react";
 
-const API_BASE = "https://suyambufoods.com/api/admin";
+const API_BASE = "http://localhost:5000/admin";
 
 const ManageCategories = () => {
   const [categories, setCategories] = useState([]);
@@ -105,7 +106,7 @@ const ManageCategories = () => {
           });
           if (!res.ok) {
             const errorData = await res.json();
-            throw new Error(errorData.error || "Failed to delete");
+            throw new Error(errorData.message || errorData.error || "Failed to delete");
           }
           Swal.fire("Deleted!", "Category has been deleted.", "success");
           loadCategories();
@@ -117,106 +118,69 @@ const ManageCategories = () => {
   };
 
   return (
-    <div className="p-6 bg-white rounded-xl shadow">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Manage Categories</h1>
+    <div className="p-4 sm:p-6 bg-white rounded-xl shadow">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Manage Categories</h1>
         <button
           onClick={openAddModal}
-          className="bg-[#69D84F] hover:bg-green-600 text-white px-4 py-2 rounded-md font-semibold transition"
+          className="bg-[#69D84F] hover:bg-green-600 text-white px-4 py-2 rounded-md font-semibold transition self-start sm:self-auto"
         >
           + Add Category
         </button>
       </div>
 
-      {/* Categories Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b border-gray-300">
-              <th className="py-3 px-4 text-gray-700">Name</th>
-              <th className="py-3 px-4 text-gray-700">Description</th>
-              <th className="py-3 px-4 text-gray-700 w-28">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {categories.length === 0 ? (
-              <tr>
-                <td colSpan="3" className="text-center py-6 text-gray-500">
-                  No categories found.
-                </td>
-              </tr>
-            ) : (
-              categories.map((cat) => (
-                <tr
-                  key={cat.id}
-                  className="border-b border-gray-200 hover:bg-green-50 transition"
-                >
-                  <td className="py-3 px-4 text-gray-900 font-medium">{cat.name}</td>
-                  <td className="py-3 px-4 text-gray-700">{cat.description || "-"}</td>
-                  <td className="py-3 px-4 space-x-3">
-                    <button
-                      onClick={() => openEditModal(cat)}
-                      className="text-[#69D84F] hover:text-green-600"
-                      aria-label="Edit"
-                      title="Edit"
-                    >
-                      {/* Pencil Icon */}
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="#69D84F"
-                        className="w-5 h-5"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11c1.105 0 2-.895 2-2v-5m-10-7l7 7m0 0l-7 7m7-7H6"
-                        />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => handleDelete(cat)}
-                      className="text-red-600 hover:text-red-800"
-                      aria-label="Delete"
-                      title="Delete"
-                    >
-                      {/* Trash Icon */}
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        className="w-5 h-5"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0a1 1 0 00-1 1h6a1 1 0 00-1-1m-4 0v-1a1 1 0 112 0v1"
-                        />
-                      </svg>
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+      {/* Categories Cards */}
+      <div className="space-y-4">
+        {categories.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            No categories found.
+          </div>
+        ) : (
+          categories.map((cat) => (
+            <div
+              key={cat.id}
+              className="border border-gray-200 rounded-lg p-4 hover:bg-green-50 transition shadow-sm"
+            >
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{cat.name}</h3>
+                  <p className="text-gray-600 text-sm">{cat.description || "-"}</p>
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => openEditModal(cat)}
+                    className="text-[#69D84F] hover:text-green-600 p-2 rounded-md hover:bg-green-100 transition"
+                    aria-label="Edit"
+                    title="Edit"
+                  >
+                    <Edit size={20} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(cat)}
+                    className="text-red-600 hover:text-red-800 p-2 rounded-md hover:bg-red-100 transition"
+                    aria-label="Delete"
+                    title="Delete"
+                  >
+                    <Trash2 size={20} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Modal */}
       {modalOpen && (
         <div
-          className="fixed inset-0 backdrop-blur-sm bg-opacity-30 flex justify-center items-center z-50"
+          className="fixed inset-0 backdrop-blur-sm bg-black bg-opacity-30 flex justify-center items-center z-50 p-4"
           onClick={closeModal}
         >
           <div
-            className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md"
+            className="bg-white rounded-lg shadow-lg p-4 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-xl font-semibold mb-4 text-gray-900">
+            <h2 className="text-lg sm:text-xl font-semibold mb-4 text-gray-900">
               {formData.id ? "Edit Category" : "Add Category"}
             </h2>
             <form onSubmit={handleSubmit}>
@@ -231,10 +195,10 @@ const ManageCategories = () => {
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#69D84F]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#69D84F] focus:border-transparent"
                 />
               </div>
-              <div className="mb-4">
+              <div className="mb-6">
                 <label htmlFor="description" className="block mb-1 font-medium text-gray-700">
                   Description
                 </label>
@@ -244,21 +208,21 @@ const ManageCategories = () => {
                   value={formData.description}
                   onChange={handleChange}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#69D84F]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#69D84F] focus:border-transparent resize-none"
                 ></textarea>
               </div>
-              <div className="flex justify-end space-x-3">
+              <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100"
+                  className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 transition w-full sm:w-auto"
                   disabled={loading}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[#69D84F] text-white rounded-md hover:bg-green-600"
+                  className="px-4 py-2 bg-[#69D84F] text-white rounded-md hover:bg-green-600 transition w-full sm:w-auto"
                   disabled={loading}
                 >
                   {loading ? "Saving..." : "Save"}
@@ -273,12 +237,3 @@ const ManageCategories = () => {
 };
 
 export default ManageCategories;
-
-
-
-
-
-
-
-
-

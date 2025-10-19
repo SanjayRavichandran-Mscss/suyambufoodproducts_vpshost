@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { User, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { User, Eye, EyeOff, X } from "lucide-react";
 // Import the registration component
 import CustomerRegister from "./CustomerRegister";
 
-export default function CustomerLogin() {
+export default function CustomerLogin({ onClose }) {
   // State to toggle between Login and Register views
   const [showRegister, setShowRegister] = useState(false);
 
@@ -25,7 +25,7 @@ export default function CustomerLogin() {
     setLoading(true);
     
     try {
-      const res = await axios.post("https://suyambufoods.com/api/customer/login", form);
+      const res = await axios.post("http://localhost:5000/customer/login", form);
       
       if (!res.data || !res.data.token || !res.data.customerId) {
         setError("Login failed. Please try again.");
@@ -56,21 +56,23 @@ export default function CustomerLogin() {
     setShowRegister(false);
   };
 
-  // This function handles navigating back to the home page
-  const handleGoBack = () => {
-    navigate('/');
-  };
-
   // Conditionally render the Register or Login component
   if (showRegister) {
     // The onClose prop now calls handleShowLogin to return to the login view
-    return <CustomerRegister onLoginClick={handleShowLogin} onClose={handleShowLogin} />;
+    return <CustomerRegister onLoginClick={handleShowLogin} onClose={onClose} />;
   }
 
   return (
     <div className="h-full flex flex-col bg-white">
-      <div className="flex items-center p-4 border-b">
+      <div className="flex items-center justify-between p-4 border-b">
         <h2 className="text-xl font-semibold text-gray-800">Welcome Back</h2>
+        <button
+          type="button"
+          onClick={onClose}
+          className="p-1 rounded-md hover:bg-gray-100 transition-colors"
+        >
+          <X size={20} className="text-gray-400" />
+        </button>
       </div>
       
       <div className="flex-1 overflow-y-auto p-6">
@@ -84,7 +86,7 @@ export default function CustomerLogin() {
               name="login"
               type="text"
               placeholder="Username or email"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               value={form.login}
               onChange={handleChange}
               required
@@ -101,7 +103,7 @@ export default function CustomerLogin() {
                 name="password"
                 type={showPassword ? "text" : "password"}
                 placeholder="Enter your password"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg pr-12"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg pr-12 focus:outline-none focus:ring-2 focus:ring-green-500"
                 value={form.password}
                 onChange={handleChange}
                 required
@@ -126,7 +128,7 @@ export default function CustomerLogin() {
                 id="remember-me"
                 name="remember-me"
                 type="checkbox"
-                className="h-4 w-4 text-green-600 border-gray-300 rounded"
+                className="h-4 w-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
               />
               <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
                 Remember me
@@ -140,13 +142,13 @@ export default function CustomerLogin() {
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full py-3 px-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg"
+            className="w-full py-3 px-4 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-medium rounded-lg transition-colors"
           >
             {loading ? "Signing in..." : "Sign in"}
           </button>
           
           {error && (
-            <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
               {error}
             </div>
           )}

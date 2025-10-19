@@ -6,6 +6,8 @@ import AdminLogin from "./components/Authentication/AdminLogin";
 import CustomerLogin from "./components/Authentication/CustomerLogin";
 import CustomerRegister from "./components/Authentication/CustomerRegister";
 import CheckOutPage from "./Pages/CheckOutPage";
+import Aboutus from "./components/CustomerComponents/AboutUs";
+import ContactUs from "./components/CustomerComponents/ContactUs";
 import { AdminProtectedRoute, CustomerProtectedRoute } from "./components/ProtectedRoutes/ProtectedRoutes";
 
 export default function App() {
@@ -14,6 +16,8 @@ export default function App() {
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<CustomerPage />} />
+        <Route path="/about" element={<Aboutus />} />
+        <Route path="/contact" element={<ContactUs />} />
         <Route path="/customer" element={<CustomerPage />} /> {/* Made public - handles single product via query params */}
         <Route path="/customerlogin" element={<CustomerLogin />} />
         <Route path="/customerregister" element={<CustomerRegister />} />

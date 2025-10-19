@@ -15,7 +15,7 @@ const MyOrders = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const baseUrl = "http://suyambufoods.com/api";
+  const baseUrl = "http://localhost:5000";
 
   const showMessage = (msg, icon = "success") => {
     Swal.fire({
@@ -42,7 +42,7 @@ const MyOrders = ({
 
       try {
         const response = await fetch(
-          `${baseUrl}/api/customer/orders?customerId=${customerId}`,
+          `${baseUrl}/customer/orders/?customerId=${customerId}`,
           {
             headers: {
               "Content-Type": "application/json",
@@ -52,7 +52,14 @@ const MyOrders = ({
         );
 
         if (!response.ok) {
-          const errorData = await response.json();
+          // If response is not JSON (e.g., HTML error page), read as text to avoid parse error
+          let errorData;
+          try {
+            errorData = await response.json();
+          } catch {
+            const errorText = await response.text();
+            throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 200)}`);
+          }
           throw new Error(errorData.message || "Failed to fetch orders");
         }
 

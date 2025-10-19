@@ -6,11 +6,11 @@ const PaymentMethod = ({
   setSelectedPaymentMethodId,
 }) => {
   const options = [
-    {
-      id: 1,
-      title: "Cash on Delivery",
-      description: "Pay with cash when the order is delivered.",
-    },
+    // {
+    //   id: 1,
+    //   title: "Cash on Delivery",
+    //   description: "Pay with cash when the order is delivered.",
+    // },
     {
       id: 2,
       title: "Online Payment",

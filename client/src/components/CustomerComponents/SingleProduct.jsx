@@ -1,5 +1,4 @@
-
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -13,17 +12,14 @@ import {
   RotateCcw,
 } from "lucide-react";
 
-const IMAGE_BASE = "http://suyambufoods.com/api";
+const IMAGE_BASE = "http://localhost:5000";
 
 // Keep the same magnifier CSS (unchanged logic)
 const magnifierStyles = `
 .single-product-magnifier-container { position: relative; overflow: hidden; border-radius: 1rem; background: #f3f5f7; }
 .single-product-magnifier-main-img { width: 100%; height: 28rem; object-fit: contain; display: block; }
-.single-product-magnifier-lens { pointer-events: none; position: absolute; z-index: 20; border-radius: 50%; box-shadow: 0 2px 12px 2px #0003; width: 160px; height: 160px; background-repeat: no-repeat; background-size: 200% 200%; display: none; }
-.single-product-magnifier-container:hover .single-product-magnifier-lens { display: block; }
 @media (max-width: 768px) {
   .single-product-magnifier-main-img { height: 18rem; }
-  .single-product-magnifier-lens { width: 110px; height: 110px; }
 }
 `;
 
@@ -47,9 +43,6 @@ export default function SingleProduct({
   const [quantity, setQuantity] = useState(1);
   const [selectedVariantId, setSelectedVariantId] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState(null);
-  const [magnifierVisible, setMagnifierVisible] = useState(false);
-  const [magnifierPos, setMagnifierPos] = useState({ x: 0, y: 0 });
-  const imageRef = useRef(null);
 
   const normalizeImage = (img) => {
     if (!img) return "https://via.placeholder.com/600";
@@ -80,7 +73,7 @@ export default function SingleProduct({
     }
 
     axios
-      .get(`https://suyambufoods.com/api/admin/products/${idNum}`, {
+      .get(`http://localhost:5000/admin/products/${idNum}`, {
         headers: { Origin: "http://localhost:5173" },
       })
       .then((res) => {
@@ -166,7 +159,7 @@ export default function SingleProduct({
 
     if (item) {
       axios
-        .put("https://suyambufoods.com/api/customer/cart", body, {
+        .put("http://localhost:5000/customer/cart", body, {
           headers: { Origin: "http://localhost:5173" },
         })
         .then(() => {
@@ -176,7 +169,7 @@ export default function SingleProduct({
         .catch(() => showMessage("Failed to update cart"));
     } else {
       axios
-        .post("https://suyambufoods.com/api/customer/cart", body, {
+        .post("http://localhost:5000/customer/cart", body, {
           headers: { Origin: "http://localhost:5173" },
         })
         .then(() => {
@@ -208,7 +201,7 @@ export default function SingleProduct({
 
     if (!item) {
       axios
-        .post("https://suyambufoods.com/api/customer/cart", body, {
+        .post("http://localhost:5000/customer/cart", body, {
           headers: { Origin: "http://localhost:5173" },
         })
         .then(() => {
@@ -237,26 +230,6 @@ export default function SingleProduct({
   const handleBack = () => {
     const encodedCustomerId = btoa(customerId || "");
     navigate(`/customer?customerId=${encodedCustomerId}`);
-  };
-
-  // Magnifier events (logic unchanged)
-  const handleImageMouseEnter = (e) => {
-    setMagnifierVisible(true);
-    handleImageMouseMove(e);
-  };
-  const handleImageMouseMove = (e) => {
-    if (!imageRef.current) return;
-    const { left, top, width, height } =
-      imageRef.current.getBoundingClientRect();
-    let x = e.clientX - left;
-    let y = e.clientY - top;
-    const lensRadius = 80;
-    x = Math.max(lensRadius, Math.min(x, width - lensRadius));
-    y = Math.max(lensRadius, Math.min(y, height - lensRadius));
-    setMagnifierPos({ x, y });
-  };
-  const handleImageMouseLeave = () => {
-    setMagnifierVisible(false);
   };
 
   const handleUomChange = (productId, composite, variants) => {
@@ -305,17 +278,6 @@ export default function SingleProduct({
       ? product.price
       : 0;
 
-  const lensSize = 160;
-  const lensRadius = lensSize / 2;
-  const backgroundSize = 2;
-  let bgX = 0,
-    bgY = 0;
-  if (imageRef.current) {
-    const { width, height } = imageRef.current.getBoundingClientRect();
-    bgX = (magnifierPos.x / width) * 100;
-    bgY = (magnifierPos.y / height) * 100;
-  }
-
   const cartItem = cartItems.find(
     (item) => String(item.variant_id) === String(selectedVariant?.id)
   );
@@ -349,10 +311,6 @@ export default function SingleProduct({
         <div className="flex flex-col gap-4">
           <div
             className="single-product-magnifier-container"
-            ref={imageRef}
-            onMouseEnter={handleImageMouseEnter}
-            onMouseMove={handleImageMouseMove}
-            onMouseLeave={handleImageMouseLeave}
           >
             <img
               src={imgSrc}
@@ -362,20 +320,6 @@ export default function SingleProduct({
                 (e.currentTarget.src = "https://via.placeholder.com/600")
               }
             />
-            {magnifierVisible && (
-              <div
-                className="single-product-magnifier-lens"
-                style={{
-                  top: magnifierPos.y - lensRadius,
-                  left: magnifierPos.x - lensRadius,
-                  backgroundImage: `url(${imgSrc})`,
-                  backgroundSize: `${backgroundSize * 100}% ${
-                    backgroundSize * 100
-                  }%`,
-                  backgroundPosition: `${bgX}% ${bgY}%`,
-                }}
-              />
-            )}
           </div>
 
           {/* Thumbs */}

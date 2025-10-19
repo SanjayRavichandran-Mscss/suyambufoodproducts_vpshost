@@ -29,16 +29,19 @@ router.get('/customer-details', customerController.getCustomerDetails);
 router.post('/orders', customerController.placeOrder);
 router.get('/orders', customerController.getOrders);
 
+// --- RAZORPAY PAYMENT ROUTES ---
+// This route creates the Razorpay order on the server
+router.post('/payment/create-order', customerController.createPaymentOrder);
+
+// This route verifies the payment signature after the user pays
+router.post('/payment/verify', customerController.verifyPayment);
+// ---------------------------------
+
 // Invoice routes (now returns HTML for frontend PDF generation)
 router.get('/invoice/:orderId/data', customerController.getInvoiceData);
 
+
+// Contact form email route
+router.post('/contact', customerController.sendContactEmail);
+
 module.exports = router;
-
-
-
-
-
-
-
-
-

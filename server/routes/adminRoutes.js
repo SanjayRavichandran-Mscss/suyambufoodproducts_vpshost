@@ -83,4 +83,6 @@ router.get("/dashboard", (req, res, next) => {
 console.log("✅ Admin routes loaded");
 
 
+router.get("/banner-products", adminController.getBannerProducts);
+
 module.exports = router;

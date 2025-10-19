@@ -67,7 +67,7 @@ const DeliveryAddress = ({ selectedAddressId, setSelectedAddressId }) => {
       try {
         console.log("Fetching addresses for customerId:", decodedCustomerId);
         
-        const addressResponse = await axios.get(`https://suyambufoods.com/api/customer/addresses`, {
+        const addressResponse = await axios.get(`http://localhost:5000/customer/addresses`, {
           params: { customerId: decodedCustomerId },
           headers: {
             Authorization: `Bearer ${token}`,
@@ -75,7 +75,7 @@ const DeliveryAddress = ({ selectedAddressId, setSelectedAddressId }) => {
         });
         setAddresses(addressResponse.data);
 
-        const profileResponse = await axios.get(`https://suyambufoods.com/api/customer/profile`, {
+        const profileResponse = await axios.get(`http://localhost:5000/customer/profile`, {
           params: { customerId: decodedCustomerId },
           headers: {
             Authorization: `Bearer ${token}`,
@@ -83,7 +83,7 @@ const DeliveryAddress = ({ selectedAddressId, setSelectedAddressId }) => {
         });
         setCustomerDetails(prev => ({...prev, ...profileResponse.data}));
 
-        const detailsResponse = await axios.get(`https://suyambufoods.com/api/customer/customer-details`, {
+        const detailsResponse = await axios.get(`http://localhost:5000/customer/customer-details`, {
           params: { customerId: decodedCustomerId },
           headers: {
             Authorization: `Bearer ${token}`,
@@ -174,7 +174,7 @@ const DeliveryAddress = ({ selectedAddressId, setSelectedAddressId }) => {
 
     try {
       await axios.post(
-        "https://suyambufoods.com/api/customer/addresses",
+        "http://localhost:5000/customer/addresses",
         { ...formData },
         {
           params: { customerId: decodedCustomerId },
@@ -184,7 +184,7 @@ const DeliveryAddress = ({ selectedAddressId, setSelectedAddressId }) => {
         }
       );
       resetForm();
-      const response = await axios.get(`https://suyambufoods.com/api/customer/addresses`, {
+      const response = await axios.get(`http://localhost:5000/customer/addresses`, {
         params: { customerId: decodedCustomerId },
         headers: {
           Authorization: `Bearer ${token}`,
@@ -231,7 +231,7 @@ const DeliveryAddress = ({ selectedAddressId, setSelectedAddressId }) => {
 
     try {
       await axios.put(
-        "https://suyambufoods.com/api/customer/addresses",
+        "http://localhost:5000/customer/addresses",
         { id: editingAddressId, ...formData },
         {
           params: { customerId: decodedCustomerId },
@@ -241,7 +241,7 @@ const DeliveryAddress = ({ selectedAddressId, setSelectedAddressId }) => {
         }
       );
       resetForm();
-      const response = await axios.get(`https://suyambufoods.com/api/customer/addresses`, {
+      const response = await axios.get(`http://localhost:5000/customer/addresses`, {
         params: { customerId: decodedCustomerId },
         headers: {
           Authorization: `Bearer ${token}`,
@@ -269,7 +269,7 @@ const DeliveryAddress = ({ selectedAddressId, setSelectedAddressId }) => {
     }
 
     try {
-      await axios.delete("https://suyambufoods.com/api/customer/addresses", {
+      await axios.delete("http://localhost:5000/customer/addresses", {
         params: { id, customerId: decodedCustomerId },
         headers: {
           Authorization: `Bearer ${token}`,
@@ -278,7 +278,7 @@ const DeliveryAddress = ({ selectedAddressId, setSelectedAddressId }) => {
       if (selectedAddressId === id) {
         setSelectedAddressId(null);
       }
-      const response = await axios.get(`https://suyambufoods.com/api/customer/addresses`, {
+      const response = await axios.get(`http://localhost:5000/customer/addresses`, {
         params: { customerId: decodedCustomerId },
         headers: {
           Authorization: `Bearer ${token}`,
@@ -306,7 +306,7 @@ const DeliveryAddress = ({ selectedAddressId, setSelectedAddressId }) => {
     try {
       const address = addresses.find(addr => addr.id === id);
       await axios.put(
-        "https://suyambufoods.com/api/customer/addresses",
+        "http://localhost:5000/customer/addresses",
         { 
           id, 
           street: address.street,
@@ -323,7 +323,7 @@ const DeliveryAddress = ({ selectedAddressId, setSelectedAddressId }) => {
           },
         }
       );
-      const response = await axios.get(`https://suyambufoods.com/api/customer/addresses`, {
+      const response = await axios.get(`http://localhost:5000/customer/addresses`, {
         params: { customerId: decodedCustomerId },
         headers: {
           Authorization: `Bearer ${token}`,
