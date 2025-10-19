@@ -421,58 +421,75 @@ exports.updateProduct = [
     }
   };
 
-  exports.viewProducts = async (req, res) => {
-    console.log("🟢 viewProducts called");
-    try {
-      const [rows] = await db.query(
-        `SELECT 
-          p.id, p.name, p.description, p.thumbnail_url, p.additional_images,
-          p.category_id, c.name AS category_name,
-          s.status AS stock_status, s.id AS stock_status_id,
-          pv.id AS variant_id, pv.variant_quantity, pv.price AS variant_price, 
-          u.id AS variant_uom_id, u.uom_name
-        FROM products p
-        LEFT JOIN categories c ON p.category_id = c.id
-        LEFT JOIN stock_statuses s ON p.stock_status_id = s.id
-        LEFT JOIN product_variants pv ON pv.product_id = p.id
-        LEFT JOIN uom_master u ON pv.uom_id = u.id
-        ORDER BY p.created_at DESC`
-      );
-      console.log("🔎 viewProducts query result count:", rows.length);
+exports.viewProducts = async (req, res) => {
+  console.log("🟢 viewProducts called");
+  try {
+    const [rows] = await db.query(
+      `SELECT 
+        p.id, p.name, p.description, p.thumbnail_url, p.additional_images,
+        p.category_id, c.name AS category_name,
+        s.status AS stock_status, s.id AS stock_status_id,
+        pv.id AS variant_id, pv.variant_quantity, pv.price AS variant_price, 
+        u.id AS variant_uom_id, u.uom_name
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN stock_statuses s ON p.stock_status_id = s.id
+      LEFT JOIN product_variants pv ON pv.product_id = p.id
+      LEFT JOIN uom_master u ON pv.uom_id = u.id
+      ORDER BY p.created_at DESC`
+    );
+    console.log("🔎 viewProducts query result count:", rows.length);
 
-      const productsMap = {};
-      rows.forEach((r) => {
-        if (!productsMap[r.id]) {
-          productsMap[r.id] = {
-            id: r.id,
-            name: r.name,
-            description: r.description,
-            thumbnail_url: r.thumbnail_url,
-            additional_images: parseAdditionalImages(r.additional_images),
-            category_id: r.category_id,
-            category_name: r.category_name,
-            stock_status_id: r.stock_status_id,
-            stock_status: r.stock_status,
-            variants: [],
-          };
+    const productsMap = {};
+    rows.forEach((r) => {
+      if (!productsMap[r.id]) {
+        let additionalImages = [];
+        if (typeof r.additional_images === "string") {
+          try {
+            additionalImages = JSON.parse(r.additional_images);
+          } catch {
+            additionalImages = r.additional_images.split(",").map((img) => img.trim()).filter(Boolean);
+          }
+        } else if (Array.isArray(r.additional_images)) {
+          additionalImages = r.additional_images;
         }
-        if (r.variant_id) {
-          productsMap[r.id].variants.push({
-            id: r.variant_id,
-            quantity: r.variant_quantity,
-            price: r.variant_price,
-            uom_id: r.variant_uom_id,
-            uom_name: r.uom_name,
-          });
-        }
-      });
+        // Prepend IMAGE_BASE to image URLs for consistency
+        const fullThumbnailUrl = r.thumbnail_url && r.thumbnail_url.startsWith("/")
+          ? `${IMAGE_BASE}${r.thumbnail_url}`
+          : r.thumbnail_url || null;
+        const fullAdditionalImages = additionalImages.map((img) =>
+          img && img.startsWith("/") ? `${IMAGE_BASE}${img}` : img || null
+        );
+        productsMap[r.id] = {
+          id: r.id,
+          name: r.name,
+          description: r.description,
+          thumbnail_url: fullThumbnailUrl,
+          additional_images: fullAdditionalImages,
+          category_id: r.category_id,
+          category_name: r.category_name,
+          stock_status_id: r.stock_status_id,
+          stock_status: r.stock_status,
+          variants: [],
+        };
+      }
+      if (r.variant_id) {
+        productsMap[r.id].variants.push({
+          id: r.variant_id,
+          quantity: r.variant_quantity,
+          price: r.variant_price,
+          uom_id: r.variant_uom_id,
+          uom_name: r.uom_name,
+        });
+      }
+    });
 
-      return res.status(200).json(Object.values(productsMap));
-    } catch (error) {
-      console.error("❌ Error fetching products:", error);
-      return res.status(500).json({ error: "Internal server error" });
-    }
-  };
+    return res.status(200).json(Object.values(productsMap));
+  } catch (error) {
+    console.error("❌ Error fetching products:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
 
   exports.getProductById = async (req, res) => {
     console.log("🟢 getProductById called with params:", req.params);
