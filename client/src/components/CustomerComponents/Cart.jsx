@@ -12,7 +12,7 @@ const Cart = ({
   showCartModal,
   cartAnimation,
 }) => {
-  const baseUrl = "https://suyambufoods.com";
+  const baseUrl = "https://suyambufoods.com/api";
   const navigate = useNavigate();
 
   const totalItems = Array.isArray(cartItems)

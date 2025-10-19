@@ -4,7 +4,7 @@
   const path = require("path");
   const fs = require("fs");
 
-  const IMAGE_BASE = "https://suyambufoods.com";
+  const IMAGE_BASE = "https://suyambufoods.com/api";
 
   /* ----------------------- AUTH ----------------------- */
   exports.login = async (req, res) => {

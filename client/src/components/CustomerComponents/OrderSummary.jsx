@@ -12,7 +12,7 @@ const OrderSummary = ({
   updateQuantity,
   handleRemoveItem,
 }) => {
-  const baseUrl = "https://suyambufoods.com";
+  const baseUrl = "https://suyambufoods.com/api";
   const [showCartModal, setShowCartModal] = useState(false);
   const [cartAnimation, setCartAnimation] = useState("");
 

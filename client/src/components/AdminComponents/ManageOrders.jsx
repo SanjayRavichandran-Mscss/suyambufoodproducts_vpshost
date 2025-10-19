@@ -41,7 +41,7 @@ const ManageOrders = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const response = await fetch("https://suyambufoods.com/admin/orders");
+        const response = await fetch("https://suyambufoods.com/api/admin/orders");
         if (!response.ok) {
           throw new Error("Failed to fetch orders");
         }
@@ -83,7 +83,7 @@ const ManageOrders = () => {
 
     const newStatus = orderStatuses[orderId];
     try {
-      const response = await fetch(`https://suyambufoods.com/admin/orders/${orderId}/status`, {
+      const response = await fetch(`https://suyambufoods.com/api/admin/orders/${orderId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
@@ -333,7 +333,7 @@ const ManageOrders = () => {
                       {order.items.map(item => (
                         <div key={item.product_variant_id} className="flex items-start space-x-4 p-3 bg-gray-50 rounded-lg">
                           <img
-                            src={`https://suyambufoods.com${item.thumbnail_url}`}
+                            src={`https://suyambufoods.com/api${item.thumbnail_url}`}
                             alt={item.name}
                             className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
                             onError={(e) => {

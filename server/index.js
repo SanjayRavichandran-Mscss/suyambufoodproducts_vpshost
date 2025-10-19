@@ -16,7 +16,7 @@ console.log("🚀 Starting server...");
 app.use('/productImages', express.static(path.join(__dirname, 'public/productImages')));
 
 app.use(cors({
-  origin: ['http://localhost:5173','https://suyambufoodproducts-demohost.vercel.app','https://suyambufoods.com','https://www.suyambufoods.com'],
+  origin: ['http://localhost:5173','https://suyambufoodproducts-demohost.vercel.app','https://suyambufoods.com/api','https://www.suyambufoods.com'],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
