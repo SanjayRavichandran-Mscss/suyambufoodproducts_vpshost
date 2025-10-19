@@ -879,7 +879,7 @@ import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import Select from 'react-select';
 
-const API_BASE = "https://suyambufoods.com/api/admin";
+const API_BASE = "https://suyambufoods.com/api";
 const IMAGE_BASE = "https://suyambufoods.com/api";
 const FALLBACK_IMAGE = `${IMAGE_BASE}/fallback-image.png`;
 
