@@ -874,12 +874,13 @@
 // export default ManageProducts;
 
 
+
 import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import Select from 'react-select';
 
 const API_BASE = "https://suyambufoods.com/api/admin";
-const IMAGE_BASE = "https://suyambufoods.com/api/admin";
+const IMAGE_BASE = "https://suyambufoods.com/api";
 const FALLBACK_IMAGE = `${IMAGE_BASE}/fallback-image.png`;
 
 const ManageProducts = () => {
@@ -914,71 +915,38 @@ const ManageProducts = () => {
     loadProducts();
   }, []);
 
-  const fetchWithErrorHandling = async (url, options = {}) => {
-    const res = await fetch(url, options);
-    if (!res.ok) {
-      let errorMessage = `HTTP error! status: ${res.status}`;
-      try {
-        const contentType = res.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
-          const errorData = await res.json();
-          errorMessage = errorData.error || errorMessage;
-        } else {
-          const errorText = await res.text();
-          console.error("Non-JSON error response:", errorText);
-          if (res.status === 413) {
-            errorMessage = "Payload too large. Please check file sizes (recommended: under 5MB per image) and try again. If issue persists, contact support to increase server limits.";
-          } else {
-            errorMessage = `Server returned non-JSON response: ${res.status}`;
-          }
-        }
-      } catch (parseErr) {
-        console.error("Failed to parse error response:", parseErr);
-      }
-      throw new Error(errorMessage);
-    }
-    const contentType = res.headers.get("content-type");
-    if (!contentType || !contentType.includes("application/json")) {
-      const text = await res.text();
-      console.error("Expected JSON but got:", text.substring(0, 200));
-      throw new Error("Server returned non-JSON response");
-    }
-    return await res.json();
-  };
-
   const loadCategories = async () => {
     try {
-      const data = await fetchWithErrorHandling(`${API_BASE}/categories`);
+      const res = await fetch(`${API_BASE}/categories`);
+      const data = await res.json();
       setCategories(data);
     } catch (error) {
       console.error("Failed to load categories", error);
-      Swal.fire("Error", "Failed to load categories. Please try refreshing.", "error");
     }
   };
 
   const loadUoms = async () => {
     try {
-      const data = await fetchWithErrorHandling(`${API_BASE}/uoms`);
-      setUoms(data);
+      const res = await fetch(`${API_BASE}/uoms`);
+      setUoms(await res.json());
     } catch (error) {
       console.error("Failed to load UOMs", error);
-      Swal.fire("Error", "Failed to load units. Please try refreshing.", "error");
     }
   };
 
   const loadStockStatuses = async () => {
     try {
-      const data = await fetchWithErrorHandling(`${API_BASE}/stock-statuses`);
-      setStockStatuses(data);
+      const res = await fetch(`${API_BASE}/stock-statuses`);
+      setStockStatuses(await res.json());
     } catch (error) {
       console.error("Failed to load stock statuses", error);
-      Swal.fire("Error", "Failed to load stock statuses. Please try refreshing.", "error");
     }
   };
 
   const loadProducts = async () => {
     try {
-      const data = await fetchWithErrorHandling(`${API_BASE}/products`);
+      const res = await fetch(`${API_BASE}/products`);
+      const data = await res.json();
       const updatedProducts = data.map((product) => {
         let additionalImages = [];
         if (typeof product.additional_images === "string") {
@@ -1012,7 +980,6 @@ const ManageProducts = () => {
       setProducts(updatedProducts);
     } catch (error) {
       console.error("Failed to load products", error);
-      Swal.fire("Error", "Failed to load products. Please try refreshing.", "error");
     }
   };
 
@@ -1145,9 +1112,14 @@ const ManageProducts = () => {
 
       if (result.isConfirmed) {
         try {
-          await fetchWithErrorHandling(`${API_BASE}/products/${formData.id}/variants/${variant.id}`, {
+          const res = await fetch(`${API_BASE}/products/${formData.id}/variants/${variant.id}`, {
             method: "DELETE",
           });
+
+          if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.error || "Failed to delete variant");
+          }
 
           const updatedVariants = formData.variants.filter((_, i) => i !== index);
           setFormData((prev) => ({ ...prev, variants: updatedVariants }));
@@ -1235,7 +1207,11 @@ const ManageProducts = () => {
 
       payload.append("stock_status_id", formData.stock_status_id);
 
-      await fetchWithErrorHandling(url, { method, body: payload });
+      const res = await fetch(url, { method, body: payload });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Operation failed");
+      }
       Swal.fire(
         "Success",
         formData.id ? "Product updated successfully" : "Product added successfully",
@@ -1244,11 +1220,7 @@ const ManageProducts = () => {
       closeModal();
       loadProducts();
     } catch (error) {
-      let errorMsg = error.message;
-      if (errorMsg.includes("413")) {
-        errorMsg = "Upload failed: Payload too large. Please use smaller images (under 5MB each) or fewer files. On VPS server, increase 'client_max_body_size' in nginx.conf if needed.";
-      }
-      Swal.fire("Error", errorMsg, "error");
+      Swal.fire("Error", error.message, "error");
     } finally {
       setLoading(false);
     }
@@ -1266,9 +1238,13 @@ const ManageProducts = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await fetchWithErrorHandling(`${API_BASE}/products/${product.id}`, {
+          const res = await fetch(`${API_BASE}/products/${product.id}`, {
             method: "DELETE",
           });
+          if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.error || "Failed to delete");
+          }
           Swal.fire("Deleted!", "Product has been deleted.", "success");
           loadProducts();
         } catch (error) {
@@ -1652,7 +1628,7 @@ const ManageProducts = () => {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                               </svg>
                               <p className="text-sm text-gray-600">Click to upload thumbnail</p>
-                              <p className="text-xs text-gray-500 mt-1">Main product image (max 5MB)</p>
+                              <p className="text-xs text-gray-500 mt-1">Main product image</p>
                             </div>
                           )}
                         </label>
@@ -1701,7 +1677,7 @@ const ManageProducts = () => {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                   </svg>
                                   <p className="text-sm text-gray-600">Click to upload banner</p>
-                                  <p className="text-xs text-gray-500 mt-1">Optional banner image (max 5MB)</p>
+                                  <p className="text-xs text-gray-500 mt-1">Optional banner image</p>
                                 </div>
                               )}
                             </label>
@@ -1713,7 +1689,7 @@ const ManageProducts = () => {
                     {/* Additional Images */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-3">
-                        Additional Images (Max 5, each under 5MB)
+                        Additional Images (Max 5)
                       </label>
                       <div className="grid grid-cols-5 gap-2">
                         {[0, 1, 2, 3, 4].map((index) => (
