@@ -223,13 +223,17 @@ const productUploadWrapper = (req, res, next) => {
 };
 /* ----------------------- PRODUCTS ----------------------- */
 /* ----------------------- PRODUCTS ----------------------- */
+/* ----------------------- PRODUCTS ----------------------- */
 exports.addProduct = [
   productUploadWrapper,
   async (req, res) => {
     console.log("🟢 addProduct called with body:", req.body, "files:", req.files);
     try {
-      const { name, description, category_id, stock_status_id, quantity, uom_id, price, isBanner = "0" } =
-        req.body;
+      const { name, description, category_id, stock_status_id, isBanner = "0" } = req.body;
+      const quantity = req.body['quantity[]'];  // ✅ Fix: Access bracketed array fields
+      const uom_id = req.body['uom_id[]'];
+      const price = req.body['price[]'];
+      
       if (!name || !category_id || !stock_status_id) {
         console.log("❌ Issue: Missing required fields", { name, category_id, stock_status_id });
         return res.status(400).json({ error: "Missing required fields" });
@@ -238,23 +242,29 @@ exports.addProduct = [
       let thumbnail_url = null;
       let bannerimg = null;
       let additional_images = [];
-      if (req.files?.thumbnail?.length > 0) {
+      if (req.files?.thumbnail?.[0]) {  // ✅ Safer: Check [0] exists
         thumbnail_url = `/productImages/${req.files.thumbnail[0].filename}`;
       } else {
-        console.log("⚠️ Issue: No thumbnail file uploaded");
+        console.log("⚠️ No thumbnail uploaded—product will save without image");
       }
-      if (req.files?.banner?.length > 0) {
+      if (req.files?.banner?.[0]) {
         bannerimg = `/productImages/${req.files.banner[0].filename}`;
       } else if (isBanner === "true") {
-        console.log("⚠️ Issue: Banner enabled but no banner file uploaded");
+        console.log("⚠️ Banner enabled but no file—saving without banner image");
       }
       if (req.files?.additional_images?.length > 0) {
-        additional_images = req.files.additional_images.map(
-          (f) => `/productImages/${f.filename}`
-        );
+        additional_images = req.files.additional_images.map((f) => `/productImages/${f.filename}`);
       }
 
-      console.log("🟢 Inserting product with params:", { name, category_id, stock_status_id, isBanner, thumbnail_url: !!thumbnail_url, bannerimg: !!bannerimg, additional_images_count: additional_images.length });
+      console.log("🟢 Inserting product with params:", { 
+        name, 
+        category_id, 
+        stock_status_id, 
+        isBanner, 
+        thumbnail_url: !!thumbnail_url, 
+        bannerimg: !!bannerimg, 
+        additional_images_count: additional_images.length 
+      });
 
       const sql = `
         INSERT INTO products (name, description, thumbnail_url, additional_images, category_id, admin_id, created_at, updated_at, stock_status_id, isBanner, bannerimg) 
@@ -266,7 +276,7 @@ exports.addProduct = [
         thumbnail_url,
         stringifyAdditionalImages(additional_images),
         category_id,
-        1,
+        1,  // Hardcoded admin_id—consider dynamic from JWT
         stock_status_id,
         isBanner === "true" ? 1 : 0,
         bannerimg,
@@ -275,7 +285,7 @@ exports.addProduct = [
       const productId = result.insertId;
       console.log("🟢 Product inserted successfully with ID:", productId);
 
-      // handle variants
+      // Handle variants
       if (quantity && uom_id && price) {
         const qArr = Array.isArray(quantity) ? quantity : [quantity];
         const uArr = Array.isArray(uom_id) ? uom_id : [uom_id];
@@ -293,22 +303,19 @@ exports.addProduct = [
               console.log("🟢 Variant inserted for index:", i, "with values:", { quantity: qArr[i], uom_id: uArr[i], price: pArr[i] });
             } catch (variantError) {
               console.error("❌ Issue inserting variant at index", i, ":", variantError);
-              // Continue with other variants, don't fail the whole operation
             }
           } else {
-            console.log("⚠️ Issue: Skipping invalid variant at index", i, "missing values:", { quantity: !!qArr[i], uom_id: !!uArr[i], price: !!pArr[i] });
+            console.log("⚠️ Skipping invalid variant at index", i, "missing values:", { quantity: !!qArr[i], uom_id: !!uArr[i], price: !!pArr[i] });
           }
         }
       } else {
-        console.log("⚠️ Issue: No variants data provided");
+        console.log("⚠️ No variants data provided—product saved without variants");
       }
 
-      return res
-        .status(201)
-        .json({ message: "Product added", id: productId });
+      return res.status(201).json({ message: "Product added", id: productId });
     } catch (error) {
       console.error("❌ Error adding product:", error.message, error.stack);
-      return res.status(500).json({ error: "Internal server error" });
+      return res.status(500).json({ error: "Internal server error", details: error.message });
     }
   },
 ];
@@ -319,34 +326,29 @@ exports.updateProduct = [
     console.log("🟢 updateProduct called with params:", req.params, "body:", req.body);
     try {
       const { id } = req.params;
-      const { name, description, category_id, stock_status_id, quantity, uom_id, price, isBanner = "0" } =
-        req.body;
+      const { name, description, category_id, stock_status_id, isBanner = "0" } = req.body;
+      const quantity = req.body['quantity[]'];  // ✅ Fix: Access bracketed array fields
+      const uom_id = req.body['uom_id[]'];
+      const price = req.body['price[]'];
 
-      const [existing] = await db.query("SELECT * FROM products WHERE id = ?", [
-        id,
-      ]);
-      if (existing.length === 0)
-        return res.status(404).json({ error: "Product not found" });
+      const [existing] = await db.query("SELECT * FROM products WHERE id = ?", [id]);
+      if (existing.length === 0) return res.status(404).json({ error: "Product not found" });
 
       const existingProduct = existing[0];
       let thumbnail_url = existingProduct.thumbnail_url;
       let bannerimg = existingProduct.bannerimg;
-      let additional_images = parseAdditionalImages(
-        existingProduct.additional_images
-      );
+      let additional_images = parseAdditionalImages(existingProduct.additional_images);
 
-      if (req.files?.thumbnail?.length > 0) {
+      if (req.files?.thumbnail?.[0]) {
         thumbnail_url = `/productImages/${req.files.thumbnail[0].filename}`;
       }
-      if (req.files?.banner?.length > 0) {
+      if (req.files?.banner?.[0]) {
         bannerimg = `/productImages/${req.files.banner[0].filename}`;
       }
       if (req.files?.additional_images?.length > 0) {
         additional_images = [
           ...additional_images,
-          ...req.files.additional_images.map(
-            (f) => `/productImages/${f.filename}`
-          ),
+          ...req.files.additional_images.map((f) => `/productImages/${f.filename}`),
         ];
       }
 
@@ -367,9 +369,10 @@ exports.updateProduct = [
         ]
       );
 
-      // reset variants
+      // Reset variants
       await db.query("DELETE FROM product_variants WHERE product_id=?", [id]);
 
+      // Re-insert variants
       if (quantity && uom_id && price) {
         const qArr = Array.isArray(quantity) ? quantity : [quantity];
         const uArr = Array.isArray(uom_id) ? uom_id : [uom_id];
@@ -401,9 +404,7 @@ exports.updateProduct = [
       });
     } catch (error) {
       console.error("❌ Error updating product:", error);
-      return res
-        .status(500)
-        .json({ error: "Internal server error", details: error.message });
+      return res.status(500).json({ error: "Internal server error", details: error.message });
     }
   },
 ];
