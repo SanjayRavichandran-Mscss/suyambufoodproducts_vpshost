@@ -1676,7 +1676,7 @@ const ManageProducts = () => {
       {/* Fullscreen Image Modal */}
       {fullscreenImage && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-opacity-90 flex items-center justify-center z-50 p-4"
           onClick={closeFullscreen}
         >
           <div className="relative max-w-4xl max-h-full">
@@ -1686,7 +1686,7 @@ const ManageProducts = () => {
               className="max-w-full max-h-full object-contain"
             />
             <button
-              className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors duration-200 bg-black bg-opacity-50 rounded-full p-2"
+              className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors duration-200 bg-opacity-50 rounded-full p-2"
               onClick={closeFullscreen}
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1699,7 +1699,7 @@ const ManageProducts = () => {
 
       {/* Add/Edit Product Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 backdrop-blur-2xl bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 backdrop-blur-2xl bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
             {/* Header */}
             <div className="flex justify-between items-center p-6 border-b border-gray-200 bg-[#4A6572] text-white">
