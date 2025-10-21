@@ -1233,7 +1233,7 @@ const handleSubmit = async (e) => {
 
     payload.append("stock_status_id", formData.stock_status_id);
 
-    console.log("🟢 Frontend: Submitting to", url, "with method", method);  // For browser console debug
+    console.log("🟢 Frontend: Submitting to", url, "with method", method);
 
     const res = await fetch(url, { 
       method, 
@@ -1242,22 +1242,32 @@ const handleSubmit = async (e) => {
 
     let errorData;
     if (!res.ok) {
-      try {
-        const text = await res.text();
-        console.error("🟢 Frontend: Raw response text (first 200 chars):", text.substring(0, 200));
-        if (text.trim().startsWith('<')) {
-          throw new Error("Server returned HTML error (likely 500). Check backend logs for details.");
-        }
-        errorData = JSON.parse(text);
-      } catch (parseErr) {
-        console.error("🟢 Frontend: Parse error:", parseErr);
-        throw new Error(`Server error (${res.status}): ${parseErr.message}`);
+      const text = await res.text();
+      console.error("🟢 Frontend: Raw response (first 300 chars):", text.substring(0, 300));
+      console.error("🟢 Frontend: Full status:", res.status, res.statusText);
+
+      // Detect common errors
+      let errorMsg = `Server error (${res.status}): ${res.statusText}`;
+      if (res.status === 413) {
+        errorMsg = "413: Upload too large – Try smaller images (<15MB each) or fewer files.";
+      } else if (text.trim().startsWith('<')) {
+        errorMsg += " (HTML response – check backend/Nginx logs).";
       }
-      throw new Error(errorData.error || errorData.message || "Operation failed");
+
+      try {
+        if (!text.trim().startsWith('<')) {
+          errorData = JSON.parse(text);
+          errorMsg = errorData.error || errorData.message || errorMsg;
+        }
+      } catch (parseErr) {
+        // Already handled as HTML
+      }
+
+      throw new Error(errorMsg);
     }
 
-    const result = await res.json();  // Safe now
-    console.log("✅ Frontend: Success response:", result);
+    const result = await res.json();
+    console.log("✅ Frontend: Success:", result);
     Swal.fire(
       "Success",
       formData.id ? "Product updated successfully" : "Product added successfully",
