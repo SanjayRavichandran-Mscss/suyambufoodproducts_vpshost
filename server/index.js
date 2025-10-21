@@ -100,15 +100,15 @@ app.use(cors({
 app.use(express.json());
 
 // Test API
-app.get('/api/test', (req, res) => {
+app.get('/test', (req, res) => {
   console.log("✅ /api/test called");
   res.status(200).json({ message: 'Server is running successfully' });
 });
 
 // ------------------ API ROUTES ------------------
 // Add `/api` prefix to match frontend/Nginx
-app.use('/api/admin', adminRoutes);
-app.use('/api/customer', customerRoutes);
+app.use('/admin', adminRoutes);
+app.use('/customer', customerRoutes);
 
 // ------------------ DB CHECK ------------------
 async function checkDbConnection() {
