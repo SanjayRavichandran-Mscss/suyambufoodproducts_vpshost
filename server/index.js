@@ -66,7 +66,6 @@
 
 // startServer();
 
-
 const express = require('express');
 const cors = require('cors');
 const db = require('./config/db');
@@ -84,13 +83,15 @@ console.log("🚀 Starting server...");
 // Serve static files
 app.use('/productImages', express.static(path.join(__dirname, 'public/productImages')));
 
-// CORS setup (fixed origins, added credentials support)
+// CORS setup (added IP fallback and HTTPS for prod)
 app.use(cors({
   origin: [
     'http://localhost:5173',
+    'http://72.60.202.205:5173',
     'https://suyambufoodproducts-demohost.vercel.app',
     'https://suyambufoods.com',
-    'https://www.suyambufoods.com'
+    'https://www.suyambufoods.com',
+    'http://72.60.202.205'
   ],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -106,9 +107,9 @@ app.get('/api/test', (req, res) => {
 });
 
 // ------------------ API ROUTES ------------------
-// Add `/api` prefix to match frontend/Nginx
-app.use('/admin', adminRoutes);
-app.use('/customer', customerRoutes);
+// Prefix with /api to match Nginx proxy
+app.use('/api/admin', adminRoutes);
+app.use('/api/customer', customerRoutes);
 
 // ------------------ DB CHECK ------------------
 async function checkDbConnection() {
@@ -126,7 +127,7 @@ async function checkDbConnection() {
 async function startServer() {
   const isDbConnected = await checkDbConnection();
   if (isDbConnected) {
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Server running on port ${PORT}`);
       const endpoints = listEndpoints(app);
       console.log("✅ Registered endpoints:");
