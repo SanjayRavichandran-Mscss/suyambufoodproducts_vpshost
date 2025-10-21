@@ -66,6 +66,17 @@
 
 // startServer();
 
+
+
+
+
+
+
+
+
+
+
+
 const express = require('express');
 const cors = require('cors');
 const db = require('./config/db');
@@ -98,7 +109,22 @@ app.use(cors({
   credentials: true  // Enable if using cookies/auth; otherwise, set to false
 }));
 
-app.use(express.json());
+// Body parsers for JSON and URL-encoded (essential for multipart/form-data handling)
+app.use(express.json({ limit: '50mb' }));  // Increased limit for files
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));  // For form data
+
+// Optional: Global multer setup for any file uploads (but recommend per-route for security)
+// If you want global handling for any multipart, uncomment below (adjust fileFilter for "any kind")
+// const multer = require('multer');
+// const upload = multer({ 
+//   dest: 'public/uploads/',  // Or custom storage
+//   limits: { fileSize: 100 * 1024 * 1024 },  // 100MB max
+//   fileFilter: (req, file, cb) => {
+//     // Accept any file type (no filter – "any kind")
+//     cb(null, true);
+//   }
+// });
+// app.use(upload.any());  // Parses any files in multipart requests
 
 // Test API
 app.get('/api/test', (req, res) => {
@@ -108,8 +134,8 @@ app.get('/api/test', (req, res) => {
 
 // ------------------ API ROUTES ------------------
 // Prefix with /api to match Nginx proxy
-app.use('/admin', adminRoutes);
-app.use('/customer', customerRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/customer', customerRoutes);
 
 // ------------------ DB CHECK ------------------
 async function checkDbConnection() {
