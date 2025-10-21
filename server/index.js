@@ -66,8 +66,6 @@
 
 // startServer();
 
-
-
 const express = require('express');
 const cors = require('cors');
 const db = require('./config/db');
@@ -137,5 +135,11 @@ async function startServer() {
     process.exit(1);
   }
 }
+
+// NEW: Global error handler to force JSON responses (prevents HTML errors)
+app.use((err, req, res, next) => {
+  console.error('❌ Global error:', err);
+  res.status(500).json({ error: 'Internal server error', details: err.message });
+});
 
 startServer();
