@@ -68,15 +68,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
 const express = require('express');
 const cors = require('cors');
 const db = require('./config/db');
@@ -94,37 +85,19 @@ console.log("🚀 Starting server...");
 // Serve static files
 app.use('/productImages', express.static(path.join(__dirname, 'public/productImages')));
 
-// CORS setup (added IP fallback and HTTPS for prod)
+// CORS setup
 app.use(cors({
   origin: [
     'http://localhost:5173',
-    'http://72.60.202.205:5173',
     'https://suyambufoodproducts-demohost.vercel.app',
-    'https://suyambufoods.com',
-    'https://www.suyambufoods.com',
-    'http://72.60.202.205'
+    'https://suyambufoods.com/api',
+    'https://www.suyambufoods.com'
   ],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true  // Enable if using cookies/auth; otherwise, set to false
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Body parsers for JSON and URL-encoded (essential for multipart/form-data handling)
-app.use(express.json({ limit: '50mb' }));  // Increased limit for files
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));  // For form data
-
-// Optional: Global multer setup for any file uploads (but recommend per-route for security)
-// If you want global handling for any multipart, uncomment below (adjust fileFilter for "any kind")
-// const multer = require('multer');
-// const upload = multer({ 
-//   dest: 'public/uploads/',  // Or custom storage
-//   limits: { fileSize: 100 * 1024 * 1024 },  // 100MB max
-//   fileFilter: (req, file, cb) => {
-//     // Accept any file type (no filter – "any kind")
-//     cb(null, true);
-//   }
-// });
-// app.use(upload.any());  // Parses any files in multipart requests
+app.use(express.json());
 
 // Test API
 app.get('/api/test', (req, res) => {
@@ -133,9 +106,9 @@ app.get('/api/test', (req, res) => {
 });
 
 // ------------------ API ROUTES ------------------
-// Prefix with /api to match Nginx proxy
-app.use('/admin', adminRoutes);
-app.use('/customer', customerRoutes);
+// Add `/api` prefix to match frontend/Nginx
+app.use('/api/admin', adminRoutes);
+app.use('/api/customer', customerRoutes);
 
 // ------------------ DB CHECK ------------------
 async function checkDbConnection() {
@@ -153,7 +126,7 @@ async function checkDbConnection() {
 async function startServer() {
   const isDbConnected = await checkDbConnection();
   if (isDbConnected) {
-    app.listen(PORT, '0.0.0.0', () => {
+    app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       const endpoints = listEndpoints(app);
       console.log("✅ Registered endpoints:");
