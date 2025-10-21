@@ -2,8 +2,8 @@
 // import Swal from "sweetalert2";
 // import Select from 'react-select';
 
-// const API_BASE = "https://suyambufoods.com/api/api/admin";
-// const IMAGE_BASE = "https://suyambufoods.com/api/api";
+// const API_BASE = "https://suyambufoods.com/api/admin";
+// const IMAGE_BASE = "https://suyambufoods.com/api";
 // const FALLBACK_IMAGE = `${IMAGE_BASE}/fallback-image.png`;
 
 // const ManageProducts = () => {
@@ -874,19 +874,13 @@
 // export default ManageProducts;
 
 
-
-
-
-
-
-
 import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import Select from 'react-select';
 
-const API_BASE = "/api/admin";  // Relative path for Nginx proxy
-const IMAGE_BASE = "/productImages";  // Static images from backend
-const FALLBACK_IMAGE = '/productImages/fallback-image.png';  // Adjust if you have a fallback
+const API_BASE = "https://suyambufoods.com/api/admin";
+const IMAGE_BASE = "https://suyambufoods.com/api";
+const FALLBACK_IMAGE = `${IMAGE_BASE}/fallback-image.png`;
 
 const ManageProducts = () => {
   const [products, setProducts] = useState([]);
@@ -912,7 +906,6 @@ const ManageProducts = () => {
     banner_url: "",
   });
   const [variantCount, setVariantCount] = useState(1);
-  const [token, setToken] = useState(localStorage.getItem('adminToken') || '');  // Add token management
 
   useEffect(() => {
     loadCategories();
@@ -921,67 +914,38 @@ const ManageProducts = () => {
     loadProducts();
   }, []);
 
-  // Helper function for API calls with better error handling
-  const apiCall = async (url, options = {}) => {
-    const config = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),  // Add auth if token exists
-      },
-      ...options,
-    };
-
-    const res = await fetch(url, config);
-    if (!res.ok) {
-      let errorMsg = `HTTP ${res.status}: ${res.statusText}`;
-      try {
-        const errorData = await res.clone().json();
-        errorMsg = errorData.error || errorMsg;
-      } catch (jsonErr) {
-        // If not JSON (e.g., HTML error page), log raw text
-        const text = await res.clone().text();
-        console.error('Non-JSON response:', text);  // Logs the HTML causing '<' error
-        errorMsg = 'Server returned an unexpected response (check console for details)';
-      }
-      throw new Error(errorMsg);
-    }
-    return res.json();
-  };
-
   const loadCategories = async () => {
     try {
-      const data = await apiCall(`${API_BASE}/categories`);
+      const res = await fetch(`${API_BASE}/categories`);
+      const data = await res.json();
       setCategories(data);
     } catch (error) {
       console.error("Failed to load categories", error);
-      Swal.fire("Error", error.message, "error");
     }
   };
 
   const loadUoms = async () => {
     try {
-      const data = await apiCall(`${API_BASE}/uoms`);
-      setUoms(data);
+      const res = await fetch(`${API_BASE}/uoms`);
+      setUoms(await res.json());
     } catch (error) {
       console.error("Failed to load UOMs", error);
-      Swal.fire("Error", error.message, "error");
     }
   };
 
   const loadStockStatuses = async () => {
     try {
-      const data = await apiCall(`${API_BASE}/stock-statuses`);
-      setStockStatuses(data);
+      const res = await fetch(`${API_BASE}/stock-statuses`);
+      setStockStatuses(await res.json());
     } catch (error) {
       console.error("Failed to load stock statuses", error);
-      Swal.fire("Error", error.message, "error");
     }
   };
 
   const loadProducts = async () => {
     try {
-      const data = await apiCall(`${API_BASE}/products`);
+      const res = await fetch(`${API_BASE}/products`);
+      const data = await res.json();
       const updatedProducts = data.map((product) => {
         let additionalImages = [];
         if (typeof product.additional_images === "string") {
@@ -1015,7 +979,6 @@ const ManageProducts = () => {
       setProducts(updatedProducts);
     } catch (error) {
       console.error("Failed to load products", error);
-      Swal.fire("Error", error.message, "error");
     }
   };
 
@@ -1150,11 +1113,10 @@ const ManageProducts = () => {
         try {
           const res = await fetch(`${API_BASE}/products/${formData.id}/variants/${variant.id}`, {
             method: "DELETE",
-            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
           });
 
           if (!res.ok) {
-            const errorData = await res.json().catch(() => ({}));
+            const errorData = await res.json();
             throw new Error(errorData.error || "Failed to delete variant");
           }
 
@@ -1244,13 +1206,9 @@ const ManageProducts = () => {
 
       payload.append("stock_status_id", formData.stock_status_id);
 
-      const res = await fetch(url, { 
-        method, 
-        body: payload,
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {},  // Multipart doesn't need Content-Type
-      });
+      const res = await fetch(url, { method, body: payload });
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
+        const errorData = await res.json();
         throw new Error(errorData.error || "Operation failed");
       }
       Swal.fire(
@@ -1281,10 +1239,9 @@ const ManageProducts = () => {
         try {
           const res = await fetch(`${API_BASE}/products/${product.id}`, {
             method: "DELETE",
-            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
           });
           if (!res.ok) {
-            const errorData = await res.json().catch(() => ({}));
+            const errorData = await res.json();
             throw new Error(errorData.error || "Failed to delete");
           }
           Swal.fire("Deleted!", "Product has been deleted.", "success");

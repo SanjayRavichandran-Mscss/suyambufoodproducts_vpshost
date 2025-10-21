@@ -67,7 +67,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const response = await fetch("https://suyambufoods.com/api/api/admin/dashboard");
+        const response = await fetch("https://suyambufoods.com/api/admin/dashboard");
         if (!response.ok) {
           throw new Error("Failed to fetch dashboard data");
         }
@@ -375,7 +375,7 @@ const locationData = {
               {topProducts.map((product, index) => (
                 <div key={product.id} className="flex items-center space-x-3 sm:space-x-4 p-3 bg-gradient-to-r from-pink-50 to-rose-50 rounded-lg border border-pink-200">
                   <img
-                    src={`https://suyambufoods.com/api/api${product.thumbnail_url}`}
+                    src={`https://suyambufoods.com/api${product.thumbnail_url}`}
                     alt={product.name}
                     className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded-lg flex-shrink-0"
                     onError={(e) => {

@@ -69,7 +69,7 @@ export default function ContactUs() {
     const verifyCustomer = async () => {
       try {
         const response = await axios.get(
-          `https://suyambufoods.com/api/api/customer/profile?customerId=${storedCustomerId}`,
+          `https://suyambufoods.com/api/customer/profile?customerId=${storedCustomerId}`,
           {
             headers: {
               "Content-Type": "application/json",
@@ -98,7 +98,7 @@ export default function ContactUs() {
 
     try {
       const response = await axios.get(
-        `https://suyambufoods.com/api/api/customer/cart?customerId=${customerId}`,
+        `https://suyambufoods.com/api/customer/cart?customerId=${customerId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setCartItems(Array.isArray(response.data) ? response.data : []);
@@ -167,7 +167,7 @@ export default function ContactUs() {
     const token = localStorage.getItem("customerToken");
     try {
       await axios.put(
-        "https://suyambufoods.com/api/api/customer/cart",
+        "https://suyambufoods.com/api/customer/cart",
         { customerId, variantId, quantity: newQuantity },
         { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
       );
@@ -184,7 +184,7 @@ export default function ContactUs() {
     const token = localStorage.getItem("customerToken");
     try {
       await axios.delete(
-        `https://suyambufoods.com/api/api/customer/cart?customerId=${customerId}&variantId=${variantId}`,
+        `https://suyambufoods.com/api/customer/cart?customerId=${customerId}&variantId=${variantId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       await fetchCart();
@@ -209,7 +209,7 @@ export default function ContactUs() {
     setSubmitMessage(""); // Clear previous messages
 
     try {
-      const response = await axios.post("https://suyambufoods.com/api/api/customer/contact", formData, {
+      const response = await axios.post("https://suyambufoods.com/api/customer/contact", formData, {
         headers: { "Content-Type": "application/json" },
       });
       setSubmitMessage(response.data.message);
