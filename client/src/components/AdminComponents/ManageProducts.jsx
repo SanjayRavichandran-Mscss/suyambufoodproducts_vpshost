@@ -3,7 +3,7 @@
 // import Select from 'react-select';
 
 // const API_BASE = "https://suyambufoods.com/api/admin";
-// const IMAGE_BASE = "https://suyambufoods.com/api";
+// const IMAGE_BASE = "https://suyambufoods.com";  // Updated: Root domain for static images
 // const FALLBACK_IMAGE = `${IMAGE_BASE}/fallback-image.png`;
 
 // const ManageProducts = () => {
@@ -25,6 +25,9 @@
 //     existing_additional_images: [],
 //     variants: [{ quantity: "", uom_id: "", price: "" }],
 //     stock_status_id: "",
+//     isBanner: false,
+//     banner: null,
+//     banner_url: "",
 //   });
 //   const [variantCount, setVariantCount] = useState(1);
 
@@ -66,8 +69,11 @@
 //   const loadProducts = async () => {
 //     try {
 //       const res = await fetch(`${API_BASE}/products`);
+//       if (!res.ok) throw new Error("Failed to fetch products");
 //       const data = await res.json();
+
 //       const updatedProducts = data.map((product) => {
+//         // Normalize additional images
 //         let additionalImages = [];
 //         if (typeof product.additional_images === "string") {
 //           try {
@@ -81,12 +87,17 @@
 //         } else if (Array.isArray(product.additional_images)) {
 //           additionalImages = product.additional_images;
 //         }
+
 //         return {
 //           ...product,
 //           thumbnail_url:
 //             product.thumbnail_url && product.thumbnail_url.startsWith("/")
 //               ? `${IMAGE_BASE}${product.thumbnail_url}`
 //               : product.thumbnail_url || FALLBACK_IMAGE,
+//           banner_url:
+//             product.bannerimg && product.bannerimg.startsWith("/")
+//               ? `${IMAGE_BASE}${product.bannerimg}`
+//               : product.bannerimg || null,
 //           additional_images: additionalImages.map((img) =>
 //             img && img.startsWith("/") ? `${IMAGE_BASE}${img}` : img || FALLBACK_IMAGE
 //           ),
@@ -94,9 +105,11 @@
 //           variants: product.variants || [],
 //         };
 //       });
+
 //       setProducts(updatedProducts);
 //     } catch (error) {
-//       console.error("Failed to load products", error);
+//       console.error("Error loading products:", error.message);
+//       Swal.fire("Error", "Failed to load products", "error");
 //     }
 //   };
 
@@ -117,6 +130,9 @@
 //       existing_additional_images: [],
 //       variants: [{ quantity: "", uom_id: "", price: "" }],
 //       stock_status_id: "",
+//       isBanner: false,
+//       banner: null,
+//       banner_url: "",
 //     });
 //     setVariantCount(1);
 //     setModalOpen(true);
@@ -142,6 +158,9 @@
 //             }))
 //           : [{ quantity: "", uom_id: "", price: "" }],
 //       stock_status_id: product.stock_status_id?.toString() || "",
+//       isBanner: product.isBanner === 1,
+//       banner: null,
+//       banner_url: product.banner_url || "",
 //     });
 //     setVariantCount(product.variants?.length || 1);
 //     setModalOpen(true);
@@ -150,7 +169,7 @@
 //   const closeModal = () => setModalOpen(false);
 
 //   const handleChange = (e) => {
-//     const { name, value, files, type } = e.target;
+//     const { name, value, files, type, checked } = e.target;
 //     if (type === "file") {
 //       if (name === "thumbnail") {
 //         setFormData((prev) => ({
@@ -158,7 +177,15 @@
 //           thumbnail: files[0],
 //           thumbnail_url: files[0] ? URL.createObjectURL(files[0]) : prev.thumbnail_url,
 //         }));
+//       } else if (name === "banner") {
+//         setFormData((prev) => ({
+//           ...prev,
+//           banner: files[0],
+//           banner_url: files[0] ? URL.createObjectURL(files[0]) : prev.banner_url,
+//         }));
 //       }
+//     } else if (type === "checkbox") {
+//       setFormData((prev) => ({ ...prev, [name]: checked }));
 //     } else {
 //       setFormData((prev) => ({ ...prev, [name]: value }));
 //     }
@@ -272,61 +299,93 @@
 //     return true;
 //   };
 
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-//     if (!validateForm()) return;
-//     setLoading(true);
-//     try {
-//       let url = `${API_BASE}/products`;
-//       let method = "POST";
-//       if (formData.id) {
-//         url += `/${formData.id}`;
-//         method = "PATCH";
-//       }
-//       const payload = new FormData();
-//       payload.append("category_id", formData.category_id);
-//       payload.append("name", formData.name);
-//       payload.append("description", formData.description);
-//       if (formData.thumbnail) payload.append("thumbnail", formData.thumbnail);
-      
-//       formData.additional_images.forEach((f) => {
-//         if (f) payload.append("additional_images", f);
-//       });
-
-//       if (formData.existing_additional_images.length > 0) {
-//         payload.append(
-//           "existing_additional_images",
-//           JSON.stringify(formData.existing_additional_images)
-//         );
-//       }
-
-//       formData.variants.forEach((v) => {
-//         payload.append("id[]", v.id ? String(v.id) : "");
-//         payload.append("quantity[]", v.quantity);
-//         payload.append("uom_id[]", v.uom_id);
-//         payload.append("price[]", v.price);
-//       });
-
-//       payload.append("stock_status_id", formData.stock_status_id);
-
-//       const res = await fetch(url, { method, body: payload });
-//       if (!res.ok) {
-//         const errorData = await res.json();
-//         throw new Error(errorData.error || "Operation failed");
-//       }
-//       Swal.fire(
-//         "Success",
-//         formData.id ? "Product updated successfully" : "Product added successfully",
-//         "success"
-//       );
-//       closeModal();
-//       loadProducts();
-//     } catch (error) {
-//       Swal.fire("Error", error.message, "error");
-//     } finally {
-//       setLoading(false);
+// const handleSubmit = async (e) => {
+//   e.preventDefault();
+//   if (!validateForm()) return;
+//   setLoading(true);
+//   try {
+//     let url = `${API_BASE}/products`;
+//     let method = "POST";
+//     if (formData.id) {
+//       url += `/${formData.id}`;
+//       method = "PATCH";
 //     }
-//   };
+//     const payload = new FormData();
+//     payload.append("category_id", formData.category_id);
+//     payload.append("name", formData.name);
+//     payload.append("description", formData.description);
+//     payload.append("isBanner", formData.isBanner ? "true" : "false");
+//     if (formData.thumbnail) payload.append("thumbnail", formData.thumbnail);
+//     if (formData.banner) payload.append("banner", formData.banner);
+    
+//     formData.additional_images.forEach((f) => {
+//       if (f) payload.append("additional_images", f);
+//     });
+
+//     if (formData.existing_additional_images.length > 0) {
+//       payload.append(
+//         "existing_additional_images",
+//         JSON.stringify(formData.existing_additional_images)
+//       );
+//     }
+
+//     formData.variants.forEach((v) => {
+//       payload.append("quantity[]", v.quantity);
+//       payload.append("uom_id[]", v.uom_id);
+//       payload.append("price[]", v.price);
+//     });
+
+//     payload.append("stock_status_id", formData.stock_status_id);
+
+//     console.log("🟢 Frontend: Submitting to", url, "with method", method);
+
+//     const res = await fetch(url, { 
+//       method, 
+//       body: payload 
+//     });
+
+//     let errorData;
+//     if (!res.ok) {
+//       const text = await res.text();
+//       console.error("🟢 Frontend: Raw response (first 300 chars):", text.substring(0, 300));
+//       console.error("🟢 Frontend: Full status:", res.status, res.statusText);
+
+//       // Detect common errors
+//       let errorMsg = `Server error (${res.status}): ${res.statusText}`;
+//       if (res.status === 413) {
+//         errorMsg = "413: Upload too large – Try smaller images (<15MB each) or fewer files.";
+//       } else if (text.trim().startsWith('<')) {
+//         errorMsg += " (HTML response – check backend/Nginx logs).";
+//       }
+
+//       try {
+//         if (!text.trim().startsWith('<')) {
+//           errorData = JSON.parse(text);
+//           errorMsg = errorData.error || errorData.message || errorMsg;
+//         }
+//       } catch (parseErr) {
+//         // Already handled as HTML
+//       }
+
+//       throw new Error(errorMsg);
+//     }
+
+//     const result = await res.json();
+//     console.log("✅ Frontend: Success:", result);
+//     Swal.fire(
+//       "Success",
+//       formData.id ? "Product updated successfully" : "Product added successfully",
+//       "success"
+//     );
+//     closeModal();
+//     loadProducts();
+//   } catch (error) {
+//     console.error("❌ Frontend Submit error:", error);
+//     Swal.fire("Error", error.message, "error");
+//   } finally {
+//     setLoading(false);
+//   }
+// };
 
 //   const handleDelete = (product) => {
 //     Swal.fire({
@@ -403,7 +462,7 @@
 //   };
 
 //   return (
-//     <div className="min-h-screen bg-gray-50 p-6">
+//     <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
 //       <div className="max-w-7xl mx-auto">
 //         {/* Header */}
 //         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8">
@@ -439,8 +498,15 @@
 //               return (
 //                 <div
 //                   key={prod.id}
-//                   className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200"
+//                   className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200 relative"
 //                 >
+//                   {/* Banner Badge */}
+//                   {prod.isBanner === 1 && (
+//                     <div className="absolute top-2 right-2 bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-medium z-10">
+//                       Banner
+//                     </div>
+//                   )}
+
 //                   {/* Product Image */}
 //                   <div className="relative aspect-square">
 //                     <img
@@ -476,6 +542,22 @@
 //                       </div>
 //                     )}
 //                   </div>
+
+//                   {/* Banner Preview (if exists) */}
+//                   {prod.banner_url && (
+//                     <div className="p-2 bg-gray-50">
+//                       <p className="text-xs text-gray-500 mb-1">Banner:</p>
+//                       <img
+//                         src={prod.banner_url}
+//                         alt="Banner"
+//                         className="w-full h-16 object-cover rounded"
+//                         onClick={() => openFullscreen(prod.banner_url)}
+//                         onError={(e) => {
+//                           e.target.src = FALLBACK_IMAGE;
+//                         }}
+//                       />
+//                     </div>
+//                   )}
 
 //                   {/* Product Info */}
 //                   <div className="p-4">
@@ -560,7 +642,7 @@
 //       {/* Fullscreen Image Modal */}
 //       {fullscreenImage && (
 //         <div
-//           className="fixed inset-0 bg-opacity-90 flex items-center justify-center z-50 p-4"
+//           className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4"
 //           onClick={closeFullscreen}
 //         >
 //           <div className="relative max-w-4xl max-h-full">
@@ -570,7 +652,7 @@
 //               className="max-w-full max-h-full object-contain"
 //             />
 //             <button
-//               className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors duration-200 bg-opacity-50 rounded-full p-2"
+//               className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors duration-200 bg-black bg-opacity-50 rounded-full p-2"
 //               onClick={closeFullscreen}
 //             >
 //               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -583,8 +665,8 @@
 
 //       {/* Add/Edit Product Modal */}
 //       {modalOpen && (
-//         <div className="fixed inset-0 backdrop-blur-2xl  bg-opacity-50 flex items-center justify-center z-50 p-4">
-//           <div className="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+//         <div className="fixed inset-0 backdrop-blur-2xl bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+//           <div className="bg-white rounded-xl w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
 //             {/* Header */}
 //             <div className="flex justify-between items-center p-6 border-b border-gray-200 bg-[#4A6572] text-white">
 //               <h2 className="text-xl font-semibold">
@@ -712,6 +794,57 @@
 //                           )}
 //                         </label>
 //                       </div>
+//                     </div>
+
+//                     {/* Banner Toggle & Upload */}
+//                     <div className="space-y-3">
+//                       <label className="flex items-center">
+//                         <input
+//                           type="checkbox"
+//                           name="isBanner"
+//                           checked={formData.isBanner}
+//                           onChange={handleChange}
+//                           className="rounded border-gray-300 text-[#4A6572] focus:ring-[#4A6572]"
+//                         />
+//                         <span className="ml-2 text-sm font-medium text-gray-700">Enable as Banner Product</span>
+//                       </label>
+//                       {formData.isBanner && (
+//                         <div>
+//                           <label className="block text-sm font-medium text-gray-700 mb-2">
+//                             Banner Image
+//                           </label>
+//                           <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-[#4A6572] transition-colors duration-200">
+//                             <input
+//                               type="file"
+//                               name="banner"
+//                               accept="image/*"
+//                               onChange={handleChange}
+//                               className="hidden"
+//                               id="banner-upload"
+//                             />
+//                             <label htmlFor="banner-upload" className="cursor-pointer block">
+//                               {formData.banner_url ? (
+//                                 <div className="flex flex-col items-center">
+//                                   <img
+//                                     src={formData.banner_url}
+//                                     alt="Banner preview"
+//                                     className="w-32 h-32 object-cover rounded-lg mb-2"
+//                                   />
+//                                   <span className="text-sm text-[#4A6572] font-medium">Change banner</span>
+//                                 </div>
+//                               ) : (
+//                                 <div className="py-8">
+//                                   <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+//                                   </svg>
+//                                   <p className="text-sm text-gray-600">Click to upload banner</p>
+//                                   <p className="text-xs text-gray-500 mt-1">Optional banner image</p>
+//                                 </div>
+//                               )}
+//                             </label>
+//                           </div>
+//                         </div>
+//                       )}
 //                     </div>
 
 //                     {/* Additional Images */}
@@ -872,14 +1005,6 @@
 // };
 
 // export default ManageProducts;
-
-
-
-
-
-
-
-
 
 
 
@@ -1195,93 +1320,93 @@ const ManageProducts = () => {
     return true;
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (!validateForm()) return;
-  setLoading(true);
-  try {
-    let url = `${API_BASE}/products`;
-    let method = "POST";
-    if (formData.id) {
-      url += `/${formData.id}`;
-      method = "PATCH";
-    }
-    const payload = new FormData();
-    payload.append("category_id", formData.category_id);
-    payload.append("name", formData.name);
-    payload.append("description", formData.description);
-    payload.append("isBanner", formData.isBanner ? "true" : "false");
-    if (formData.thumbnail) payload.append("thumbnail", formData.thumbnail);
-    if (formData.banner) payload.append("banner", formData.banner);
-    
-    formData.additional_images.forEach((f) => {
-      if (f) payload.append("additional_images", f);
-    });
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    setLoading(true);
+    try {
+      let url = `${API_BASE}/products`;
+      let method = "POST";
+      if (formData.id) {
+        url += `/${formData.id}`;
+        method = "PATCH";
+      }
+      const payload = new FormData();
+      payload.append("category_id", formData.category_id);
+      payload.append("name", formData.name);
+      payload.append("description", formData.description);
+      payload.append("isBanner", formData.isBanner ? "true" : "false");
+      if (formData.thumbnail) payload.append("thumbnail", formData.thumbnail);
+      if (formData.banner) payload.append("banner", formData.banner);
+      
+      formData.additional_images.forEach((f) => {
+        if (f) payload.append("additional_images", f);
+      });
 
-    if (formData.existing_additional_images.length > 0) {
-      payload.append(
-        "existing_additional_images",
-        JSON.stringify(formData.existing_additional_images)
-      );
-    }
-
-    formData.variants.forEach((v) => {
-      payload.append("quantity[]", v.quantity);
-      payload.append("uom_id[]", v.uom_id);
-      payload.append("price[]", v.price);
-    });
-
-    payload.append("stock_status_id", formData.stock_status_id);
-
-    console.log("🟢 Frontend: Submitting to", url, "with method", method);
-
-    const res = await fetch(url, { 
-      method, 
-      body: payload 
-    });
-
-    let errorData;
-    if (!res.ok) {
-      const text = await res.text();
-      console.error("🟢 Frontend: Raw response (first 300 chars):", text.substring(0, 300));
-      console.error("🟢 Frontend: Full status:", res.status, res.statusText);
-
-      // Detect common errors
-      let errorMsg = `Server error (${res.status}): ${res.statusText}`;
-      if (res.status === 413) {
-        errorMsg = "413: Upload too large – Try smaller images (<15MB each) or fewer files.";
-      } else if (text.trim().startsWith('<')) {
-        errorMsg += " (HTML response – check backend/Nginx logs).";
+      if (formData.existing_additional_images.length > 0) {
+        payload.append(
+          "existing_additional_images",
+          JSON.stringify(formData.existing_additional_images)
+        );
       }
 
-      try {
-        if (!text.trim().startsWith('<')) {
-          errorData = JSON.parse(text);
-          errorMsg = errorData.error || errorData.message || errorMsg;
+      formData.variants.forEach((v) => {
+        payload.append("quantity[]", v.quantity);
+        payload.append("uom_id[]", v.uom_id);
+        payload.append("price[]", v.price);
+      });
+
+      payload.append("stock_status_id", formData.stock_status_id);
+
+      console.log("🟢 Frontend: Submitting to", url, "with method", method);
+
+      const res = await fetch(url, { 
+        method, 
+        body: payload 
+      });
+
+      let errorData;
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("🟢 Frontend: Raw response (first 300 chars):", text.substring(0, 300));
+        console.error("🟢 Frontend: Full status:", res.status, res.statusText);
+
+        // Detect common errors
+        let errorMsg = `Server error (${res.status}): ${res.statusText}`;
+        if (res.status === 413) {
+          errorMsg = "413: Upload too large – Try smaller images (<15MB each) or fewer files.";
+        } else if (text.trim().startsWith('<')) {
+          errorMsg += " (HTML response – check backend/Nginx logs).";
         }
-      } catch (parseErr) {
-        // Already handled as HTML
+
+        try {
+          if (!text.trim().startsWith('<')) {
+            errorData = JSON.parse(text);
+            errorMsg = errorData.error || errorData.message || errorMsg;
+          }
+        } catch (parseErr) {
+          // Already handled as HTML
+        }
+
+        throw new Error(errorMsg);
       }
 
-      throw new Error(errorMsg);
+      const result = await res.json();
+      console.log("✅ Frontend: Success:", result);
+      Swal.fire(
+        "Success",
+        formData.id ? "Product updated successfully" : "Product added successfully",
+        "success"
+      );
+      closeModal();
+      loadProducts();
+    } catch (error) {
+      console.error("❌ Frontend Submit error:", error);
+      Swal.fire("Error", error.message, "error");
+    } finally {
+      setLoading(false);
     }
-
-    const result = await res.json();
-    console.log("✅ Frontend: Success:", result);
-    Swal.fire(
-      "Success",
-      formData.id ? "Product updated successfully" : "Product added successfully",
-      "success"
-    );
-    closeModal();
-    loadProducts();
-  } catch (error) {
-    console.error("❌ Frontend Submit error:", error);
-    Swal.fire("Error", error.message, "error");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const handleDelete = (product) => {
     Swal.fire({
@@ -1415,7 +1540,7 @@ const handleSubmit = async (e) => {
                       }}
                     />
                     
-                    {/* Image Thumbnails */}
+                    {/* Image Thumbnails (Only additional images + thumbnail, exclude banner) */}
                     {allImages.length > 1 && (
                       <div className="absolute bottom-2 left-2 right-2 flex gap-1 overflow-x-auto">
                         {allImages.map((img, idx) => (
@@ -1439,14 +1564,17 @@ const handleSubmit = async (e) => {
                     )}
                   </div>
 
-                  {/* Banner Preview (if exists) */}
+                  {/* Banner Preview (Separate section, neat and distinct) */}
                   {prod.banner_url && (
-                    <div className="p-2 bg-gray-50">
-                      <p className="text-xs text-gray-500 mb-1">Banner:</p>
+                    <div className="p-3 bg-gradient-to-r from-yellow-50 to-orange-50 border-t border-yellow-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                        <span className="text-xs font-medium text-yellow-800 uppercase tracking-wide">Banner Image</span>
+                      </div>
                       <img
                         src={prod.banner_url}
                         alt="Banner"
-                        className="w-full h-16 object-cover rounded"
+                        className="w-full h-20 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity duration-200"
                         onClick={() => openFullscreen(prod.banner_url)}
                         onError={(e) => {
                           e.target.src = FALLBACK_IMAGE;
