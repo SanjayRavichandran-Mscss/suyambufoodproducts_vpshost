@@ -108,8 +108,8 @@ app.get('/api/test', (req, res) => {
 
 // ------------------ API ROUTES ------------------
 // Prefix with /api to match Nginx proxy
-app.use('/api/admin', adminRoutes);
-app.use('/api/customer', customerRoutes);
+app.use('/admin', adminRoutes);
+app.use('/customer', customerRoutes);
 
 // ------------------ DB CHECK ------------------
 async function checkDbConnection() {
