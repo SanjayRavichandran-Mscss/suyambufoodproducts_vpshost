@@ -15,7 +15,7 @@ const MyOrders = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const baseUrl = "https://suyambufoods.com/api";
+  const baseUrl = "http://localhost:5000";
 
   const showMessage = (msg, icon = "success") => {
     Swal.fire({

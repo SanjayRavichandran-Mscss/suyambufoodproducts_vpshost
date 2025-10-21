@@ -2,8 +2,8 @@
 // import Swal from "sweetalert2";
 // import Select from 'react-select';
 
-// const API_BASE = "https://suyambufoods.com/api/admin";
-// const IMAGE_BASE = "https://suyambufoods.com";  // Updated: Root domain for static images
+// const API_BASE = "http://localhost:5000/admin";
+// const IMAGE_BASE = "http://localhost:5000";  // Updated: Root domain for static images
 // const FALLBACK_IMAGE = `${IMAGE_BASE}/fallback-image.png`;
 
 // const ManageProducts = () => {
@@ -1023,8 +1023,8 @@ import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import Select from 'react-select';
 
-const API_BASE = "https://suyambufoods.com/api/admin";
-const IMAGE_BASE = "https://suyambufoods.com";  // Updated: Root domain for static images
+const API_BASE = "http://localhost:5000/admin";
+const IMAGE_BASE = "http://localhost:5000";  // Updated: Root domain for static images
 const FALLBACK_IMAGE = `${IMAGE_BASE}/fallback-image.png`;
 
 const ManageProducts = () => {
@@ -1289,36 +1289,46 @@ const ManageProducts = () => {
     }
   };
 
-  const validateForm = () => {
-    const { category_id, name, variants, stock_status_id } = formData;
-    if (!category_id) {
-      Swal.fire("Validation Error", "Category is required", "warning");
+ const validateForm = () => {
+  const { category_id, name, variants, stock_status_id } = formData;
+  if (!category_id) {
+    Swal.fire("Validation Error", "Category is required", "warning");
+    return false;
+  }
+  if (!name.trim()) {
+    Swal.fire("Validation Error", "Name is required", "warning");
+    return false;
+  }
+
+  let hasValidVariant = false;
+  for (const v of variants) {
+    const qty = Number(v.quantity);
+    const prc = Number(v.price);
+    // Check if partially filled (some fields have values but not all valid)
+    const hasQuantity = v.quantity && v.quantity.trim() !== '';
+    const hasUom = v.uom_id && v.uom_id.trim() !== '';
+    const hasPrice = v.price && v.price.trim() !== '';
+    if ((hasQuantity || hasUom || hasPrice) && !(hasQuantity && hasUom && hasPrice && !isNaN(qty) && qty > 0 && !isNaN(prc) && prc >= 0)) {
+      Swal.fire("Validation Error", "Please complete all fields for each variant or remove incomplete ones", "warning");
       return false;
     }
-    if (!name.trim()) {
-      Swal.fire("Validation Error", "Name is required", "warning");
-      return false;
+    // Check if fully valid
+    if (hasQuantity && hasUom && hasPrice && !isNaN(qty) && qty > 0 && !isNaN(prc) && prc >= 0) {
+      hasValidVariant = true;
     }
-    for (const v of variants) {
-      if (!v.quantity || Number(v.quantity) <= 0) {
-        Swal.fire("Validation Error", "All quantities must be > 0", "warning");
-        return false;
-      }
-      if (!v.uom_id) {
-        Swal.fire("Validation Error", "All UOMs are required", "warning");
-        return false;
-      }
-      if (!v.price || Number(v.price) < 0) {
-        Swal.fire("Validation Error", "All prices must be non-negative", "warning");
-        return false;
-      }
-    }
-    if (!stock_status_id) {
-      Swal.fire("Validation Error", "Stock status is required", "warning");
-      return false;
-    }
-    return true;
-  };
+  }
+
+  if (!hasValidVariant) {
+    Swal.fire("Validation Error", "At least one valid variant is required", "warning");
+    return false;
+  }
+
+  if (!stock_status_id) {
+    Swal.fire("Validation Error", "Stock status is required", "warning");
+    return false;
+  }
+  return true;
+};
 
   const handleSubmit = async (e) => {
     e.preventDefault();
