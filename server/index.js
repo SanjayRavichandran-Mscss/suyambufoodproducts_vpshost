@@ -16,7 +16,7 @@
 // app.use('/productImages', express.static(path.join(__dirname, 'public/productImages')));
 
 // app.use(cors({
-//   origin: ['http://localhost:5173','https://suyambufoodproducts-demohost.vercel.app','https://suyambufoods.com/api/api','https://www.suyambufoods.com'],
+//   origin: ['http://localhost:5173','https://suyambufoodproducts-demohost.vercel.app','https://suyambufoods.com/api','https://www.suyambufoods.com'],
 //   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 //   allowedHeaders: ['Content-Type', 'Authorization']
 // }));
@@ -67,7 +67,6 @@
 // startServer();
 
 
-
 const express = require('express');
 const cors = require('cors');
 const db = require('./config/db');
@@ -85,16 +84,17 @@ console.log("🚀 Starting server...");
 // Serve static files
 app.use('/productImages', express.static(path.join(__dirname, 'public/productImages')));
 
-// CORS setup
+// CORS setup (fixed origins, added credentials support)
 app.use(cors({
   origin: [
     'http://localhost:5173',
     'https://suyambufoodproducts-demohost.vercel.app',
-    'https://suyambufoods.com/api/api',
+    'https://suyambufoods.com',
     'https://www.suyambufoods.com'
   ],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true  // Enable if using cookies/auth; otherwise, set to false
 }));
 
 app.use(express.json());
@@ -107,8 +107,8 @@ app.get('/api/test', (req, res) => {
 
 // ------------------ API ROUTES ------------------
 // Add `/api` prefix to match frontend/Nginx
-app.use('/api/admin', adminRoutes);
-app.use('/api/customer', customerRoutes);
+app.use('/admin', adminRoutes);
+app.use('/customer', customerRoutes);
 
 // ------------------ DB CHECK ------------------
 async function checkDbConnection() {
