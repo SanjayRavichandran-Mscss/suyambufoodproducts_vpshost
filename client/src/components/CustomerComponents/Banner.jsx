@@ -16,7 +16,7 @@ import {
   Grape,
 } from "lucide-react";
 
-const IMAGE_BASE = "https://suyambufoods.com/api";
+const IMAGE_BASE = "http://localhost:5000";
 
 const normalizeImage = (img) => {
   if (!img) return "https://via.placeholder.com/1920x1080";
@@ -47,7 +47,7 @@ export default function Banner({ customerId }) {
   useEffect(() => {
     let mounted = true;
     axios
-      .get("https://suyambufoods.com/api/admin/banner-products", {
+      .get("http://localhost:5000/admin/banner-products", {
         headers: { Origin: "http://localhost:5173" },
       })
       .then((res) => {

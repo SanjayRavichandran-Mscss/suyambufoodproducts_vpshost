@@ -99,7 +99,7 @@ async function generateInvoiceData(orderId) {
         const totalAmount = subtotal + shipping + tax;
 
         const templateData = {
-            baseUrl: process.env.BASE_URL || 'https://suyambufoods.com/api',
+            baseUrl: process.env.BASE_URL || 'http://localhost:5000',
             customerName: order.customer_name,
             customerEmail: order.customer_email,
             customerMobile: order.customer_mobile,
