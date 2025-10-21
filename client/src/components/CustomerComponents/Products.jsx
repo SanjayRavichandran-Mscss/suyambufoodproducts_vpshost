@@ -4,7 +4,7 @@
 // import { useNavigate } from "react-router-dom";
 // import { Heart, Plus, Minus } from "lucide-react";
 
-// const IMAGE_BASE = "https://suyambufoods.com/api";
+// const IMAGE_BASE = "https://suyambufoods.com/api/api";
 // const BRAND = "#B6895B";
 
 // export default function Products({
@@ -45,7 +45,7 @@
 //     if (!customerId) return [];
 //     try {
 //       const response = await axios.get(
-//         `https://suyambufoods.com/api/customer/cart?customerId=${customerId}`,
+//         `https://suyambufoods.com/api/api/customer/cart?customerId=${customerId}`,
 //         { headers: { Origin: "http://localhost:5173" } }
 //       );
 //       return Array.isArray(response.data) ? response.data : [];
@@ -75,14 +75,14 @@
 //   // Fetch products + UOMs
 //   useEffect(() => {
 //     axios
-//       .get("https://suyambufoods.com/api/admin/uoms", {
+//       .get("https://suyambufoods.com/api/api/admin/uoms", {
 //         headers: { Origin: "http://localhost:5173" },
 //       })
 //       .then((res) => setUoms(res.data || []))
 //       .catch(() => {});
 
 //     axios
-//       .get("https://suyambufoods.com/api/admin/products", {
+//       .get("https://suyambufoods.com/api/api/admin/products", {
 //         headers: { Origin: "http://localhost:5173" },
 //       })
 //       .then((res) => {
@@ -214,7 +214,7 @@
 //     }
 //     try {
 //       await axios.post(
-//         "https://suyambufoods.com/api/customer/cart",
+//         "https://suyambufoods.com/api/api/customer/cart",
 //         { customerId, variantId, quantity },
 //         { headers: { Origin: "http://localhost:5173" } }
 //       );
@@ -244,7 +244,7 @@
 //     const newQuantity = Math.max(1, item.quantity + change);
 //     try {
 //       await axios.put(
-//         "https://suyambufoods.com/api/customer/cart",
+//         "https://suyambufoods.com/api/api/customer/cart",
 //         { customerId, variantId, quantity: newQuantity },
 //         { headers: { Origin: "http://localhost:5173" } }
 //       );
@@ -571,7 +571,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { Heart, Plus, Minus } from "lucide-react";
 
-const IMAGE_BASE = "https://suyambufoods.com/api";
+const IMAGE_BASE = "https://suyambufoods.com/api/api";
 const BRAND = "#B6895B";
 
 export default function Products({
@@ -613,7 +613,7 @@ export default function Products({
     if (!customerId) return [];
     try {
       const response = await axios.get(
-        `https://suyambufoods.com/api/customer/cart?customerId=${customerId}`,
+        `https://suyambufoods.com/api/api/customer/cart?customerId=${customerId}`,
         { headers: { Origin: "http://localhost:5173" } }
       );
       return Array.isArray(response.data) ? response.data : [];
@@ -643,14 +643,14 @@ export default function Products({
   // Fetch products + UOMs
   useEffect(() => {
     axios
-      .get("https://suyambufoods.com/api/admin/uoms", {
+      .get("https://suyambufoods.com/api/api/admin/uoms", {
         headers: { Origin: "http://localhost:5173" },
       })
       .then((res) => setUoms(res.data || []))
       .catch(() => {});
 
     axios
-      .get("https://suyambufoods.com/api/admin/products", {
+      .get("https://suyambufoods.com/api/api/admin/products", {
         headers: { Origin: "http://localhost:5173" },
       })
       .then((res) => {
@@ -787,7 +787,7 @@ export default function Products({
     }
     try {
       await axios.post(
-        "https://suyambufoods.com/api/customer/cart",
+        "https://suyambufoods.com/api/api/customer/cart",
         { customerId, variantId, quantity },
         { headers: { Origin: "http://localhost:5173" } }
       );
@@ -817,7 +817,7 @@ export default function Products({
     const newQuantity = Math.max(1, item.quantity + change);
     try {
       await axios.put(
-        "https://suyambufoods.com/api/customer/cart",
+        "https://suyambufoods.com/api/api/customer/cart",
         { customerId, variantId, quantity: newQuantity },
         { headers: { Origin: "http://localhost:5173" } }
       );
