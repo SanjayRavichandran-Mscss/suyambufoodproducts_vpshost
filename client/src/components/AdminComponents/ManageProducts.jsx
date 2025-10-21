@@ -1195,62 +1195,83 @@ const ManageProducts = () => {
     return true;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-    setLoading(true);
-    try {
-      let url = `${API_BASE}/products`;
-      let method = "POST";
-      if (formData.id) {
-        url += `/${formData.id}`;
-        method = "PATCH";
-      }
-      const payload = new FormData();
-      payload.append("category_id", formData.category_id);
-      payload.append("name", formData.name);
-      payload.append("description", formData.description);
-      payload.append("isBanner", formData.isBanner ? "true" : "false");
-      if (formData.thumbnail) payload.append("thumbnail", formData.thumbnail);
-      if (formData.banner) payload.append("banner", formData.banner);
-      
-      formData.additional_images.forEach((f) => {
-        if (f) payload.append("additional_images", f);
-      });
-
-      if (formData.existing_additional_images.length > 0) {
-        payload.append(
-          "existing_additional_images",
-          JSON.stringify(formData.existing_additional_images)
-        );
-      }
-
-      formData.variants.forEach((v) => {
-        payload.append("quantity[]", v.quantity);
-        payload.append("uom_id[]", v.uom_id);
-        payload.append("price[]", v.price);
-      });
-
-      payload.append("stock_status_id", formData.stock_status_id);
-
-      const res = await fetch(url, { method, body: payload });
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Operation failed");
-      }
-      Swal.fire(
-        "Success",
-        formData.id ? "Product updated successfully" : "Product added successfully",
-        "success"
-      );
-      closeModal();
-      loadProducts();
-    } catch (error) {
-      Swal.fire("Error", error.message, "error");
-    } finally {
-      setLoading(false);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (!validateForm()) return;
+  setLoading(true);
+  try {
+    let url = `${API_BASE}/products`;
+    let method = "POST";
+    if (formData.id) {
+      url += `/${formData.id}`;
+      method = "PATCH";
     }
-  };
+    const payload = new FormData();
+    payload.append("category_id", formData.category_id);
+    payload.append("name", formData.name);
+    payload.append("description", formData.description);
+    payload.append("isBanner", formData.isBanner ? "true" : "false");
+    if (formData.thumbnail) payload.append("thumbnail", formData.thumbnail);
+    if (formData.banner) payload.append("banner", formData.banner);
+    
+    formData.additional_images.forEach((f) => {
+      if (f) payload.append("additional_images", f);
+    });
+
+    if (formData.existing_additional_images.length > 0) {
+      payload.append(
+        "existing_additional_images",
+        JSON.stringify(formData.existing_additional_images)
+      );
+    }
+
+    formData.variants.forEach((v) => {
+      payload.append("quantity[]", v.quantity);
+      payload.append("uom_id[]", v.uom_id);
+      payload.append("price[]", v.price);
+    });
+
+    payload.append("stock_status_id", formData.stock_status_id);
+
+    console.log("🟢 Frontend: Submitting to", url, "with method", method);  // For browser console debug
+
+    const res = await fetch(url, { 
+      method, 
+      body: payload 
+    });
+
+    let errorData;
+    if (!res.ok) {
+      try {
+        const text = await res.text();
+        console.error("🟢 Frontend: Raw response text (first 200 chars):", text.substring(0, 200));
+        if (text.trim().startsWith('<')) {
+          throw new Error("Server returned HTML error (likely 500). Check backend logs for details.");
+        }
+        errorData = JSON.parse(text);
+      } catch (parseErr) {
+        console.error("🟢 Frontend: Parse error:", parseErr);
+        throw new Error(`Server error (${res.status}): ${parseErr.message}`);
+      }
+      throw new Error(errorData.error || errorData.message || "Operation failed");
+    }
+
+    const result = await res.json();  // Safe now
+    console.log("✅ Frontend: Success response:", result);
+    Swal.fire(
+      "Success",
+      formData.id ? "Product updated successfully" : "Product added successfully",
+      "success"
+    );
+    closeModal();
+    loadProducts();
+  } catch (error) {
+    console.error("❌ Frontend Submit error:", error);
+    Swal.fire("Error", error.message, "error");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleDelete = (product) => {
     Swal.fire({

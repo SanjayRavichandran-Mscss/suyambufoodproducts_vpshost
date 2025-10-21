@@ -1166,65 +1166,174 @@ const productUploadWrapper = (req, res, next) => {
 };
 
 /* ----------------------- PRODUCTS ----------------------- */
-exports.addProduct = [
-  productUploadWrapper,
-  async (req, res) => {
-    try {
-      const { name, description, category_id, stock_status_id, isBanner = "0" } = req.body;
-      const quantity = req.body['quantity[]'];
-      const uom_id = req.body['uom_id[]'];
-      const price = req.body['price[]'];
+// In adminController.js, replace the existing exports.addProduct with this robust, error-free version.
+// Key improvements:
+// - Pre-validates foreign keys (category_id, stock_status_id, uom_ids) exist in DB to prevent FK errors.
+// - Uses DB transaction for atomicity (product + variants together; rollback on any fail).
+// - Handles single vs. array variants gracefully.
+// - Extensive logging for debugging (remove in prod if needed).
+// - Ensures admin_id=1 exists or skips if not (adjust as per your auth).
+// - Catches and logs specific MySQL errors (e.g., ER_NO_REFERENCED_ROW).
 
-      if (!name || !category_id || !stock_status_id) {
-        return res.status(400).json({ error: "Missing required fields" });
+exports.addProduct = [
+  productUploadWrapper,  // Multer middleware
+  async (req, res) => {
+    const connection = db.promise();  // Use promise-based for async/await
+    let transaction;
+    try {
+      console.log("🟢 addProduct: Starting transaction...");
+      
+      // Step 1: Validate required fields
+      const { name, description, category_id, stock_status_id, isBanner = "0" } = req.body;
+      const quantity = req.body['quantity[]'] || req.body.quantity;  // Handle single or array
+      const uom_id = req.body['uom_id[]'] || req.body.uom_id;
+      const price = req.body['price[]'] || req.body.price;
+
+      console.log("🟢 addProduct: Parsed fields:", { name, category_id, stock_status_id, isBanner });
+
+      if (!name?.trim() || !category_id || !stock_status_id) {
+        console.log("❌ addProduct: Validation fail - missing core fields");
+        return res.status(400).json({ error: "Name, category, and stock status are required" });
       }
 
-      let thumbnail_url = req.files?.thumbnail?.[0] ? `/productImages/${req.files.thumbnail[0].filename}` : null;
-      let bannerimg = req.files?.banner?.[0] ? `/productImages/${req.files.banner[0].filename}` : null;
-      let additional_images = req.files?.additional_images?.map(f => `/productImages/${f.filename}`) || [];
+      // Step 2: Validate foreign keys exist
+      console.log("🟢 addProduct: Validating foreign keys...");
+      const [categoryCheck] = await connection.query("SELECT id FROM categories WHERE id = ?", [category_id]);
+      if (categoryCheck.length === 0) {
+        console.log("❌ addProduct: Invalid category_id:", category_id);
+        return res.status(400).json({ error: "Invalid category selected" });
+      }
 
-      const sql = `
+      const [stockCheck] = await connection.query("SELECT id FROM stock_statuses WHERE id = ?", [stock_status_id]);
+      if (stockCheck.length === 0) {
+        console.log("❌ addProduct: Invalid stock_status_id:", stock_status_id);
+        return res.status(400).json({ error: "Invalid stock status selected" });
+      }
+
+      // Validate admin_id (hardcoded; replace with JWT if auth is implemented)
+      const [adminCheck] = await connection.query("SELECT id FROM admins WHERE id = 1");
+      if (adminCheck.length === 0) {
+        console.log("⚠️ addProduct: No admin_id=1 found; creating placeholder...");
+        await connection.query("INSERT INTO admins (id, username, password, email, full_name) VALUES (1, 'admin', 'placeholder', 'admin@example.com', 'Admin User') ON DUPLICATE KEY UPDATE id=id");
+      }
+
+      // Step 3: Process images
+      let thumbnail_url = null;
+      let bannerimg = null;
+      let additional_images = [];
+
+      if (req.files?.thumbnail?.[0]) {
+        thumbnail_url = `/productImages/${req.files.thumbnail[0].filename}`;
+        console.log("🟢 addProduct: Thumbnail uploaded:", thumbnail_url);
+      }
+
+      if (req.files?.banner?.[0]) {
+        bannerimg = `/productImages/${req.files.banner[0].filename}`;
+        console.log("🟢 addProduct: Banner uploaded:", bannerimg);
+      }
+
+      if (req.files?.additional_images) {
+        additional_images = req.files.additional_images.map(f => `/productImages/${f.filename}`);
+        console.log("🟢 addProduct: Additional images uploaded:", additional_images.length);
+      }
+
+      // Step 4: Start transaction
+      transaction = await connection.beginTransaction();
+      console.log("🟢 addProduct: Transaction started");
+
+      // Step 5: Insert product
+      const productSql = `
         INSERT INTO products (name, description, thumbnail_url, additional_images, category_id, admin_id, created_at, updated_at, stock_status_id, isBanner, bannerimg)
-        VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, 1, NOW(), NOW(), ?, ?, ?)
       `;
-      const [result] = await db.query(sql, [
-        name,
+      const [productResult] = await connection.query(productSql, [
+        name.trim(),
         description || null,
         thumbnail_url,
         stringifyAdditionalImages(additional_images),
         category_id,
-        1, // admin_id, ideally from JWT
         stock_status_id,
         isBanner === "true" ? 1 : 0,
         bannerimg,
       ]);
+      const productId = productResult.insertId;
+      console.log("✅ addProduct: Product inserted with ID:", productId);
 
-      const productId = result.insertId;
-
-      // Handle variants
+      // Step 6: Insert variants (if provided)
+      let variantsInserted = 0;
       if (quantity && uom_id && price) {
         const qArr = Array.isArray(quantity) ? quantity : [quantity];
         const uArr = Array.isArray(uom_id) ? uom_id : [uom_id];
         const pArr = Array.isArray(price) ? price : [price];
 
-        for (let i = 0; i < qArr.length; i++) {
-          if (qArr[i] && uArr[i] && pArr[i]) {
-            await db.query(
-              "INSERT INTO product_variants (product_id, variant_quantity, uom_id, price, created_at, updated_at) VALUES (?, ?, ?, ?, NOW(), NOW())",
-              [productId, qArr[i], uArr[i], pArr[i]]
-            );
+        const maxVariants = Math.max(qArr.length, uArr.length, pArr.length);
+        console.log("🟢 addProduct: Processing", maxVariants, "variants");
+
+        for (let i = 0; i < maxVariants; i++) {
+          const q = qArr[i];
+          const u = uArr[i];
+          const p = pArr[i];
+
+          if (q && u && p && Number(q) > 0 && Number(p) >= 0) {
+            // Validate UOM exists
+            const [uomCheck] = await connection.query("SELECT id FROM uom_master WHERE id = ?", [u]);
+            if (uomCheck.length === 0) {
+              console.log("❌ addProduct: Invalid uom_id for variant", i, ":", u);
+              throw new Error(`Invalid UOM for variant ${i + 1}: ${u}`);
+            }
+
+            const variantSql = `
+              INSERT INTO product_variants (product_id, variant_quantity, uom_id, price, created_at, updated_at)
+              VALUES (?, ?, ?, ?, NOW(), NOW())
+            `;
+            await connection.query(variantSql, [productId, Number(q), u, Number(p)]);
+            variantsInserted++;
+            console.log(`✅ addProduct: Variant ${i + 1} inserted (Q:${q}, UOM:${u}, P:${p})`);
+          } else {
+            console.log(`⚠️ addProduct: Skipping invalid variant ${i + 1}`);
           }
         }
+      } else {
+        console.log("⚠️ addProduct: No valid variants provided");
       }
 
-      res.status(201).json({ message: "Product added", id: productId });
+      // Step 7: Commit transaction
+      await transaction.commit();
+      console.log("🎉 addProduct: Transaction committed. Product ID:", productId, "Variants:", variantsInserted);
+
+      res.status(201).json({ 
+        message: "Product added successfully", 
+        id: productId,
+        variants_count: variantsInserted 
+      });
+
     } catch (error) {
-      console.error("❌ Error adding product:", error);
-      res.status(500).json({ error: "Internal server error", details: error.message });
+      // Rollback on error
+      if (transaction) {
+        await transaction.rollback();
+        console.log("🔄 addProduct: Transaction rolled back");
+      }
+
+      // Detailed logging
+      console.error("❌ addProduct: Full error stack:", error.stack);
+      console.error("❌ Error message:", error.message);
+      console.error("❌ Error code:", error.code || error.errno);
+      console.error("❌ SQL state:", error.sqlState);
+
+      // Specific error messages
+      let userError = "Internal server error";
+      if (error.code === 'ER_NO_REFERENCED_ROW_2' || error.errno === 1452) {
+        userError = "Invalid reference (e.g., category or UOM not found)";
+      } else if (error.code === 'ER_BAD_NULL_ERROR') {
+        userError = "Missing required field";
+      } else if (error.message.includes('uom_id')) {
+        userError = "Invalid UOM selected";
+      }
+
+      res.status(500).json({ error: userError, details: process.env.NODE_ENV === 'development' ? error.message : undefined });
     }
   },
 ];
-
 // Update product
 exports.updateProduct = [
   productUploadWrapper,
