@@ -10,7 +10,7 @@ import Cart from "../components/CustomerComponents/Cart";
 
 // --- RAZORPAY INTEGRATION: START ---
 // Your public Razorpay Key ID
-const RAZORPAY_KEY_ID = 'rzp_test_R9s2JfWDP6FAjl';
+const RAZORPAY_KEY_ID = 'rzp_live_RWp6XBrY1vkSS5';
 // --- RAZORPAY INTEGRATION: END ---
 
 function decodeCustomerId(encodedId) {
