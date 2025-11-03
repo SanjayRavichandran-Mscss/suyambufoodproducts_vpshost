@@ -220,7 +220,7 @@ exports.login = async (req, res) => {
         const isValidPassword = await bcrypt.compare(password, user.password);
         if (!isValidPassword) return res.status(401).json({ message: 'Invalid password' });
         if (SESSIONS.has(user.id)) SESSIONS.delete(user.id);
-        const token = jwt.sign({ id: user.id, email: user.email, username: user.username }, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '1da' });
+        const token = jwt.sign({ id: user.id, email: user.email, username: user.username }, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '1d' });
         SESSIONS.set(user.id, token);
         res.status(200).json({ message: 'Login successful', token, customerId: user.id });
     } catch (error) {
