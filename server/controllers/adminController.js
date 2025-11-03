@@ -411,6 +411,7 @@ exports.viewProducts = async (req, res) => {
     const [rows] = await db.query(
       `SELECT 
         p.id, p.name, p.description, p.thumbnail_url, p.additional_images, p.tax_percentage,
+        p.bannerimg, p.isBanner,  // NEW: Added bannerimg and isBanner
         p.category_id, c.name AS category_name,
         s.status AS stock_status, s.id AS stock_status_id,
         pv.id AS variant_id, pv.variant_quantity, pv.price AS variant_price, 
@@ -444,12 +445,18 @@ exports.viewProducts = async (req, res) => {
         const fullAdditionalImages = additionalImages.map((img) =>
           img && img.startsWith("/") ? `${IMAGE_BASE}${img}` : img || null
         );
+        // NEW: Compute full banner_url
+        const fullBannerUrl = r.bannerimg && r.bannerimg.startsWith("/")
+          ? `${IMAGE_BASE}${r.bannerimg}`
+          : r.bannerimg || null;
         productsMap[r.id] = {
           id: r.id,
           name: r.name,
           description: r.description,
           thumbnail_url: fullThumbnailUrl,
           additional_images: fullAdditionalImages,
+          banner_url: fullBannerUrl,  // NEW: Full URL for banner
+          isBanner: r.isBanner,  // NEW: Include isBanner
           tax_percentage: r.tax_percentage || 0, // Default to 0 if null
           category_id: r.category_id,
           category_name: r.category_name,
@@ -483,6 +490,7 @@ exports.getProductById = async (req, res) => {
     const [rows] = await db.query(
       `SELECT 
         p.id, p.name, p.description, p.thumbnail_url, p.additional_images, p.tax_percentage,
+        p.bannerimg, p.isBanner,  -- NEW: Added bannerimg and isBanner
         p.category_id, c.name AS category_name,
         s.status AS stock_status, s.id AS stock_status_id,
         pv.id AS variant_id, pv.variant_quantity, pv.price AS variant_price, 
@@ -517,6 +525,10 @@ exports.getProductById = async (req, res) => {
     const fullAdditionalImages = additionalImages.map((img) =>
       img && img.startsWith("/") ? `${IMAGE_BASE}${img}` : img || null
     );
+    // NEW: Compute full banner_url
+    const fullBannerUrl = rows[0].bannerimg && rows[0].bannerimg.startsWith("/")
+      ? `${IMAGE_BASE}${rows[0].bannerimg}`
+      : rows[0].bannerimg || null;
 
     const product = {
       id: rows[0].id,
@@ -524,6 +536,8 @@ exports.getProductById = async (req, res) => {
       description: rows[0].description,
       thumbnail_url: fullThumbnailUrl,
       additional_images: fullAdditionalImages,
+      banner_url: fullBannerUrl,  // NEW: Full URL for banner
+      isBanner: rows[0].isBanner,  // NEW: Include isBanner
       tax_percentage: rows[0].tax_percentage || 0, // Default to 0 if null
       category_id: rows[0].category_id,
       category_name: rows[0].category_name,

@@ -96,10 +96,7 @@ const ManageProducts = () => {
             product.thumbnail_url && product.thumbnail_url.startsWith("/")
               ? `${IMAGE_BASE}${product.thumbnail_url}`
               : product.thumbnail_url || FALLBACK_IMAGE,
-          banner_url:
-            product.bannerimg && product.bannerimg.startsWith("/")
-              ? `${IMAGE_BASE}${product.bannerimg}`
-              : product.bannerimg || null,
+          banner_url: product.banner_url || null,  // UPDATED: Directly use full banner_url from backend
           additional_images: additionalImages.map((img) =>
             img && img.startsWith("/") ? `${IMAGE_BASE}${img}` : img || FALLBACK_IMAGE
           ),
