@@ -13,7 +13,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 
-const IMAGE_BASE = "http://localhost:5000";
+const IMAGE_BASE = "https://suyambufoods.com/api";
 
 // Keep the same magnifier CSS (unchanged logic)
 const magnifierStyles = `
@@ -74,7 +74,7 @@ export default function SingleProduct({
     }
 
     axios
-      .get(`http://localhost:5000/customer/product/${idNum}`, {
+      .get(`https://suyambufoods.com/api/customer/product/${idNum}`, {
         headers: { Origin: "http://localhost:5173" },
       })
       .then((res) => {
@@ -160,7 +160,7 @@ export default function SingleProduct({
 
     if (item) {
       axios
-        .put("http://localhost:5000/customer/cart", body, {
+        .put("https://suyambufoods.com/api/customer/cart", body, {
           headers: { Origin: "http://localhost:5173" },
         })
         .then(() => {
@@ -170,7 +170,7 @@ export default function SingleProduct({
         .catch(() => showMessage("Failed to update cart"));
     } else {
       axios
-        .post("http://localhost:5000/customer/cart", body, {
+        .post("https://suyambufoods.com/api/customer/cart", body, {
           headers: { Origin: "http://localhost:5173" },
         })
         .then(() => {
@@ -224,7 +224,7 @@ export default function SingleProduct({
 
     if (!item) {
       axios
-        .post("http://localhost:5000/customer/cart", body, {
+        .post("https://suyambufoods.com/api/customer/cart", body, {
           headers: { Origin: "http://localhost:5173" },
         })
         .then(() => {

@@ -47,7 +47,7 @@ const CheckOutPage = () => {
       console.log("Fetching product details for tax_percentage:", buyNowItem.product_id || buyNowItem.id);
       const token = localStorage.getItem("customerToken");
       const productId = buyNowItem.product_id || buyNowItem.id;
-      const response = await fetch(`http://localhost:5000/customer/product/${productId}`, {
+      const response = await fetch(`https://suyambufoods.com/api/customer/product/${productId}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -131,7 +131,7 @@ const CheckOutPage = () => {
         }));
       }
       // For cart, omit items to fetch from backend
-      const response = await fetch(`http://localhost:5000/customer/calculate-delivery`, {
+      const response = await fetch(`https://suyambufoods.com/api/customer/calculate-delivery`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -188,7 +188,7 @@ const CheckOutPage = () => {
     const verifyCustomer = async () => {
       try {
         const response = await fetch(
-          `http://localhost:5000/customer/profile?customerId=${storedCustomerId}`,
+          `https://suyambufoods.com/api/customer/profile?customerId=${storedCustomerId}`,
           {
             method: "GET",
             headers: {
@@ -231,7 +231,7 @@ const CheckOutPage = () => {
     if (!customerId) return;
     try {
       const token = localStorage.getItem("customerToken");
-      const response = await fetch(`http://localhost:5000/customer/cart?customerId=${customerId}`, {
+      const response = await fetch(`https://suyambufoods.com/api/customer/cart?customerId=${customerId}`, {
         headers: {
           "Content-Type": "application/json",
           Origin: "http://localhost:5173",
@@ -259,7 +259,7 @@ const CheckOutPage = () => {
     const newQuantity = Math.max(1, item.quantity + change);
     try {
       const token = localStorage.getItem("customerToken");
-      const response = await fetch(`http://localhost:5000/customer/cart`, {
+      const response = await fetch(`https://suyambufoods.com/api/customer/cart`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -294,7 +294,7 @@ const CheckOutPage = () => {
     try {
       const token = localStorage.getItem("customerToken");
       const response = await fetch(
-        `http://localhost:5000/customer/cart?customerId=${customerId}&variantId=${variantId}`,
+        `https://suyambufoods.com/api/customer/cart?customerId=${customerId}&variantId=${variantId}`,
         {
           method: "DELETE",
           headers: {
@@ -424,7 +424,7 @@ const CheckOutPage = () => {
     const token = localStorage.getItem("customerToken");
 
     try {
-      const createOrderResponse = await fetch(`http://localhost:5000/customer/payment/create-order`, {
+      const createOrderResponse = await fetch(`https://suyambufoods.com/api/customer/payment/create-order`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -445,7 +445,7 @@ const CheckOutPage = () => {
         description: "Order Payment",
         order_id: order.id,
         handler: async function (response) {
-          const verifyResponse = await fetch(`http://localhost:5000/customer/payment/verify`, {
+          const verifyResponse = await fetch(`https://suyambufoods.com/api/customer/payment/verify`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -478,7 +478,7 @@ const CheckOutPage = () => {
               },
             };
 
-            const placeOrderResponse = await fetch(`http://localhost:5000/customer/orders`, {
+            const placeOrderResponse = await fetch(`https://suyambufoods.com/api/customer/orders`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",

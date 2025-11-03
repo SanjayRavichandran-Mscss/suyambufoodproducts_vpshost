@@ -101,7 +101,7 @@ async function generateInvoiceData(orderId) {
     const totalAmount = parseFloat(order.total_amount);
 
     const templateData = {
-      baseUrl: process.env.BASE_URL || 'http://localhost:5000',
+      baseUrl: process.env.BASE_URL || 'https://suyambufoods.com/api',
       customerName: order.customer_name,
       customerEmail: order.customer_email,
       customerMobile: order.customer_mobile,
