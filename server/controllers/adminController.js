@@ -410,7 +410,7 @@ exports.viewProducts = async (req, res) => {
   try {
     const [rows] = await db.query(
       `SELECT 
-        p.id, p.name, p.description, p.thumbnail_url, p.additional_images,
+        p.id, p.name, p.description, p.thumbnail_url, p.additional_images, p.tax_percentage,
         p.category_id, c.name AS category_name,
         s.status AS stock_status, s.id AS stock_status_id,
         pv.id AS variant_id, pv.variant_quantity, pv.price AS variant_price, 
@@ -450,6 +450,7 @@ exports.viewProducts = async (req, res) => {
           description: r.description,
           thumbnail_url: fullThumbnailUrl,
           additional_images: fullAdditionalImages,
+          tax_percentage: r.tax_percentage || 0, // Default to 0 if null
           category_id: r.category_id,
           category_name: r.category_name,
           stock_status_id: r.stock_status_id,
@@ -475,60 +476,80 @@ exports.viewProducts = async (req, res) => {
   }
 };
 
-  exports.getProductById = async (req, res) => {
-    console.log("🟢 getProductById called with params:", req.params);
-    try {
-      const { id } = req.params;
-      const [rows] = await db.query(
-        `SELECT 
-          p.id, p.name, p.description, p.thumbnail_url, p.additional_images,
-          p.category_id, c.name AS category_name,
-          s.status AS stock_status, s.id AS stock_status_id,
-          pv.id AS variant_id, pv.variant_quantity, pv.price AS variant_price, 
-          u.id AS variant_uom_id, u.uom_name
-        FROM products p
-        LEFT JOIN categories c ON p.category_id = c.id
-        LEFT JOIN stock_statuses s ON p.stock_status_id = s.id
-        LEFT JOIN product_variants pv ON pv.product_id = p.id
-        LEFT JOIN uom_master u ON pv.uom_id = u.id
-        WHERE p.id = ?`,
-        [id]
-      );
+exports.getProductById = async (req, res) => {
+  console.log("🟢 getProductById called with params:", req.params);
+  try {
+    const { id } = req.params;
+    const [rows] = await db.query(
+      `SELECT 
+        p.id, p.name, p.description, p.thumbnail_url, p.additional_images, p.tax_percentage,
+        p.category_id, c.name AS category_name,
+        s.status AS stock_status, s.id AS stock_status_id,
+        pv.id AS variant_id, pv.variant_quantity, pv.price AS variant_price, 
+        u.id AS variant_uom_id, u.uom_name
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN stock_statuses s ON p.stock_status_id = s.id
+      LEFT JOIN product_variants pv ON pv.product_id = p.id
+      LEFT JOIN uom_master u ON pv.uom_id = u.id
+      WHERE p.id = ?`,
+      [id]
+    );
 
-      if (rows.length === 0)
-        return res.status(404).json({ error: "Product not found" });
+    if (rows.length === 0)
+      return res.status(404).json({ error: "Product not found" });
 
-      const product = {
-        id: rows[0].id,
-        name: rows[0].name,
-        description: rows[0].description,
-        thumbnail_url: rows[0].thumbnail_url,
-        additional_images: parseAdditionalImages(rows[0].additional_images),
-        category_id: rows[0].category_id,
-        category_name: rows[0].category_name,
-        stock_status_id: rows[0].stock_status_id,
-        stock_status: rows[0].stock_status,
-        variants: [],
-      };
-
-      rows.forEach((r) => {
-        if (r.variant_id) {
-          product.variants.push({
-            id: r.variant_id,
-            quantity: r.variant_quantity,
-            price: r.variant_price,
-            uom_id: r.variant_uom_id,
-            uom_name: r.uom_name,
-          });
-        }
-      });
-
-      return res.status(200).json(product);
-    } catch (error) {
-      console.error("❌ Error fetching product by id:", error);
-      return res.status(500).json({ error: "Internal server error" });
+    // Inline parsing for additional_images (consistent with viewProducts)
+    let additionalImages = [];
+    if (typeof rows[0].additional_images === "string") {
+      try {
+        additionalImages = JSON.parse(rows[0].additional_images);
+      } catch {
+        additionalImages = rows[0].additional_images.split(",").map((img) => img.trim()).filter(Boolean);
+      }
+    } else if (Array.isArray(rows[0].additional_images)) {
+      additionalImages = rows[0].additional_images;
     }
-  };
+    // Prepend IMAGE_BASE to image URLs for consistency
+    const fullThumbnailUrl = rows[0].thumbnail_url && rows[0].thumbnail_url.startsWith("/")
+      ? `${IMAGE_BASE}${rows[0].thumbnail_url}`
+      : rows[0].thumbnail_url || null;
+    const fullAdditionalImages = additionalImages.map((img) =>
+      img && img.startsWith("/") ? `${IMAGE_BASE}${img}` : img || null
+    );
+
+    const product = {
+      id: rows[0].id,
+      name: rows[0].name,
+      description: rows[0].description,
+      thumbnail_url: fullThumbnailUrl,
+      additional_images: fullAdditionalImages,
+      tax_percentage: rows[0].tax_percentage || 0, // Default to 0 if null
+      category_id: rows[0].category_id,
+      category_name: rows[0].category_name,
+      stock_status_id: rows[0].stock_status_id,
+      stock_status: rows[0].stock_status,
+      variants: [],
+    };
+
+    rows.forEach((r) => {
+      if (r.variant_id) {
+        product.variants.push({
+          id: r.variant_id,
+          quantity: r.variant_quantity,
+          price: r.variant_price,
+          uom_id: r.variant_uom_id,
+          uom_name: r.uom_name,
+        });
+      }
+    });
+
+    return res.status(200).json(product);
+  } catch (error) {
+    console.error("❌ Error fetching product by id:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
 
   /* ----------------------- PRODUCT VARIANTS ----------------------- */
   exports.addProductVariant = async (req, res) => {
