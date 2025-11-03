@@ -61,83 +61,85 @@ async function checkCustomerExists(customerId) {
 }
 
 async function generateInvoiceData(orderId) {
-    try {
-        const orderQuery = `
-          SELECT 
-            o.id AS order_id, o.customer_id, o.order_date, o.total_amount, o.tracking_number, o.invoice_number,
-            c.full_name as customer_name, c.email as customer_email, c.phone as customer_mobile,
-            CONCAT(a.street, ', ', a.city, ', ', a.state, ' ', a.zip_code, ', ', a.country) as delivery_address,
-            pm.method as payment_method, os.status as order_status, om.method as order_method
-          FROM orders o
-          JOIN customers c ON o.customer_id = c.id
-          JOIN addresses a ON o.address_id = a.id
-          JOIN payment_methods pm ON o.payment_method_id = pm.id
-          JOIN order_status os ON o.order_status_id = os.id
-          JOIN order_methods om ON o.order_method_id = om.id
-          WHERE o.id = ?
-        `;
-        const [orderRows] = await db.execute(orderQuery, [orderId]);
-        if (orderRows.length === 0) {
-            throw new Error('Order not found');
-        }
-        const order = orderRows[0];
-
-        const itemsQuery = `
-          SELECT 
-            oi.product_variant_id, oi.quantity, oi.price_at_purchase, oi.subtotal,
-            p.name, p.thumbnail_url
-          FROM order_items oi
-          JOIN product_variants pv ON oi.product_variant_id = pv.id
-          JOIN products p ON pv.product_id = p.id
-          WHERE oi.order_id = ?
-        `;
-        const [itemRows] = await db.execute(itemsQuery, [orderId]);
-
-        const subtotal = parseFloat(order.total_amount);
-        const shipping = subtotal > 999 ? 0 : 100;
-        const tax = (subtotal * 0.18);
-        const totalAmount = subtotal + shipping + tax;
-
-        const templateData = {
-            baseUrl: process.env.BASE_URL || 'https://suyambufoods.com/api',
-            customerName: order.customer_name,
-            customerEmail: order.customer_email,
-            customerMobile: order.customer_mobile,
-            deliveryAddress: order.delivery_address,
-            orderId: order.order_id,
-            invoiceDate: new Date().toLocaleDateString('en-IN'),
-            orderDate: new Date(order.order_date).toLocaleDateString('en-IN'),
-            paymentMethod: order.payment_method,
-            orderStatus: order.order_status,
-            orderMethod: order.order_method,
-            invoiceNumber: order.invoice_number || `SFP${new Date().getFullYear().toString().slice(-2)}${(new Date().getMonth() + 1).toString().padStart(2, '0')}${new Date().getDate().toString().padStart(2, '0')}${orderId}`,
-            items: itemRows.map(item => ({
-                ...item,
-                unitPrice: parseFloat(item.price_at_purchase / item.quantity).toFixed(2),
-                subtotal: parseFloat(item.subtotal).toFixed(2)
-            })),
-            subtotal: subtotal.toFixed(2),
-            shipping: shipping.toFixed(2),
-            freeShipping: shipping === 0,
-            tax: tax.toFixed(2),
-            totalAmount: totalAmount.toFixed(2),
-            paymentStatus: 'Completed',
-            trackingNumber: order.tracking_number || null,
-            full_name: order.customer_name,
-            phone: order.customer_mobile,
-            email: order.customer_email,
-            street: order.delivery_address.split(', ')[0],
-            city: order.delivery_address.split(', ')[1],
-            state: order.delivery_address.split(', ')[2],
-            zip_code: order.delivery_address.split(', ')[3],
-            country: order.delivery_address.split(', ')[4],
-            transactionDate: new Date().toLocaleDateString('en-IN')
-        };
-        return { templateData, order };
-    } catch (error) {
-        console.error('Error generating invoice data:', error);
-        throw error;
+  try {
+    const orderQuery = `
+      SELECT 
+        o.id AS order_id, o.customer_id, o.order_date, o.total_amount, o.tracking_number, o.invoice_number, o.delivery_fee,
+        o.order_tax_amount, o.order_tax_rate,
+        c.full_name as customer_name, c.email as customer_email, c.phone as customer_mobile,
+        CONCAT(a.street, ', ', a.city, ', ', a.state, ' ', a.zip_code, ', ', a.country) as delivery_address,
+        pm.method as payment_method, os.status as order_status, om.method as order_method
+      FROM orders o
+      JOIN customers c ON o.customer_id = c.id
+      JOIN addresses a ON o.address_id = a.id
+      JOIN payment_methods pm ON o.payment_method_id = pm.id
+      JOIN order_status os ON o.order_status_id = os.id
+      JOIN order_methods om ON o.order_method_id = om.id
+      WHERE o.id = ?
+    `;
+    const [orderRows] = await db.execute(orderQuery, [orderId]);
+    if (orderRows.length === 0) {
+      throw new Error('Order not found');
     }
+    const order = orderRows[0];
+
+    const itemsQuery = `
+      SELECT 
+        oi.product_variant_id, oi.quantity, oi.price_at_purchase, oi.subtotal,
+        p.name, p.thumbnail_url
+      FROM order_items oi
+      JOIN product_variants pv ON oi.product_variant_id = pv.id
+      JOIN products p ON pv.product_id = p.id
+      WHERE oi.order_id = ?
+    `;
+    const [itemRows] = await db.execute(itemsQuery, [orderId]);
+
+    const delivery_fee = parseFloat(order.delivery_fee || 0);
+    const tax = parseFloat(order.order_tax_amount || 0);
+    const subtotal = parseFloat(order.total_amount) - delivery_fee - tax;
+    const shipping = delivery_fee;
+    const totalAmount = parseFloat(order.total_amount);
+
+    const templateData = {
+      baseUrl: process.env.BASE_URL || 'http://localhost:5000',
+      customerName: order.customer_name,
+      customerEmail: order.customer_email,
+      customerMobile: order.customer_mobile,
+      deliveryAddress: order.delivery_address,
+      orderId: order.order_id,
+      invoiceDate: new Date().toLocaleDateString('en-IN'),
+      orderDate: new Date(order.order_date).toLocaleDateString('en-IN'),
+      paymentMethod: order.payment_method,
+      orderStatus: order.order_status,
+      orderMethod: order.order_method,
+      invoiceNumber: order.invoice_number || `SFP${new Date().getFullYear().toString().slice(-2)}${(new Date().getMonth() + 1).toString().padStart(2, '0')}${new Date().getDate().toString().padStart(2, '0')}${orderId}`,
+      items: itemRows.map(item => ({
+        ...item,
+        unitPrice: parseFloat(item.price_at_purchase / item.quantity).toFixed(2),
+        subtotal: parseFloat(item.subtotal).toFixed(2)
+      })),
+      subtotal: subtotal.toFixed(2),
+      shipping: shipping.toFixed(2),
+      freeShipping: shipping === 0,
+      tax: tax.toFixed(2),
+      totalAmount: totalAmount.toFixed(2),
+      paymentStatus: 'Completed',
+      trackingNumber: order.tracking_number || null,
+      full_name: order.customer_name,
+      phone: order.customer_mobile,
+      email: order.customer_email,
+      street: order.delivery_address.split(', ')[0],
+      city: order.delivery_address.split(', ')[1],
+      state: order.delivery_address.split(', ')[2],
+      zip_code: order.delivery_address.split(', ')[3],
+      country: order.delivery_address.split(', ')[4],
+      transactionDate: new Date().toLocaleDateString('en-IN')
+    };
+    return { templateData, order };
+  } catch (error) {
+    console.error('Error generating invoice data:', error);
+    throw error;
+  }
 }
 
 async function generatePDFfromHTMLTemplate(templateData) {
@@ -218,7 +220,7 @@ exports.login = async (req, res) => {
         const isValidPassword = await bcrypt.compare(password, user.password);
         if (!isValidPassword) return res.status(401).json({ message: 'Invalid password' });
         if (SESSIONS.has(user.id)) SESSIONS.delete(user.id);
-        const token = jwt.sign({ id: user.id, email: user.email, username: user.username }, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '1h' });
+        const token = jwt.sign({ id: user.id, email: user.email, username: user.username }, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '1da' });
         SESSIONS.set(user.id, token);
         res.status(200).json({ message: 'Login successful', token, customerId: user.id });
     } catch (error) {
@@ -263,7 +265,7 @@ exports.getCart = async (req, res) => {
     }
     try {
         const [rows] = await db.query(
-            'SELECT ci.*, pv.id AS variant_id, pv.product_id, p.name AS product_name, p.thumbnail_url, um.uom_name AS uom_name, pv.variant_quantity, pv.price, ss.status AS stock_status FROM cart_items ci JOIN product_variants pv ON ci.product_variant_id = pv.id JOIN products p ON pv.product_id = p.id LEFT JOIN uom_master um ON pv.uom_id = um.id LEFT JOIN stock_statuses ss ON p.stock_status_id = ss.id WHERE ci.customer_id = ?',
+            'SELECT ci.*, pv.id AS variant_id, pv.product_id, p.name AS product_name, p.thumbnail_url, um.uom_name AS uom_name, pv.variant_quantity, pv.price, ss.status AS stock_status, p.tax_percentage FROM cart_items ci JOIN product_variants pv ON ci.product_variant_id = pv.id JOIN products p ON pv.product_id = p.id LEFT JOIN uom_master um ON pv.uom_id = um.id LEFT JOIN stock_statuses ss ON p.stock_status_id = ss.id WHERE ci.customer_id = ?',
             [customerId]
         );
         res.status(200).json(rows);
@@ -326,70 +328,156 @@ exports.toggleWishlist = async (req, res) => {
     }
 };
 
+
+
+exports.getStates = async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT id, name, code FROM states ORDER BY name');
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error('Get states error:', error);
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
+};
+
+exports.getCities = async (req, res) => {
+  const { stateId } = req.query;
+  if (!stateId || isNaN(stateId)) {
+    return res.status(400).json({ message: 'stateId parameter is required and must be a number' });
+  }
+  try {
+    const [rows] = await db.query(
+      'SELECT id, name FROM cities WHERE state_id = ? ORDER BY name',
+      [parseInt(stateId)]
+    );
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error('Get cities error:', error);
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
+};
+
 exports.getAddresses = async (req, res) => {
-    const customerId = getDecodedCustomerId(req);
-    if (!customerId || isNaN(customerId)) return res.status(400).json({ message: 'Invalid customer ID' });
-    try {
-        if (!(await checkCustomerExists(customerId))) return res.status(404).json({ message: 'Customer not found' });
-        const [rows] = await db.query('SELECT id, street, city, state, zip_code, country, is_default FROM addresses WHERE customer_id = ?', [customerId]);
-        res.status(200).json(rows);
-    } catch (error) {
-        console.error('Get addresses error:', error);
-        res.status(500).json({ message: 'Server error: ' + error.message });
-    }
+  const customerId = getDecodedCustomerId(req);
+  if (!customerId || isNaN(customerId)) return res.status(400).json({ message: 'Invalid customer ID' });
+  try {
+    if (!(await checkCustomerExists(customerId))) return res.status(404).json({ message: 'Customer not found' });
+    const [rows] = await db.query(`
+      SELECT a.id, a.street, a.zip_code, a.country, a.is_default, a.created_at, a.updated_at,
+             c.name as city, s.name as state
+      FROM addresses a
+      JOIN states s ON a.state_id = s.id
+      JOIN cities c ON a.city_id = c.id
+      WHERE a.customer_id = ?
+      ORDER BY a.is_default DESC, a.created_at DESC
+    `, [customerId]);
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error('Get addresses error:', error);
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
 };
 
 exports.addAddress = async (req, res) => {
-    const customerId = getDecodedCustomerId(req);
-    if (!customerId) return res.status(400).json({ message: 'Customer ID is required' });
-    const { street, city, state, zip_code, country, is_default } = req.body;
-    // ... validation ...
-    try {
-        if (!(await checkCustomerExists(customerId))) return res.status(404).json({ message: 'Customer not found' });
-        if (is_default === 1 || is_default === true) await db.query('UPDATE addresses SET is_default = 0 WHERE customer_id = ?', [customerId]);
-        const [result] = await db.query('INSERT INTO addresses (customer_id, street, city, state, zip_code, country, is_default, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())', [customerId, street, city, state, zip_code, country, is_default ? 1 : 0]);
-        if (result.affectedRows === 0) return res.status(500).json({ message: 'Failed to add address' });
-        res.status(201).json({ message: 'Address added successfully', id: result.insertId });
-    } catch (error) {
-        console.error('Add address error:', error);
-        res.status(500).json({ message: 'Server error: ' + error.message });
+  const customerId = getDecodedCustomerId(req);
+  if (!customerId) return res.status(400).json({ message: 'Customer ID is required' });
+  const { street, city, state, zip_code, country, is_default } = req.body;
+
+  // Validation
+  if (!street || street.length > 255) return res.status(400).json({ message: 'Street is required and must be 255 characters or less' });
+  if (!city || city.length > 100) return res.status(400).json({ message: 'City is required and must be 100 characters or less' });
+  if (!state || state.length > 100) return res.status(400).json({ message: 'State is required and must be 100 characters or less' });
+  if (!zip_code || zip_code.length > 20) return res.status(400).json({ message: 'Zip code is required and must be 20 characters or less' });
+  if (!country || country.length > 100) return res.status(400).json({ message: 'Country is required and must be 100 characters or less' });
+
+  try {
+    if (!(await checkCustomerExists(customerId))) return res.status(404).json({ message: 'Customer not found' });
+
+    // Resolve state_id and city_id
+    const [stateRows] = await db.query('SELECT id FROM states WHERE name = ? AND name LIKE ?', [state, `${state}%`]); // Fuzzy match if needed, but exact for now
+    if (stateRows.length === 0) return res.status(404).json({ message: `State '${state}' not found` });
+    const stateId = stateRows[0].id;
+
+    const [cityRows] = await db.query('SELECT id FROM cities WHERE name = ? AND state_id = ? AND name LIKE ?', [city, stateId, `${city}%`]);
+    if (cityRows.length === 0) return res.status(404).json({ message: `City '${city}' not found in state '${state}'` });
+    const cityId = cityRows[0].id;
+
+    if (is_default === 1 || is_default === true) {
+      await db.query('UPDATE addresses SET is_default = 0 WHERE customer_id = ?', [customerId]);
     }
+
+    const [result] = await db.query(
+      'INSERT INTO addresses (customer_id, street, city_id, state_id, zip_code, country, is_default, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
+      [customerId, street, cityId, stateId, zip_code, country, is_default ? 1 : 0]
+    );
+
+    if (result.affectedRows === 0) return res.status(500).json({ message: 'Failed to add address' });
+    res.status(201).json({ message: 'Address added successfully', id: result.insertId });
+  } catch (error) {
+    console.error('Add address error:', error);
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
 };
 
 exports.updateAddress = async (req, res) => {
-    const customerId = getDecodedCustomerId(req);
-    if (!customerId) return res.status(400).json({ message: 'Customer ID is required' });
-    const { id, street, city, state, zip_code, country, is_default } = req.body;
-    // ... validation ...
-    try {
-        if (!(await checkCustomerExists(customerId))) return res.status(404).json({ message: 'Customer not found' });
-        const [existing] = await db.query('SELECT * FROM addresses WHERE id = ? AND customer_id = ?', [id, customerId]);
-        if (existing.length === 0) return res.status(404).json({ message: 'Address not found' });
-        if (is_default === 1 || is_default === true) await db.query('UPDATE addresses SET is_default = 0 WHERE customer_id = ? AND id != ?', [customerId, id]);
-        const [result] = await db.query('UPDATE addresses SET street = ?, city = ?, state = ?, zip_code = ?, country = ?, is_default = ?, updated_at = NOW() WHERE id = ? AND customer_id = ?', [street, city, state, zip_code, country, is_default ? 1 : 0, id, customerId]);
-        if (result.affectedRows === 0) return res.status(500).json({ message: 'Failed to update address' });
-        res.status(200).json({ message: 'Address updated successfully' });
-    } catch (error) {
-        console.error('Update address error:', error);
-        res.status(500).json({ message: 'Server error: ' + error.message });
+  const customerId = getDecodedCustomerId(req);
+  if (!customerId) return res.status(400).json({ message: 'Customer ID is required' });
+  const { id, street, city, state, zip_code, country, is_default } = req.body;
+
+  // Validation
+  if (!street || street.length > 255) return res.status(400).json({ message: 'Street is required and must be 255 characters or less' });
+  if (!city || city.length > 100) return res.status(400).json({ message: 'City is required and must be 100 characters or less' });
+  if (!state || state.length > 100) return res.status(400).json({ message: 'State is required and must be 100 characters or less' });
+  if (!zip_code || zip_code.length > 20) return res.status(400).json({ message: 'Zip code is required and must be 20 characters or less' });
+  if (!country || country.length > 100) return res.status(400).json({ message: 'Country is required and must be 100 characters or less' });
+
+  try {
+    if (!(await checkCustomerExists(customerId))) return res.status(404).json({ message: 'Customer not found' });
+
+    const [existing] = await db.query('SELECT * FROM addresses WHERE id = ? AND customer_id = ?', [id, customerId]);
+    if (existing.length === 0) return res.status(404).json({ message: 'Address not found' });
+
+    // Resolve state_id and city_id (only if changed; but for simplicity, always resolve)
+    const [stateRows] = await db.query('SELECT id FROM states WHERE name = ? AND name LIKE ?', [state, `${state}%`]);
+    if (stateRows.length === 0) return res.status(404).json({ message: `State '${state}' not found` });
+    const stateId = stateRows[0].id;
+
+    const [cityRows] = await db.query('SELECT id FROM cities WHERE name = ? AND state_id = ? AND name LIKE ?', [city, stateId, `${city}%`]);
+    if (cityRows.length === 0) return res.status(404).json({ message: `City '${city}' not found in state '${state}'` });
+    const cityId = cityRows[0].id;
+
+    if (is_default === 1 || is_default === true) {
+      await db.query('UPDATE addresses SET is_default = 0 WHERE customer_id = ? AND id != ?', [customerId, id]);
     }
+
+    const [result] = await db.query(
+      'UPDATE addresses SET street = ?, city_id = ?, state_id = ?, zip_code = ?, country = ?, is_default = ?, updated_at = NOW() WHERE id = ? AND customer_id = ?',
+      [street, cityId, stateId, zip_code, country, is_default ? 1 : 0, id, customerId]
+    );
+
+    if (result.affectedRows === 0) return res.status(500).json({ message: 'Failed to update address' });
+    res.status(200).json({ message: 'Address updated successfully' });
+  } catch (error) {
+    console.error('Update address error:', error);
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
 };
 
 exports.deleteAddress = async (req, res) => {
-    const customerId = getDecodedCustomerId(req);
-    if (!customerId) return res.status(400).json({ message: 'Customer ID is required' });
-    const parsedUrl = url.parse(req.url, true);
-    const id = parseInt(parsedUrl.query.id, 10);
-    if (!id || isNaN(id)) return res.status(400).json({ message: 'Address ID is required' });
-    try {
-        if (!(await checkCustomerExists(customerId))) return res.status(404).json({ message: 'Customer not found' });
-        const [result] = await db.query('DELETE FROM addresses WHERE id = ? AND customer_id = ?', [id, customerId]);
-        if (result.affectedRows === 0) return res.status(404).json({ message: 'Address not found' });
-        res.status(200).json({ message: 'Address deleted successfully' });
-    } catch (error) {
-        console.error('Delete address error:', error);
-        res.status(500).json({ message: 'Server error: ' + error.message });
-    }
+  const customerId = getDecodedCustomerId(req);
+  if (!customerId) return res.status(400).json({ message: 'Customer ID is required' });
+  const parsedUrl = url.parse(req.url, true);
+  const id = parseInt(parsedUrl.query.id, 10);
+  if (!id || isNaN(id)) return res.status(400).json({ message: 'Address ID is required' });
+  try {
+    if (!(await checkCustomerExists(customerId))) return res.status(404).json({ message: 'Customer not found' });
+    const [result] = await db.query('DELETE FROM addresses WHERE id = ? AND customer_id = ?', [id, customerId]);
+    if (result.affectedRows === 0) return res.status(404).json({ message: 'Address not found' });
+    res.status(200).json({ message: 'Address deleted successfully' });
+  } catch (error) {
+    console.error('Delete address error:', error);
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
 };
 
 exports.getCustomerDetails = async (req, res) => {
@@ -406,151 +494,235 @@ exports.getCustomerDetails = async (req, res) => {
 };
 
 exports.placeOrder = async (req, res) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) return res.status(401).json({ message: 'Unauthorized: No token provided' });
-    const token = authHeader.split(' ')[1];
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
-        const { customerId: customerIdStr, addressId, paymentMethodId, orderMethod, items, totalAmount, paymentDetails } = req.body;
-        const customerId = parseInt(customerIdStr, 10);
-        if (isNaN(customerId)) return res.status(400).json({ message: 'Invalid customer ID' });
-        if (decoded.id !== customerId) return res.status(401).json({ message: 'Unauthorized: Token does not match customer ID' });
-        if (!addressId || !paymentMethodId || !orderMethod || !items || items.length === 0) return res.status(400).json({ message: 'Missing required fields' });
-        const orderMethodId = orderMethod === 'buy_now' ? 1 : orderMethod === 'cart' ? 2 : null;
-        if (!orderMethodId) return res.status(400).json({ message: 'Invalid order method' });
-        let calculatedTotal = 0;
-        let orderItemsValues = [];
-        const variantIds = items.map(item => item.variantId);
-        const [variantRows] = await db.query(`
-            SELECT 
-                pv.id, 
-                pv.price, 
-                pv.variant_quantity, 
-                pv.uom_id, 
-                pv.product_id, 
-                p.name AS product_name, 
-                p.description AS product_description, 
-                p.thumbnail_url AS product_thumbnail_url, 
-                p.additional_images AS product_additional_images, 
-                p.category_id AS product_category_id,
-                c.name AS product_category_name,
-                c.description AS product_category_description
-            FROM product_variants pv
-            JOIN products p ON pv.product_id = p.id
-            JOIN categories c ON p.category_id = c.id
-            WHERE pv.id IN (?)
-        `, [variantIds]);
-        const variantMap = variantRows.reduce((map, row) => ({
-            ...map, 
-            [row.id]: {
-                price: parseFloat(row.price),
-                variant_quantity: parseFloat(row.variant_quantity),
-                uom_id: row.uom_id,
-                product_id: row.product_id,
-                product_name: row.product_name,
-                product_description: row.product_description,
-                product_thumbnail_url: row.product_thumbnail_url,
-                product_additional_images: row.product_additional_images,  // Could be string or array here
-                product_category_id: row.product_category_id,
-                product_category_name: row.product_category_name,
-                product_category_description: row.product_category_description
-            }
-        }), {});
-        for (const item of items) {
-            if (!item.variantId || !item.quantity || isNaN(item.quantity)) return res.status(400).json({ message: 'Invalid item data' });
-            const variantData = variantMap[item.variantId];
-            if (!variantData) return res.status(400).json({ message: `Invalid variantId ${item.variantId}` });
-            const qty = parseInt(item.quantity, 10);
-            const price = variantData.price;
-            if (qty <= 0 || !price) return res.status(400).json({ message: `Invalid variantId or quantity for item with variantId ${item.variantId}` });
-            const subtotal = price * qty;
-            calculatedTotal += subtotal;
-
-            // Fix: Stringify product_additional_images if it's an array (or object); handle null/empty safely
-            let additionalImagesStr = null;
-            const images = variantData.product_additional_images;
-            if (images) {
-                if (Array.isArray(images)) {
-                    additionalImagesStr = JSON.stringify(images);
-                } else if (typeof images === 'object') {
-                    additionalImagesStr = JSON.stringify(images);
-                } else {
-                    // Already a string (e.g., '[]' or '["path"]')
-                    additionalImagesStr = images;
-                }
-            }
-
-            orderItemsValues.push([
-                null, // id (auto-increment)
-                item.variantId, 
-                qty, 
-                price, 
-                subtotal,
-                variantData.product_id,
-                variantData.product_name,
-                variantData.product_description,
-                variantData.product_thumbnail_url,
-                additionalImagesStr,  // Now guaranteed as JSON string or null
-                variantData.product_category_id,
-                variantData.product_category_name,
-                variantData.product_category_description,
-                variantData.variant_quantity,
-                variantData.uom_id,
-                price // variant_price (same as price_at_purchase for snapshot consistency)
-            ]);
-        }
-        const shipping = calculatedTotal > 999 ? 0 : 100;
-        const finalTotal = calculatedTotal + shipping;
-        // if (totalAmount && Math.abs(parseFloat(totalAmount) - finalTotal) > 0.01) return res.status(400).json({ message: 'Total amount mismatch' });
-        const connection = await db.getConnection();
-        try {
-            await connection.beginTransaction();
-            const razorpayPaymentId = paymentDetails ? paymentDetails.razorpay_payment_id : null;
-            const [orderResult] = await connection.query('INSERT INTO orders (customer_id, address_id, order_date, order_status_id, total_amount, payment_method_id, tracking_number, updated_at, order_method_id, invoice_number, razorpay_payment_id) VALUES (?, ?, NOW(), 1, ?, ?, NULL, NOW(), ?, NULL, ?)', [customerId, addressId, calculatedTotal.toFixed(2), paymentMethodId, orderMethodId, razorpayPaymentId]);
-            const orderId = orderResult.insertId;
-            const orderDate = new Date();
-            const yy = orderDate.getFullYear().toString().slice(-2);
-            const mm = (orderDate.getMonth() + 1).toString().padStart(2, '0');
-            const dd = orderDate.getDate().toString().padStart(2, '0');
-            const invoiceNumber = `SFP${yy}${mm}${dd}${orderId}`;
-            await connection.query(`UPDATE orders SET invoice_number = ? WHERE id = ?`, [invoiceNumber, orderId]);
-            orderItemsValues = orderItemsValues.map(row => [orderId, ...row.slice(1)]);
-            if (orderItemsValues.length > 0) {
-                await connection.query(`
-                    INSERT INTO order_items (
-                        order_id, product_variant_id, quantity, price_at_purchase, subtotal, 
-                        product_id, product_name, product_description, product_thumbnail_url, 
-                        product_additional_images, product_category_id, product_category_name,
-                        product_category_description, variant_quantity, 
-                        variant_uom_id, variant_price
-                    ) VALUES ?
-                `, [orderItemsValues]);
-            }
-            if (orderMethodId === 2) await connection.query('DELETE FROM cart_items WHERE customer_id = ?', [customerId]);
-            await connection.commit();
-            setImmediate(async () => {
-                try {
-                    const { templateData, order } = await generateInvoiceData(orderId);
-                    const pdfBuffer = await generatePDFfromHTMLTemplate(templateData);
-                    await sendInvoiceEmail(order, templateData, pdfBuffer);
-                } catch (invoiceError) {
-                    console.error(`Failed to send invoice for order ${orderId}:`, invoiceError);
-                }
-            });
-            res.status(201).json({ message: 'Order placed successfully', orderId, invoiceNumber });
-        } catch (err) {
-            await connection.rollback();
-            throw err;
-        } finally {
-            connection.release();
-        }
-    } catch (error) {
-        console.error('Place order error:', error);
-        if (error.name === 'JsonWebTokenError') return res.status(401).json({ message: 'Invalid token' });
-        res.status(500).json({ message: 'Server error: ' + error.message });
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Unauthorized: No token provided' });
+  }
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
+    const { customerId: customerIdStr, addressId, paymentMethodId, orderMethod, items, totalAmount, paymentDetails } = req.body;
+    const customerId = parseInt(customerIdStr, 10);
+    if (isNaN(customerId)) return res.status(400).json({ message: 'Invalid customer ID' });
+    if (decoded.id !== customerId) return res.status(401).json({ message: 'Unauthorized: Token does not match customer ID' });
+    if (!addressId || !paymentMethodId || !orderMethod || !items || items.length === 0) {
+      return res.status(400).json({ message: 'Missing required fields' });
     }
-};
+    const orderMethodId = orderMethod === 'buy_now' ? 1 : orderMethod === 'cart' ? 2 : null;
+    if (!orderMethodId) return res.status(400).json({ message: 'Invalid order method' });
 
+    // Compute subtotal, tax, and validate items
+    let calculatedSubtotal = 0;
+    let totalTax = 0;
+    let orderItemsValues = [];
+    const variantIds = items.map(item => item.variantId);
+    const [variantRows] = await db.query(`
+      SELECT 
+        pv.id, 
+        pv.price, 
+        pv.variant_quantity, 
+        pv.uom_id, 
+        pv.product_id, 
+        p.name AS product_name, 
+        p.description AS product_description, 
+        p.thumbnail_url AS product_thumbnail_url, 
+        p.additional_images AS product_additional_images, 
+        p.category_id AS product_category_id,
+        c.name AS product_category_name,
+        c.description AS product_category_description,
+        p.tax_percentage
+      FROM product_variants pv
+      JOIN products p ON pv.product_id = p.id
+      JOIN categories c ON p.category_id = c.id
+      WHERE pv.id IN (?)
+    `, [variantIds]);
+    const variantMap = variantRows.reduce((map, row) => ({
+      ...map, 
+      [row.id]: {
+        price: parseFloat(row.price),
+        variant_quantity: parseFloat(row.variant_quantity),
+        uom_id: row.uom_id,
+        product_id: row.product_id,
+        product_name: row.product_name,
+        product_description: row.product_description,
+        product_thumbnail_url: row.product_thumbnail_url,
+        product_additional_images: row.product_additional_images,
+        product_category_id: row.product_category_id,
+        product_category_name: row.product_category_name,
+        product_category_description: row.product_category_description,
+        tax_percentage: parseFloat(row.tax_percentage || 0)
+      }
+    }), {});
+    for (const item of items) {
+      if (!item.variantId || !item.quantity || isNaN(item.quantity)) {
+        return res.status(400).json({ message: 'Invalid item data' });
+      }
+      const variantData = variantMap[item.variantId];
+      if (!variantData) return res.status(400).json({ message: `Invalid variantId ${item.variantId}` });
+      const qty = parseInt(item.quantity, 10);
+      const price = variantData.price;
+      if (qty <= 0 || !price) {
+        return res.status(400).json({ message: `Invalid variantId or quantity for item with variantId ${item.variantId}` });
+      }
+      const subtotal = price * qty;
+      const taxPerc = variantData.tax_percentage;
+      const itemTax = subtotal * (taxPerc / 100);
+      calculatedSubtotal += subtotal;
+      totalTax += itemTax;
+
+      // Fix: Stringify product_additional_images if it's an array (or object); handle null/empty safely
+      let additionalImagesStr = null;
+      const images = variantData.product_additional_images;
+      if (images) {
+        if (Array.isArray(images)) {
+          additionalImagesStr = JSON.stringify(images);
+        } else if (typeof images === 'object') {
+          additionalImagesStr = JSON.stringify(images);
+        } else {
+          // Already a string (e.g., '[]' or '["path"]')
+          additionalImagesStr = images;
+        }
+      }
+
+      orderItemsValues.push([
+        null, // id (auto-increment)
+        item.variantId, 
+        qty, 
+        price, 
+        subtotal,
+        variantData.product_id,
+        variantData.product_name,
+        variantData.product_description,
+        variantData.product_thumbnail_url,
+        additionalImagesStr,  // Now guaranteed as JSON string or null
+        variantData.product_category_id,
+        variantData.product_category_name,
+        variantData.product_category_description,
+        variantData.variant_quantity,
+        variantData.uom_id,
+        price // variant_price (same as price_at_purchase for snapshot consistency)
+      ]);
+    }
+
+    // NEW: Compute delivery_fee and shipment_details (same logic as calculateDelivery)
+    const calcItems = items.map(item => ({
+      variantId: parseInt(item.variantId),
+      quantity: parseInt(item.quantity)
+    }));
+    const variantIdsForDelivery = calcItems.map(item => item.variantId);
+    const [variantRowsForDelivery] = await db.query(
+      'SELECT id, variant_quantity, uom_id FROM product_variants WHERE id IN (?)',
+      [variantIdsForDelivery]
+    );
+    const variantMapForDelivery = variantRowsForDelivery.reduce((map, row) => {
+      map[row.id] = {
+        variant_quantity: parseFloat(row.variant_quantity),
+        uom_id: parseInt(row.uom_id)
+      };
+      return map;
+    }, {});
+
+    const uomQuantities = {};
+    let totalQuantity = 0;
+    for (const item of calcItems) {
+      const variantData = variantMapForDelivery[item.variantId];
+      if (!variantData) continue;
+      const rawQty = variantData.variant_quantity * item.quantity;
+      const uomId = variantData.uom_id;
+
+      if (!uomQuantities[uomId]) uomQuantities[uomId] = 0;
+      uomQuantities[uomId] += rawQty;
+
+      let kgQty = rawQty;
+      if (uomId === 2) { // Gram to KG
+        kgQty = rawQty / 1000;
+      }
+      totalQuantity += kgQty;
+    }
+    totalQuantity = parseFloat(totalQuantity.toFixed(2));
+
+    const [addressRows] = await db.query(
+      'SELECT state_id FROM addresses WHERE id = ? AND customer_id = ?',
+      [addressId, customerId]
+    );
+    if (addressRows.length === 0) {
+      return res.status(404).json({ message: 'Address not found' });
+    }
+    const stateId = addressRows[0].state_id;
+
+    const [chargeRows] = await db.query(
+      'SELECT delivery_charge FROM delivery_charge_master WHERE state_id = ? AND ? BETWEEN min_quantity AND max_quantity',
+      [stateId, totalQuantity]
+    );
+    const delivery_fee = chargeRows.length > 0 ? parseFloat(chargeRows[0].delivery_charge) : 0;
+
+    const shipment_details = {
+      uom_quantities: uomQuantities,
+      total_quantity: totalQuantity
+    };
+
+    // Calculate overall effective tax rate (weighted average)
+    const overall_tax_rate = calculatedSubtotal > 0 ? (totalTax / calculatedSubtotal * 100) : 0;
+
+    // Use backend-calculated total for security
+    const calculatedTotal = calculatedSubtotal + totalTax + delivery_fee;
+
+    // Validate against frontend total (allow minor float diff)
+    if (Math.abs(parseFloat(totalAmount) - calculatedTotal) > 0.01) {
+      return res.status(400).json({ message: 'Total amount mismatch. Please refresh and try again.' });
+    }
+
+    const connection = await db.getConnection();
+    try {
+      await connection.beginTransaction();
+      const razorpayPaymentId = paymentDetails ? paymentDetails.razorpay_payment_id : null;
+      const [orderResult] = await connection.query(
+        'INSERT INTO orders (customer_id, address_id, order_date, order_status_id, total_amount, payment_method_id, tracking_number, updated_at, order_method_id, invoice_number, razorpay_payment_id, delivery_fee, order_tax_rate, order_tax_amount, shipment_details) VALUES (?, ?, NOW(), 1, ?, ?, NULL, NOW(), ?, NULL, ?, ?, ?, ?, ?)',
+        [customerId, addressId, calculatedTotal, paymentMethodId, orderMethodId, razorpayPaymentId, delivery_fee, overall_tax_rate, totalTax, JSON.stringify(shipment_details)]
+      );
+      const orderId = orderResult.insertId;
+      const orderDate = new Date();
+      const yy = orderDate.getFullYear().toString().slice(-2);
+      const mm = (orderDate.getMonth() + 1).toString().padStart(2, '0');
+      const dd = orderDate.getDate().toString().padStart(2, '0');
+      const invoiceNumber = `SFP${yy}${mm}${dd}${orderId}`;
+      await connection.query(`UPDATE orders SET invoice_number = ? WHERE id = ?`, [invoiceNumber, orderId]);
+      orderItemsValues = orderItemsValues.map(row => [orderId, ...row.slice(1)]);
+      if (orderItemsValues.length > 0) {
+        await connection.query(`
+          INSERT INTO order_items (
+            order_id, product_variant_id, quantity, price_at_purchase, subtotal, 
+            product_id, product_name, product_description, product_thumbnail_url, 
+            product_additional_images, product_category_id, product_category_name,
+            product_category_description, variant_quantity, 
+            variant_uom_id, variant_price
+          ) VALUES ?
+        `, [orderItemsValues]);
+      }
+      if (orderMethodId === 2) await connection.query('DELETE FROM cart_items WHERE customer_id = ?', [customerId]);
+      await connection.commit();
+      setImmediate(async () => {
+        try {
+          const { templateData, order } = await generateInvoiceData(orderId);
+          const pdfBuffer = await generatePDFfromHTMLTemplate(templateData);
+          await sendInvoiceEmail(order, templateData, pdfBuffer);
+        } catch (invoiceError) {
+          console.error(`Failed to send invoice for order ${orderId}:`, invoiceError);
+        }
+      });
+      res.status(201).json({ message: 'Order placed successfully', orderId, invoiceNumber });
+    } catch (err) {
+      await connection.rollback();
+      throw err;
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error('Place order error:', error);
+    if (error.name === 'JsonWebTokenError') return res.status(401).json({ message: 'Invalid token' });
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
+};
 exports.getOrders = async (req, res) => {
     const customerId = req.query.customerId;
     if (!customerId || isNaN(customerId)) return res.status(400).json({ message: 'Invalid or missing customer ID' });
@@ -559,7 +731,7 @@ exports.getOrders = async (req, res) => {
         const [customerExists] = await db.query('SELECT id, full_name, phone, email FROM customers WHERE id = ?', [parsedCustomerId]);
         if (customerExists.length === 0) return res.status(404).json({ message: 'Customer not found' });
         const customer = customerExists[0];
-        const ordersQuery = 'SELECT o.id AS order_id, o.customer_id, o.address_id, o.order_date, o.order_status_id, o.total_amount, o.payment_method_id, o.tracking_number, o.updated_at, o.order_method_id, o.invoice_number, a.street, a.city, a.state, a.zip_code, a.country, os.status AS order_status, pm.method AS payment_method, om.method AS order_method FROM orders o JOIN addresses a ON o.address_id = a.id JOIN order_status os ON o.order_status_id = os.id JOIN payment_methods pm ON o.payment_method_id = pm.id JOIN order_methods om ON o.order_method_id = om.id WHERE o.customer_id = ? ORDER BY o.order_date DESC';
+        const ordersQuery = 'SELECT o.id AS order_id, o.customer_id, o.address_id, o.order_date, o.order_status_id, o.total_amount, o.payment_method_id, o.tracking_number, o.updated_at, o.order_method_id, o.invoice_number, o.order_tax_rate, o.order_tax_amount, a.street, a.city, a.state, a.zip_code, a.country, os.status AS order_status, pm.method AS payment_method, om.method AS order_method FROM orders o JOIN addresses a ON o.address_id = a.id JOIN order_status os ON o.order_status_id = os.id JOIN payment_methods pm ON o.payment_method_id = pm.id JOIN order_methods om ON o.order_method_id = om.id WHERE o.customer_id = ? ORDER BY o.order_date DESC';
         const [orders] = await db.query(ordersQuery, [parsedCustomerId]);
         const itemsQuery = 'SELECT oi.order_id, oi.product_variant_id, oi.quantity, oi.price_at_purchase, oi.subtotal, oi.product_name AS name, oi.product_description AS description, oi.product_thumbnail_url AS thumbnail_url, oi.variant_quantity, oi.product_category_name AS category_name, um.uom_name FROM order_items oi LEFT JOIN uom_master um ON oi.variant_uom_id = um.id JOIN orders o ON oi.order_id = o.id WHERE o.customer_id = ?';
         const [itemsRows] = await db.query(itemsQuery, [parsedCustomerId]);
@@ -578,6 +750,9 @@ exports.getOrders = async (req, res) => {
             delete order.zip_code;
             delete order.country;
             order.customer = { full_name: customer.full_name, phone: customer.phone, email: customer.email };
+            // Ensure tax fields are floats for frontend
+            order.order_tax_rate = parseFloat(order.order_tax_rate || 0);
+            order.order_tax_amount = parseFloat(order.order_tax_amount || 0);
         }
         res.status(200).json(orders);
     } catch (error) {
@@ -690,4 +865,191 @@ exports.sendContactEmail = async (req, res) => {
         console.error('Error sending contact email:', error);
         res.status(500).json({ message: 'Failed to send email. Please try again later.' });
     }
+};
+
+
+
+exports.calculateDelivery = async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Unauthorized: No token provided' });
+  }
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
+    const { customerId: customerIdStr, addressId, items } = req.body;
+    const customerId = parseInt(customerIdStr, 10);
+    if (isNaN(customerId) || decoded.id !== customerId) {
+      return res.status(401).json({ message: 'Unauthorized: Invalid customer ID or token mismatch' });
+    }
+    if (!addressId || isNaN(addressId)) {
+      return res.status(400).json({ message: 'Valid addressId is required' });
+    }
+
+    let calcItems = [];
+    if (items && Array.isArray(items) && items.length > 0) {
+      // Use provided items (for buy_now)
+      calcItems = items.map(item => ({
+        variantId: parseInt(item.variantId),
+        quantity: parseInt(item.quantity)
+      })).filter(item => !isNaN(item.variantId) && !isNaN(item.quantity) && item.quantity > 0);
+      if (calcItems.length === 0) {
+        return res.json({ delivery_fee: 0, shipment_details: { uom_quantities: {}, total_quantity: 0 } });
+      }
+    } else {
+      // Fetch cart items (for cart flow)
+      const [cartRows] = await db.query(
+        'SELECT product_variant_id AS variantId, quantity FROM cart_items WHERE customer_id = ?',
+        [customerId]
+      );
+      calcItems = cartRows.map(row => ({
+        variantId: row.variantId,
+        quantity: row.quantity
+      })).filter(item => item.quantity > 0);
+      if (calcItems.length === 0) {
+        return res.json({ delivery_fee: 0, shipment_details: { uom_quantities: {}, total_quantity: 0 } });
+      }
+    }
+
+    // Fetch variant details
+    const variantIds = calcItems.map(item => item.variantId);
+    const [variantRows] = await db.query(
+      'SELECT id, variant_quantity, uom_id FROM product_variants WHERE id IN (?)',
+      [variantIds]
+    );
+    const variantMap = variantRows.reduce((map, row) => {
+      map[row.id] = {
+        variant_quantity: parseFloat(row.variant_quantity),
+        uom_id: parseInt(row.uom_id)
+      };
+      return map;
+    }, {});
+
+    // Compute uom_quantities (raw totals per uom) and total_quantity (in KG equivalent)
+    const uomQuantities = {};
+    let totalQuantity = 0;
+    for (const item of calcItems) {
+      const variantData = variantMap[item.variantId];
+      if (!variantData) continue;
+      const rawQty = variantData.variant_quantity * item.quantity;
+      const uomId = variantData.uom_id;
+
+      // Accumulate raw quantity per uom
+      if (!uomQuantities[uomId]) uomQuantities[uomId] = 0;
+      uomQuantities[uomId] += rawQty;
+
+      // Convert to KG equivalent for total
+      let kgQty = rawQty;
+      if (uomId === 2) { // Gram to KG
+        kgQty = rawQty / 1000;
+      }
+      // For uom_id 1 (KG) and 3 (Litre), treat as KG equivalent
+      totalQuantity += kgQty;
+    }
+    totalQuantity = parseFloat(totalQuantity.toFixed(2));
+
+    // Fetch state_id from address
+    const [addressRows] = await db.query(
+      'SELECT state_id FROM addresses WHERE id = ? AND customer_id = ?',
+      [addressId, customerId]
+    );
+    if (addressRows.length === 0) {
+      return res.status(404).json({ message: 'Address not found' });
+    }
+    const stateId = addressRows[0].state_id;
+
+    // Lookup delivery charge
+    const [chargeRows] = await db.query(
+      'SELECT delivery_charge FROM delivery_charge_master WHERE state_id = ? AND ? BETWEEN min_quantity AND max_quantity',
+      [stateId, totalQuantity]
+    );
+    const delivery_fee = chargeRows.length > 0 ? parseFloat(chargeRows[0].delivery_charge) : 0;
+
+    const shipment_details = {
+      uom_quantities: uomQuantities,
+      total_quantity: totalQuantity
+    };
+
+    res.status(200).json({
+      delivery_fee: parseFloat(delivery_fee.toFixed(2)),
+      shipment_details
+    });
+  } catch (error) {
+    console.error('Calculate delivery error:', error);
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+exports.getCustomerProduct = async (req, res) => {
+  const { id } = req.params;
+  const idNum = parseInt(id, 10);
+  if (isNaN(idNum)) {
+    return res.status(400).json({ message: "Invalid product ID" });
+  }
+  try {
+    // Get product details including tax_percentage
+    const [productRows] = await db.query(`
+      SELECT 
+        p.*,
+        c.name as category_name
+      FROM products p 
+      LEFT JOIN categories c ON p.category_id = c.id
+      WHERE p.id = ?
+    `, [idNum]);
+
+    if (productRows.length === 0) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    const data = productRows[0];
+
+    // Get variants
+    const [variantRows] = await db.query(`
+      SELECT 
+        pv.*,
+        um.uom_name
+      FROM product_variants pv 
+      LEFT JOIN uom_master um ON pv.uom_id = um.id
+      WHERE pv.product_id = ?
+    `, [idNum]);
+
+    const variants = variantRows.map((v) => ({
+      ...v,
+      id: v.id,
+      uom_id: v.uom_id != null ? String(v.uom_id) : undefined,
+      price: v.price != null ? Number(v.price) : undefined,
+      variant_quantity: v.quantity != null ? v.quantity : v.variant_quantity || "",
+      uom_name: v.uom_name || v.uom_name,
+    }));
+
+    const normalized = {
+      ...data,
+      price: data?.price != null ? Number(data.price) : (variants[0]?.price ?? 0),
+      thumbnail_url: data.thumbnail_url,
+      additional_images: Array.isArray(data.additional_images)
+        ? data.additional_images
+        : data.additional_images ? JSON.parse(data.additional_images || '[]') : [],
+      variants,
+      tax_percentage: parseFloat(data.tax_percentage || 0),
+    };
+
+    res.json(normalized);
+  } catch (error) {
+    console.error("Error fetching product:", error);
+    res.status(500).json({ message: "Server error" });
+  }
 };

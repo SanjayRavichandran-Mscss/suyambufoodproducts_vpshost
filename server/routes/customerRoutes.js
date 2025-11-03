@@ -22,6 +22,9 @@ router.post('/addresses', customerController.addAddress);
 router.put('/addresses', customerController.updateAddress);
 router.delete('/addresses', customerController.deleteAddress);
 
+// New routes for states and cities (public, no auth required)
+router.get('/states', customerController.getStates);
+router.get('/cities', customerController.getCities);
 // Customer details route
 router.get('/customer-details', customerController.getCustomerDetails);
 
@@ -43,5 +46,10 @@ router.get('/invoice/:orderId/data', customerController.getInvoiceData);
 
 // Contact form email route
 router.post('/contact', customerController.sendContactEmail);
+
+router.post('/calculate-delivery', customerController.calculateDelivery);
+
+
+router.get('/product/:id', customerController.getCustomerProduct);
 
 module.exports = router;

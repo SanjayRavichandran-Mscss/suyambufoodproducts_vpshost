@@ -1,4 +1,4 @@
-// import React, { useState, useEffect } from 'react';
+// import React, { useState, useEffect, useMemo } from 'react';
 // import { NavLink, useNavigate } from 'react-router-dom';
 // import { LayoutDashboard, Users, Boxes, Archive, ShoppingCart, LogOut } from 'lucide-react';
 
@@ -20,12 +20,27 @@
 //   const [profile, setProfile] = useState({ id: '', full_name: '', email: '' });
 //   const [showLogout, setShowLogout] = useState(false);
 
+//   // Decode the encoded adminId to plain ID safely
+//   const plainId = useMemo(() => {
+//     if (!adminId) return null;
+//     if (/^\d+$/.test(adminId)) return adminId; // If already numeric, use as is
+//     try {
+//       const decoded = atob(adminId);
+//       const num = parseInt(decoded, 10);
+//       if (isNaN(num)) return null;
+//       return num.toString();
+//     } catch (e) {
+//       console.error('Invalid base64 adminId:', adminId, e);
+//       return null;
+//     }
+//   }, [adminId]);
+
 //   // Fetch admin profile
 //   useEffect(() => {
-//     if (!adminId) return;
+//     if (!plainId) return;
 //     const fetchProfile = async () => {
 //       try {
-//         const response = await fetch(`https://suyambufoods.com/api/admin/profile/${adminId}`);
+//         const response = await fetch(`http://localhost:5000/admin/profile/${plainId}`);
 //         const data = await response.json();
 //         if (response.ok) {
 //           setProfile(data);
@@ -37,13 +52,21 @@
 //       }
 //     };
 //     fetchProfile();
-//   }, [adminId]);
+//   }, [plainId]);
 
 //   const handleLogout = () => {
 //     localStorage.removeItem("adminToken");
 //     localStorage.removeItem("adminId");
 //     navigate("/adminlogin", { replace: true });
 //   };
+
+//   if (!plainId) {
+//     // Optionally redirect to login if no valid ID
+//     useEffect(() => {
+//       navigate("/adminlogin", { replace: true });
+//     }, []);
+//     return null; // or handle error state
+//   }
 
 //   return (
 //     <>
@@ -62,7 +85,7 @@
 //           {menus.map(({ key, label, icon: Icon, path }) => (
 //             <NavLink
 //               key={key}
-//               to={`/admin/${path}?adminId=${btoa(adminId)}`}
+//               to={`/admin/${path}?adminId=${btoa(plainId)}`}
 //               className={({ isActive }) =>
 //                 `flex items-center gap-1 lg:gap-2 px-3 lg:px-4 py-2 text-sm lg:text-base rounded-full transition-colors ${
 //                   isActive ? menuActive : menuDefault
@@ -82,7 +105,7 @@
 //           onClick={() => setShowLogout(!showLogout)}
 //         >
 //           <span className="text-gray-700 font-semibold text-xs sm:text-sm lg:text-base">{profile.full_name || 'Admin'}</span>
-//           <span className="text-gray-500 text-xs lg:text-sm break-all">{profile.email || 'email@example.com'}</span>
+//           <span className="text-gray-500 text-xs sm:text-sm break-all">{profile.email || 'email@example.com'}</span>
 //           {showLogout && (
 //             <button
 //               onClick={handleLogout}
@@ -101,7 +124,7 @@
 //           {menus.map(({ key, label, icon: Icon, path }) => (
 //             <NavLink
 //               key={key}
-//               to={`/admin/${path}?adminId=${btoa(adminId)}`}
+//               to={`/admin/${path}?adminId=${btoa(plainId)}`}
 //               className={({ isActive }) =>
 //                 `flex flex-col items-center gap-1 transition-all min-w-0 ${
 //                   isActive ? bottomMenuActive : bottomMenuDefault
@@ -125,9 +148,18 @@
 
 
 
-import React, { useState, useEffect, useMemo } from 'react';
+
+
+
+
+
+
+
+
+
+import React, { useEffect, useState, useMemo } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Boxes, Archive, ShoppingCart, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, Boxes, Archive, ShoppingCart, Package, LogOut } from 'lucide-react';
 
 const menus = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "dashboard" },
@@ -135,6 +167,7 @@ const menus = [
   { key: "categories", label: "Categories", icon: Boxes, path: "categories" },
   { key: "products", label: "Products", icon: Archive, path: "products" },
   { key: "orders", label: "Orders", icon: ShoppingCart, path: "orders" },
+  { key: "delivery-charges", label: "Delivery Charge", icon: Package, path: "delivery-charges" },
 ];
 
 const menuActive = "bg-[#69D84F] text-white shadow font-semibold";
@@ -167,7 +200,7 @@ export default function AdminMenus({ adminId }) {
     if (!plainId) return;
     const fetchProfile = async () => {
       try {
-        const response = await fetch(`https://suyambufoods.com/api/admin/profile/${plainId}`);
+        const response = await fetch(`http://localhost:5000/admin/profile/${plainId}`);
         const data = await response.json();
         if (response.ok) {
           setProfile(data);

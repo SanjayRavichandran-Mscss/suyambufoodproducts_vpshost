@@ -4,7 +4,7 @@
   const path = require("path");
   const fs = require("fs");
 
-  const IMAGE_BASE = "https://suyambufoods.com/api";
+  const IMAGE_BASE = "http://localhost:5000";
 
   /* ----------------------- AUTH ----------------------- */
   exports.login = async (req, res) => {
@@ -36,7 +36,7 @@
       const token = jwt.sign(
         { id: admin.id, username: admin.username, email: admin.email },
         process.env.JWT_SECRET || "your_jwt_secret",
-        { expiresIn: "1h" }
+        { expiresIn: "1d" }
       );
 
       return res.status(200).json({
@@ -204,19 +204,24 @@ const productUploadWrapper = (req, res, next) => {
   });
 };
 /* ----------------------- PRODUCTS ----------------------- */
-
 // Updated addProduct module
 exports.addProduct = [
   productUploadWrapper,
   async (req, res) => {
     try {
-      const { name, description, category_id, stock_status_id, isBanner = "0" } = req.body;
+      const { name, description, category_id, stock_status_id, isBanner = "0", tax_percentage = "0" } = req.body;
       const quantities = req.body.quantity || [];
       const uom_ids = req.body.uom_id || [];
       const prices = req.body.price || [];
 
       if (!name || !category_id || !stock_status_id) {
         return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // NEW: Validate and parse tax_percentage
+      const taxPerc = parseFloat(tax_percentage);
+      if (isNaN(taxPerc) || taxPerc < 0 || taxPerc > 100) {
+        return res.status(400).json({ error: "tax_percentage must be a valid decimal between 0 and 100" });
       }
 
       // Ensure arrays
@@ -234,8 +239,8 @@ exports.addProduct = [
       let additional_images = req.files?.additional_images?.map(f => `/productImages/${f.filename}`) || [];
 
       const sql = `
-        INSERT INTO products (name, description, thumbnail_url, additional_images, category_id, admin_id, created_at, updated_at, stock_status_id, isBanner, bannerimg)
-        VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?, ?)
+        INSERT INTO products (name, description, thumbnail_url, additional_images, category_id, admin_id, created_at, updated_at, stock_status_id, isBanner, bannerimg, tax_percentage)
+        VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?, ?, ?)
       `;
       const [result] = await db.query(sql, [
         name,
@@ -247,6 +252,7 @@ exports.addProduct = [
         stock_status_id,
         isBanner === "true" ? 1 : 0,
         bannerimg,
+        taxPerc, // NEW
       ]);
 
       const productId = result.insertId;
@@ -287,13 +293,19 @@ exports.updateProduct = [
   async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, description, category_id, stock_status_id, isBanner = "0", existing_additional_images } = req.body;
+      const { name, description, category_id, stock_status_id, isBanner = "0", tax_percentage = "0", existing_additional_images } = req.body;
       const quantities = req.body.quantity || [];
       const uom_ids = req.body.uom_id || [];
       const prices = req.body.price || [];
 
       if (!name || !category_id || !stock_status_id) {
         return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // NEW: Validate and parse tax_percentage
+      const taxPerc = parseFloat(tax_percentage);
+      if (isNaN(taxPerc) || taxPerc < 0 || taxPerc > 100) {
+        return res.status(400).json({ error: "tax_percentage must be a valid decimal between 0 and 100" });
       }
 
       const [existing] = await db.query("SELECT * FROM products WHERE id = ?", [id]);
@@ -324,7 +336,7 @@ exports.updateProduct = [
       let additional_images = [...existingAdditional, ...newAdditional];
 
       await db.query(
-        `UPDATE products SET name=?, description=?, thumbnail_url=?, additional_images=?, category_id=?, stock_status_id=?, updated_at=NOW(), isBanner=?, bannerimg=? WHERE id=?`,
+        `UPDATE products SET name=?, description=?, thumbnail_url=?, additional_images=?, category_id=?, stock_status_id=?, updated_at=NOW(), isBanner=?, bannerimg=?, tax_percentage=? WHERE id=?`,
         [
           name,
           description || null,
@@ -334,6 +346,7 @@ exports.updateProduct = [
           stock_status_id,
           isBanner === "true" ? 1 : 0,
           bannerimg,
+          taxPerc, // NEW
           id,
         ]
       );
@@ -376,8 +389,7 @@ exports.updateProduct = [
       res.status(500).json({ error: "Internal server error", details: error.message });
     }
   },
-];
-
+];  
 
 
   exports.deleteProduct = async (req, res) => {
@@ -697,99 +709,99 @@ exports.viewProducts = async (req, res) => {
   };
 
 
-  exports.getAllOrders = async (req, res) => {
-    try {
-      const ordersQuery = `
-        SELECT o.id AS order_id, o.customer_id, o.address_id, o.order_date, o.order_status_id, 
-              o.total_amount, o.payment_method_id, o.tracking_number, o.updated_at, o.order_method_id,
-              o.invoice_number,
-              a.street, a.city, a.state, a.zip_code, a.country,
-              os.status AS order_status,
-              pm.method AS payment_method,
-              om.method AS order_method,
-              c.username, c.full_name, c.phone, c.email, c.created_at, c.updated_at
-        FROM orders o
-        JOIN addresses a ON o.address_id = a.id
-        JOIN order_status os ON o.order_status_id = os.id
-        JOIN payment_methods pm ON o.payment_method_id = pm.id
-        JOIN order_methods om ON o.order_method_id = om.id
-        JOIN customers c ON o.customer_id = c.id
-        ORDER BY o.order_date DESC
-      `;
-      const [orders] = await db.query(ordersQuery);
+exports.getAllOrders = async (req, res) => {
+  try {
+    const ordersQuery = `
+      SELECT o.id AS order_id, o.customer_id, o.address_id, o.order_date, o.order_status_id, 
+            o.total_amount, o.payment_method_id, o.tracking_number, o.updated_at, o.order_method_id,
+            o.invoice_number,
+            a.street, ct.name AS city, s.name AS state, a.zip_code, a.country,
+            os.status AS order_status,
+            pm.method AS payment_method,
+            om.method AS order_method,
+            c.username, c.full_name, c.phone, c.email, c.created_at, c.updated_at
+      FROM orders o
+      JOIN addresses a ON o.address_id = a.id
+      JOIN cities ct ON a.city_id = ct.id
+      JOIN states s ON a.state_id = s.id
+      JOIN order_status os ON o.order_status_id = os.id
+      JOIN payment_methods pm ON o.payment_method_id = pm.id
+      JOIN order_methods om ON o.order_method_id = om.id
+      JOIN customers c ON o.customer_id = c.id
+      ORDER BY o.order_date DESC
+    `;
+    const [orders] = await db.query(ordersQuery);
 
-      // Fetch all available order statuses
-      const [statusRows] = await db.query('SELECT status FROM order_status ORDER BY id');
-      const statuses = statusRows.map(row => row.status);
+    // Fetch all available order statuses
+    const [statusRows] = await db.query('SELECT status FROM order_status ORDER BY id');
+    const statuses = statusRows.map(row => row.status);
 
-      const itemsQuery = `
-        SELECT oi.order_id, oi.product_variant_id, oi.quantity, oi.price_at_purchase, oi.subtotal,
-              oi.product_name AS name, oi.product_description AS description, oi.product_thumbnail_url AS thumbnail_url, 
-              oi.variant_quantity, oi.product_category_name AS category_name, um.uom_name
-        FROM order_items oi
-        LEFT JOIN uom_master um ON oi.variant_uom_id = um.id
-      `;
-      const [itemsRows] = await db.query(itemsQuery);
+    const itemsQuery = `
+      SELECT oi.order_id, oi.product_variant_id, oi.quantity, oi.price_at_purchase, oi.subtotal,
+            oi.product_name AS name, oi.product_description AS description, oi.product_thumbnail_url AS thumbnail_url, 
+            oi.variant_quantity, oi.product_category_name AS category_name, um.uom_name
+      FROM order_items oi
+      LEFT JOIN uom_master um ON oi.variant_uom_id = um.id
+    `;
+    const [itemsRows] = await db.query(itemsQuery);
 
-      const itemsMap = {};
-      for (const row of itemsRows) {
-        const orderId = row.order_id;
-        if (!itemsMap[orderId]) {
-          itemsMap[orderId] = [];
-        }
-        itemsMap[orderId].push({
-          product_variant_id: row.product_variant_id,
-          quantity: row.quantity,
-          price_at_purchase: row.price_at_purchase,
-          subtotal: row.subtotal,
-          name: row.name,
-          description: row.description,
-          thumbnail_url: row.thumbnail_url,
-          variant_quantity: row.variant_quantity,
-          category_name: row.category_name,
-          uom_name: row.uom_name
-        });
+    const itemsMap = {};
+    for (const row of itemsRows) {
+      const orderId = row.order_id;
+      if (!itemsMap[orderId]) {
+        itemsMap[orderId] = [];
       }
-
-      for (let order of orders) {
-        order.items = itemsMap[order.order_id] || [];
-        order.address = {
-          street: order.street || 'N/A',
-          city: order.city || 'N/A',
-          state: order.state || 'N/A',
-          zip_code: order.zip_code || 'N/A',
-          country: order.country || 'N/A'
-        };
-        delete order.street;
-        delete order.city;
-        delete order.state;
-        delete order.zip_code;
-        delete order.country;
-
-        order.customer = {
-          username: order.username || 'N/A',
-          full_name: order.full_name || 'N/A',
-          phone: order.phone || 'N/A',
-          email: order.email || 'N/A',
-          created_at: order.created_at || 'N/A',
-          updated_at: order.updated_at || 'N/A'
-        };
-        delete order.username;
-        delete order.full_name;
-        delete order.phone;
-        delete order.email;
-        delete order.created_at;
-        delete order.updated_at;
-      }
-
-      res.status(200).json({ orders, statuses });
-    } catch (error) {
-      console.error('Get all orders error:', error);
-      res.status(500).json({ message: 'Server error: ' + error.message });
+      itemsMap[orderId].push({
+        product_variant_id: row.product_variant_id,
+        quantity: row.quantity,
+        price_at_purchase: row.price_at_purchase,
+        subtotal: row.subtotal,
+        name: row.name,
+        description: row.description,
+        thumbnail_url: row.thumbnail_url,
+        variant_quantity: row.variant_quantity,
+        category_name: row.category_name,
+        uom_name: row.uom_name
+      });
     }
-  };
 
+    for (let order of orders) {
+      order.items = itemsMap[order.order_id] || [];
+      order.address = {
+        street: order.street || 'N/A',
+        city: order.city || 'N/A',
+        state: order.state || 'N/A',
+        zip_code: order.zip_code || 'N/A',
+        country: order.country || 'N/A'
+      };
+      delete order.street;
+      delete order.city;
+      delete order.state;
+      delete order.zip_code;
+      delete order.country;
 
+      order.customer = {
+        username: order.username || 'N/A',
+        full_name: order.full_name || 'N/A',
+        phone: order.phone || 'N/A',
+        email: order.email || 'N/A',
+        created_at: order.created_at || 'N/A',
+        updated_at: order.updated_at || 'N/A'
+      };
+      delete order.username;
+      delete order.full_name;
+      delete order.phone;
+      delete order.email;
+      delete order.created_at;
+      delete order.updated_at;
+    }
+
+    res.status(200).json({ orders, statuses });
+  } catch (error) {
+    console.error('Get all orders error:', error);
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
+};
 
 
   // In adminController.js, add this new export
@@ -1000,6 +1012,84 @@ exports.getBannerProducts = async (req, res) => {
     return res.status(200).json(bannerProducts);
   } catch (error) {
     console.error("❌ Error fetching banner products:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+
+
+
+
+// Updated adminController.js - Add these new exports at the end (before the closing export)
+exports.getDeliveryCharges = async (req, res) => {
+  console.log("🟢 getDeliveryCharges called");
+  try {
+    const [rows] = await db.query(`
+      SELECT dcm.id, dcm.state_id, s.name AS state_name, dcm.min_quantity, dcm.max_quantity, 
+             dcm.delivery_charge, dcm.created_at, dcm.updated_at
+      FROM delivery_charge_master dcm
+      JOIN states s ON dcm.state_id = s.id
+      ORDER BY s.name ASC, dcm.min_quantity ASC
+    `);
+    return res.status(200).json(rows);
+  } catch (error) {
+    console.error("❌ Error fetching delivery charges:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+exports.addDeliveryCharge = async (req, res) => {
+  console.log("🟢 addDeliveryCharge called with body:", req.body);
+  try {
+    const { state_id, min_quantity, max_quantity, delivery_charge } = req.body;
+    if (!state_id || !min_quantity || !max_quantity || !delivery_charge) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+    if (parseFloat(min_quantity) > parseFloat(max_quantity)) {
+      return res.status(400).json({ error: "Min quantity cannot be greater than max quantity" });
+    }
+    const [result] = await db.query(
+      `INSERT INTO delivery_charge_master (state_id, min_quantity, max_quantity, delivery_charge, created_at, updated_at) 
+       VALUES (?, ?, ?, ?, NOW(), NOW())`,
+      [state_id, min_quantity, max_quantity, delivery_charge]
+    );
+    return res.status(201).json({ message: "Delivery charge added", id: result.insertId });
+  } catch (error) {
+    console.error("❌ Error adding delivery charge:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+exports.updateDeliveryCharge = async (req, res) => {
+  console.log("🟢 updateDeliveryCharge called with params:", req.params, "body:", req.body);
+  try {
+    const { id } = req.params;
+    const { state_id, min_quantity, max_quantity, delivery_charge } = req.body;
+    if (!state_id || !min_quantity || !max_quantity || !delivery_charge) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+    if (parseFloat(min_quantity) > parseFloat(max_quantity)) {
+      return res.status(400).json({ error: "Min quantity cannot be greater than max quantity" });
+    }
+    await db.query(
+      `UPDATE delivery_charge_master SET state_id=?, min_quantity=?, max_quantity=?, delivery_charge=?, updated_at=NOW() WHERE id=?`,
+      [state_id, min_quantity, max_quantity, delivery_charge, id]
+    );
+    return res.status(200).json({ message: "Delivery charge updated" });
+  } catch (error) {
+    console.error("❌ Error updating delivery charge:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+exports.deleteDeliveryCharge = async (req, res) => {
+  console.log("🟢 deleteDeliveryCharge called with params:", req.params);
+  try {
+    const { id } = req.params;
+    await db.query("DELETE FROM delivery_charge_master WHERE id=?", [id]);
+    return res.status(200).json({ message: "Delivery charge deleted" });
+  } catch (error) {
+    console.error("❌ Error deleting delivery charge:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 };

@@ -4,6 +4,10 @@ import Cart from "./Cart";
 
 const OrderSummary = ({
   items,
+  subtotal,
+  tax: totalTax,
+  shipping,
+  total,
   orderMethod,
   selectedPaymentMethodId,
   showEditButtons = false,
@@ -11,19 +15,11 @@ const OrderSummary = ({
   fetchCart,
   updateQuantity,
   handleRemoveItem,
+  isSidebar = false, // Optional prop from CheckoutPage
 }) => {
-  const baseUrl = "https://suyambufoods.com/api";
+  const baseUrl = "http://localhost:5000";
   const [showCartModal, setShowCartModal] = useState(false);
   const [cartAnimation, setCartAnimation] = useState("");
-
-  const subtotal = items.reduce((sum, item) => {
-    if (item.stock_status_id !== 2) {
-      return sum + (parseFloat(item.price) || 0) * (item.quantity || 1);
-    }
-    return sum;
-  }, 0);
-  const shipping = subtotal > 999 ? 0 : 100;
-  const total = subtotal + shipping;
 
   const paymentMethodDisplay =
     selectedPaymentMethodId === 1
@@ -55,7 +51,7 @@ const OrderSummary = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 mb-6 border border-gray-100">
+    <div className={`bg-white rounded-xl shadow-lg p-6 mb-6 border border-gray-100 ${isSidebar ? 'sticky top-6' : ''}`}>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <ShoppingBag size={24} className="text-green-600" />
@@ -81,6 +77,9 @@ const OrderSummary = ({
             const productName = item.product_name || "Unknown Product";
             const unit = item.uom_name || item.unit || "item";
             const variantQuantity = item.variant_quantity || "";
+            const taxPerc = parseFloat(item.tax_percentage || 0);
+            const taxAmount = (price * quantity * taxPerc / 100).toFixed(2);
+            const itemSubtotal = (price * quantity).toFixed(2);
             const isOutOfStock = item.stock_status_id === 2;
 
             return (
@@ -107,12 +106,15 @@ const OrderSummary = ({
                   <p className="font-medium text-gray-900">
                     {productName} {variantQuantity && `- ${variantQuantity} ${unit}`}
                   </p>
-                  <div className="text-sm text-gray-600 mt-1">
+                  <div className="text-sm text-gray-600 mt-1 space-y-1">
                     <p>
                       <span className="font-medium">Price:</span> ₹{price.toFixed(2)} per {unit}
                     </p>
                     <p>
                       <span className="font-medium">Quantity:</span> {quantity}
+                    </p>
+                    <p>
+                      <span className="font-medium">Tax ({taxPerc.toFixed(2)}%):</span> ₹{taxAmount}
                     </p>
                     {isOutOfStock && (
                       <p className="text-red-600 font-medium">
@@ -121,9 +123,12 @@ const OrderSummary = ({
                     )}
                   </div>
                 </div>
-                <p className="font-semibold text-[#B6895B]">
-                  ₹{(price * quantity).toFixed(2)}
-                </p>
+                <div className="text-right">
+                  <p className="font-semibold text-[#B6895B]">₹{itemSubtotal}</p>
+                  {taxAmount !== "0.00" && (
+                    <p className="text-xs text-gray-500">+ Tax: ₹{taxAmount}</p>
+                  )}
+                </div>
               </div>
             );
           })
@@ -135,12 +140,19 @@ const OrderSummary = ({
             <span className="text-lg font-extrabold text-[#B6895B]">₹{subtotal.toFixed(2)}</span>
           </div>
           <div className="flex justify-between text-gray-700 mb-2">
+            <span>Total Tax ({items.reduce((sum, item) => {
+              const taxPerc = parseFloat(item.tax_percentage || 0);
+              return taxPerc > 0 ? taxPerc : sum;
+            }, 0).toFixed(2)}%)</span>
+            <span className="text-lg font-extrabold text-[#B6895B]">₹{totalTax.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between text-gray-700 mb-2">
             <span>Shipping</span>
             <span>{shipping === 0 ? "Free" : `₹${shipping.toFixed(2)}`}</span>
           </div>
-          <div className="flex justify-between font-semibold text-gray-900">
+          <div className="flex justify-between font-semibold text-gray-900 border-t pt-2">
             <span>Total</span>
-            <span>₹{total.toFixed(2)}</span>
+            <span className="text-2xl text-[#B6895B]">₹{total.toFixed(2)}</span>
           </div>
           {typeof orderMethod !== "undefined" && (
             <>

@@ -1,3 +1,4 @@
+// Updated SingleProduct.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -12,7 +13,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 
-const IMAGE_BASE = "https://suyambufoods.com/api";
+const IMAGE_BASE = "http://localhost:5000";
 
 // Keep the same magnifier CSS (unchanged logic)
 const magnifierStyles = `
@@ -58,7 +59,7 @@ export default function SingleProduct({
     setSelectedVariantId(variantId ? String(variantId) : null);
   }, [location.search]);
 
-  // Fetch product (logic unchanged, but allow display without login check)
+  // Fetch product (updated URL to /customer/product/ for tax inclusion)
   useEffect(() => {
     if (!productId) {
       setError("Invalid product ID");
@@ -73,7 +74,7 @@ export default function SingleProduct({
     }
 
     axios
-      .get(`https://suyambufoods.com/api/admin/products/${idNum}`, {
+      .get(`http://localhost:5000/customer/product/${idNum}`, {
         headers: { Origin: "http://localhost:5173" },
       })
       .then((res) => {
@@ -159,7 +160,7 @@ export default function SingleProduct({
 
     if (item) {
       axios
-        .put("https://suyambufoods.com/api/customer/cart", body, {
+        .put("http://localhost:5000/customer/cart", body, {
           headers: { Origin: "http://localhost:5173" },
         })
         .then(() => {
@@ -169,7 +170,7 @@ export default function SingleProduct({
         .catch(() => showMessage("Failed to update cart"));
     } else {
       axios
-        .post("https://suyambufoods.com/api/customer/cart", body, {
+        .post("http://localhost:5000/customer/cart", body, {
           headers: { Origin: "http://localhost:5173" },
         })
         .then(() => {
@@ -199,9 +200,31 @@ export default function SingleProduct({
       (it) => String(it.variant_id) === String(selectedVariant.id)
     );
 
+    // Prepare buyNowData with current variant details and tax_percentage
+    const displayPrice =
+      selectedVariant?.price != null
+        ? Number(selectedVariant.price)
+        : typeof product.price === "number"
+        ? product.price
+        : 0;
+    const buyNowData = {
+      id: product.id,
+      product_id: product.id,
+      name: product.name,
+      price: displayPrice,
+      thumbnail_url: product.thumbnail_url,
+      stock_quantity: product.stock_quantity,
+      variant_id: selectedVariant.id,
+      variant_quantity: selectedVariant.variant_quantity || "",
+      uom_name: selectedVariant.uom_name || "",
+      uom_id: selectedVariant.uom_id || 0,
+      tax_percentage: parseFloat(product.tax_percentage || 0),
+      quantity,
+    };
+
     if (!item) {
       axios
-        .post("https://suyambufoods.com/api/customer/cart", body, {
+        .post("http://localhost:5000/customer/cart", body, {
           headers: { Origin: "http://localhost:5173" },
         })
         .then(() => {
@@ -210,7 +233,7 @@ export default function SingleProduct({
             `/checkout?customerId=${encodedCustomerId}&identifier=buy_now`,
             {
               state: {
-                product: { ...product, quantity, variant_id: selectedVariant.id },
+                product: buyNowData,
                 orderMethod: "buy_now",
               },
             }
@@ -220,7 +243,7 @@ export default function SingleProduct({
     } else {
       navigate(`/checkout?customerId=${encodedCustomerId}&identifier=buy_now`, {
         state: {
-          product: { ...product, quantity, variant_id: selectedVariant.id },
+          product: buyNowData,
           orderMethod: "buy_now",
         },
       });

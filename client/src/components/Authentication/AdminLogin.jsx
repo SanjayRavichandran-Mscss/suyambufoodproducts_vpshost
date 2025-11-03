@@ -21,7 +21,7 @@ export default function AdminLogin({ onCustomerLoginClick, onClose }) {
 
     try {
       console.log("Submitting admin login with:", form.login);
-      const res = await axios.post("https://suyambufoods.com/api/admin/login", form);
+      const res = await axios.post("http://localhost:5000/admin/login", form);
 
       if (!res.data || !res.data.token || !res.data.adminId) {
         console.error("Admin login response invalid:", res.data);
