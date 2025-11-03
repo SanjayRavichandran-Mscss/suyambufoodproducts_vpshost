@@ -67,11 +67,13 @@ async function generateInvoiceData(orderId) {
         o.id AS order_id, o.customer_id, o.order_date, o.total_amount, o.tracking_number, o.invoice_number, o.delivery_fee,
         o.order_tax_amount, o.order_tax_rate,
         c.full_name as customer_name, c.email as customer_email, c.phone as customer_mobile,
-        CONCAT(a.street, ', ', a.city, ', ', a.state, ' ', a.zip_code, ', ', a.country) as delivery_address,
+        CONCAT(a.street, ', ', c.name, ', ', s.name, ' ', a.zip_code, ', ', a.country) as delivery_address,
         pm.method as payment_method, os.status as order_status, om.method as order_method
       FROM orders o
       JOIN customers c ON o.customer_id = c.id
       JOIN addresses a ON o.address_id = a.id
+      JOIN cities c ON a.city_id = c.id
+      JOIN states s ON a.state_id = s.id
       JOIN payment_methods pm ON o.payment_method_id = pm.id
       JOIN order_status os ON o.order_status_id = os.id
       JOIN order_methods om ON o.order_method_id = om.id
@@ -141,7 +143,6 @@ async function generateInvoiceData(orderId) {
     throw error;
   }
 }
-
 async function generatePDFfromHTMLTemplate(templateData) {
     try {
         const templatePath = path.join(__dirname, '../EmailTemplates/InvoicePDF.html');
@@ -723,6 +724,7 @@ exports.placeOrder = async (req, res) => {
     res.status(500).json({ message: 'Server error: ' + error.message });
   }
 };
+
 exports.getOrders = async (req, res) => {
     const customerId = req.query.customerId;
     if (!customerId || isNaN(customerId)) return res.status(400).json({ message: 'Invalid or missing customer ID' });
@@ -731,7 +733,7 @@ exports.getOrders = async (req, res) => {
         const [customerExists] = await db.query('SELECT id, full_name, phone, email FROM customers WHERE id = ?', [parsedCustomerId]);
         if (customerExists.length === 0) return res.status(404).json({ message: 'Customer not found' });
         const customer = customerExists[0];
-        const ordersQuery = 'SELECT o.id AS order_id, o.customer_id, o.address_id, o.order_date, o.order_status_id, o.total_amount, o.payment_method_id, o.tracking_number, o.updated_at, o.order_method_id, o.invoice_number, o.order_tax_rate, o.order_tax_amount, a.street, a.city, a.state, a.zip_code, a.country, os.status AS order_status, pm.method AS payment_method, om.method AS order_method FROM orders o JOIN addresses a ON o.address_id = a.id JOIN order_status os ON o.order_status_id = os.id JOIN payment_methods pm ON o.payment_method_id = pm.id JOIN order_methods om ON o.order_method_id = om.id WHERE o.customer_id = ? ORDER BY o.order_date DESC';
+        const ordersQuery = `SELECT o.id AS order_id, o.customer_id, o.address_id, o.order_date, o.order_status_id, o.total_amount, o.payment_method_id, o.tracking_number, o.updated_at, o.order_method_id, o.invoice_number, o.order_tax_rate, o.order_tax_amount, a.street, c.name AS city, s.name AS state, a.zip_code, a.country, os.status AS order_status, pm.method AS payment_method, om.method AS order_method FROM orders o JOIN addresses a ON o.address_id = a.id JOIN cities c ON a.city_id = c.id JOIN states s ON a.state_id = s.id JOIN order_status os ON o.order_status_id = os.id JOIN payment_methods pm ON o.payment_method_id = pm.id JOIN order_methods om ON o.order_method_id = om.id WHERE o.customer_id = ? ORDER BY o.order_date DESC`;
         const [orders] = await db.query(ordersQuery, [parsedCustomerId]);
         const itemsQuery = 'SELECT oi.order_id, oi.product_variant_id, oi.quantity, oi.price_at_purchase, oi.subtotal, oi.product_name AS name, oi.product_description AS description, oi.product_thumbnail_url AS thumbnail_url, oi.variant_quantity, oi.product_category_name AS category_name, um.uom_name FROM order_items oi LEFT JOIN uom_master um ON oi.variant_uom_id = um.id JOIN orders o ON oi.order_id = o.id WHERE o.customer_id = ?';
         const [itemsRows] = await db.query(itemsQuery, [parsedCustomerId]);
