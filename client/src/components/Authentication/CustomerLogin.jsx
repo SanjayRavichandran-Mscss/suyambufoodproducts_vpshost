@@ -1,20 +1,17 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { User, Eye, EyeOff, X } from "lucide-react";
-// Import the registration component
+import { User, Eye, EyeOff } from "lucide-react"; // X removed
 import CustomerRegister from "./CustomerRegister";
 
 export default function CustomerLogin({ onClose }) {
-  // State to toggle between Login and Register views
   const [showRegister, setShowRegister] = useState(false);
 
-  // States for the login form
   const [form, setForm] = useState({ login: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  
+
   const navigate = useNavigate();
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
@@ -23,22 +20,20 @@ export default function CustomerLogin({ onClose }) {
     e.preventDefault();
     setError("");
     setLoading(true);
-    
+
     try {
       const res = await axios.post("https://suyambufoods.com/api/customer/login", form);
-      
+
       if (!res.data || !res.data.token || !res.data.customerId) {
         setError("Login failed. Please try again.");
         setLoading(false);
         return;
       }
-      
+
       localStorage.setItem("customerToken", res.data.token);
       localStorage.setItem("customerId", res.data.customerId);
-      
-      // On successful login, refresh the page to update the app's state
-      window.location.href = "/";
 
+      window.location.href = "/";
     } catch (err) {
       const errorMessage = err.response?.data?.message || "Login failed.";
       setError(errorMessage);
@@ -46,19 +41,10 @@ export default function CustomerLogin({ onClose }) {
     }
   };
 
-  // This function is now used to show the register component
-  const handleRegisterClick = () => {
-    setShowRegister(true);
-  };
+  const handleRegisterClick = () => setShowRegister(true);
+  const handleShowLogin = () => setShowRegister(false);
 
-  // This function is passed to the register component to switch back to login
-  const handleShowLogin = () => {
-    setShowRegister(false);
-  };
-
-  // Conditionally render the Register or Login component
   if (showRegister) {
-    // The onClose prop now calls handleShowLogin to return to the login view
     return <CustomerRegister onLoginClick={handleShowLogin} onClose={onClose} />;
   }
 
@@ -66,15 +52,16 @@ export default function CustomerLogin({ onClose }) {
     <div className="h-full flex flex-col bg-white">
       <div className="flex items-center justify-between p-4 border-b">
         <h2 className="text-xl font-semibold text-gray-800">Welcome Back</h2>
-        <button
+        {/* Remove this button if parent modal already provides a close/X */}
+        {/* <button
           type="button"
           onClick={onClose}
           className="p-1 rounded-md hover:bg-gray-100 transition-colors"
         >
           <X size={20} className="text-gray-400" />
-        </button>
+        </button> */}
       </div>
-      
+
       <div className="flex-1 overflow-y-auto p-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -92,7 +79,6 @@ export default function CustomerLogin({ onClose }) {
               required
             />
           </div>
-          
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
               Password
@@ -121,7 +107,6 @@ export default function CustomerLogin({ onClose }) {
               </button>
             </div>
           </div>
-          
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <input
@@ -138,7 +123,6 @@ export default function CustomerLogin({ onClose }) {
               Forgot password?
             </button>
           </div>
-          
           <button 
             type="submit" 
             disabled={loading}
@@ -146,25 +130,23 @@ export default function CustomerLogin({ onClose }) {
           >
             {loading ? "Signing in..." : "Sign in"}
           </button>
-          
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
               {error}
             </div>
           )}
         </form>
-
         <div className="text-center mt-6">
-            <p className="text-sm text-gray-600">
-                New user?{' '}
-                <button
-                    type="button"
-                    onClick={handleRegisterClick}
-                    className="font-medium text-green-600 hover:text-green-700"
-                >
-                    Create an account
-                </button>
-            </p>
+          <p className="text-sm text-gray-600">
+            New user?{' '}
+            <button
+              type="button"
+              onClick={handleRegisterClick}
+              className="font-medium text-green-600 hover:text-green-700"
+            >
+              Create an account
+            </button>
+          </p>
         </div>
       </div>
     </div>

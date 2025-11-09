@@ -173,7 +173,7 @@ const ManageCategories = () => {
       {/* Modal */}
       {modalOpen && (
         <div
-          className="fixed inset-0 backdrop-blur-sm bg-black bg-opacity-30 flex justify-center items-center z-50 p-4"
+          className="fixed inset-0 backdrop-blur-sm backdrop-blur-2xl bg-opacity-30 flex justify-center items-center z-50 p-4"
           onClick={closeModal}
         >
           <div

@@ -1,4 +1,3 @@
-// Updated SingleProduct.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -17,7 +16,7 @@ const IMAGE_BASE = "https://suyambufoods.com/api";
 
 // Keep the same magnifier CSS (unchanged logic)
 const magnifierStyles = `
-.single-product-magnifier-container { position: relative; overflow: hidden; border-radius: 1rem; background: #f3f5f7; }
+.single-product-magnifier-container { position: relative; overflow: hidden; border-radius: 1rem; background: #ffffff; }
 .single-product-magnifier-main-img { width: 100%; height: 28rem; object-fit: contain; display: block; }
 @media (max-width: 768px) {
   .single-product-magnifier-main-img { height: 18rem; }
@@ -59,7 +58,7 @@ export default function SingleProduct({
     setSelectedVariantId(variantId ? String(variantId) : null);
   }, [location.search]);
 
-  // Fetch product (updated URL to /customer/product/ for tax inclusion)
+  // Fetch product (logic unchanged, but allow display without login check)
   useEffect(() => {
     if (!productId) {
       setError("Invalid product ID");
@@ -74,7 +73,7 @@ export default function SingleProduct({
     }
 
     axios
-      .get(`https://suyambufoods.com/api/customer/product/${idNum}`, {
+      .get(`https://suyambufoods.com/api/admin/products/${idNum}`, {
         headers: { Origin: "http://localhost:5173" },
       })
       .then((res) => {
@@ -200,28 +199,6 @@ export default function SingleProduct({
       (it) => String(it.variant_id) === String(selectedVariant.id)
     );
 
-    // Prepare buyNowData with current variant details and tax_percentage
-    const displayPrice =
-      selectedVariant?.price != null
-        ? Number(selectedVariant.price)
-        : typeof product.price === "number"
-        ? product.price
-        : 0;
-    const buyNowData = {
-      id: product.id,
-      product_id: product.id,
-      name: product.name,
-      price: displayPrice,
-      thumbnail_url: product.thumbnail_url,
-      stock_quantity: product.stock_quantity,
-      variant_id: selectedVariant.id,
-      variant_quantity: selectedVariant.variant_quantity || "",
-      uom_name: selectedVariant.uom_name || "",
-      uom_id: selectedVariant.uom_id || 0,
-      tax_percentage: parseFloat(product.tax_percentage || 0),
-      quantity,
-    };
-
     if (!item) {
       axios
         .post("https://suyambufoods.com/api/customer/cart", body, {
@@ -233,7 +210,7 @@ export default function SingleProduct({
             `/checkout?customerId=${encodedCustomerId}&identifier=buy_now`,
             {
               state: {
-                product: buyNowData,
+                product: { ...product, quantity, variant_id: selectedVariant.id },
                 orderMethod: "buy_now",
               },
             }
@@ -243,7 +220,7 @@ export default function SingleProduct({
     } else {
       navigate(`/checkout?customerId=${encodedCustomerId}&identifier=buy_now`, {
         state: {
-          product: buyNowData,
+          product: { ...product, quantity, variant_id: selectedVariant.id },
           orderMethod: "buy_now",
         },
       });
@@ -322,10 +299,16 @@ export default function SingleProduct({
       {/* Back link */}
       <button
         onClick={handleBack}
-        className="mb-6 text-gray-600 hover:text-gray-900 font-medium"
+        className="mb-6 text-gray-600 hover:text-gray-900 font-medium flex items-center gap-1"
         aria-label="Back to products"
       >
-        &larr; Back to Products
+        <span
+          className="text-2xl font-extrabold text-black mr-1"
+          style={{ lineHeight: "1" }}
+        >
+          &larr;
+        </span>
+        Back to Products
       </button>
 
       {/* Card */}
@@ -345,31 +328,31 @@ export default function SingleProduct({
             />
           </div>
 
-          {/* Thumbs */}
-          <div className="flex gap-3">
-            {allImages.map((img, index) => (
-              <button
-                type="button"
-                key={index}
-                onClick={() => setSelectedImage(index)}
-                aria-label={`View image ${index + 1}`}
-                className={`h-16 w-16 rounded-md overflow-hidden border-2 transition ${
-                  selectedImage === index
-                    ? "border-[#B6895B]"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-              >
-                <img
-                  src={img || "https://via.placeholder.com/150"}
-                  alt={`${product.name} view ${index + 1}`}
-                  className="h-full w-full object-cover"
-                  onError={(e) =>
-                    (e.currentTarget.src = "https://via.placeholder.com/150")
-                  }
-                />
-              </button>
-            ))}
-          </div>
+{/* Thumbs */}
+<div className="flex gap-3">
+  {allImages.map((img, index) => (
+    <button
+      type="button"
+      key={index}
+      onClick={() => setSelectedImage(index)}
+      aria-label={`View image ${index + 1}`}
+      className={`h-16 w-16 rounded-md overflow-hidden border-2 transition ${
+        selectedImage === index
+          ? "border-[#B6895B]"
+          : "border-gray-200 hover:border-gray-300"
+      }`}
+    >
+      <img
+        src={img || "https://via.placeholder.com/150"}
+        alt={`${product.name} view ${index + 1}`}
+        className="h-full w-full object-cover"
+        onError={(e) =>
+          (e.currentTarget.src = "https://via.placeholder.com/150")
+        }
+      />
+    </button>
+  ))}
+</div>
         </div>
 
         {/* Right: info */}

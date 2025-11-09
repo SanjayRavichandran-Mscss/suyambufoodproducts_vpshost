@@ -302,8 +302,39 @@ exports.deleteFromCart = async (req, res) => {
 exports.getWishlist = async (req, res) => {
     const { customerId } = req.query;
     try {
-        const [rows] = await db.query('SELECT * FROM wishlist WHERE customer_id = ?', [customerId]);
-        res.status(200).json(rows);
+        // Fetch the total count of wished products
+        const [countRows] = await db.query(
+            'SELECT COUNT(*) as totalWished FROM wishlist WHERE customer_id = ?',
+            [customerId]
+        );
+        const totalWished = countRows[0].totalWished;
+
+        // Fetch the wishlist data
+        const [rows] = await db.query(`
+            SELECT 
+                w.id, 
+                w.customer_id, 
+                w.product_id, 
+                w.is_liked, 
+                w.added_at, 
+                w.updated_at,
+                p.name, 
+                p.description, 
+                p.thumbnail_url,
+                c.name AS category_name,
+                s.status AS stock_status_name
+            FROM wishlist w
+            JOIN products p ON w.product_id = p.id
+            JOIN categories c ON p.category_id = c.id
+            JOIN stock_statuses s ON p.stock_status_id = s.id
+            WHERE w.customer_id = ?
+        `, [customerId]);
+
+        // Response with total count first, followed by data
+        res.status(200).json({
+            totalWished,
+            wishlist: rows
+        });
     } catch (err) {
         res.status(500).json({ error: "Failed to fetch wishlist" });
     }

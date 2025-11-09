@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { Bar, Line, Pie } from 'react-chartjs-2';
 import {
@@ -398,18 +396,14 @@ const locationData = {
           </div>
           
           {/* Customer Analytics Graph */}
-          <div className="bg-white rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 lg:p-6 relative">
+          <div className="bg-white rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 lg:p-6">
             <h2 className="text-xl sm:text-2xl font-semibold text-green-800 mb-4 sm:mb-6">Customer Analytics</h2>
-            <div className="absolute top-4 sm:top-6 right-4 sm:right-6 text-xs sm:text-sm text-gray-700 hidden lg:block">
-              <p>Total Registered Customers: <span className="font-bold">{customerData.totalRegistered}</span></p>
-              <p>Today Registered Customers: <span className="font-bold">{customerData.todayRegistered}</span></p>
-            </div>
-            <div className="lg:absolute lg:top-24 lg:right-6 lg:w-48 lg:h-24 text-xs sm:text-sm text-gray-700">
-              <p>Total Registered Customers: <span className="font-bold">{customerData.totalRegistered}</span></p>
-              <p>Today Registered Customers: <span className="font-bold">{customerData.todayRegistered}</span></p>
-            </div>
             <div className="h-48 sm:h-64 lg:h-80 w-full">
               {customerData.labels.length > 0 && <Line data={customerData} options={lineOptions} />}
+            </div>
+            <div className="flex justify-between items-center mt-4 p-3 bg-gray-50 rounded-lg text-sm text-gray-700">
+              <p><span className="font-bold">Total Registered Customers:</span> {customerData.totalRegistered}</p>
+              <p><span className="font-bold">Today Registered Customers:</span> {customerData.todayRegistered}</p>
             </div>
           </div>
         </div>

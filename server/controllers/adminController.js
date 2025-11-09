@@ -139,7 +139,6 @@
   };
 
   exports.viewCategories = async (req, res) => {
-    console.log("🟢 viewCategories called");
     try {
       const [rows] = await db.query(
         "SELECT * FROM categories ORDER BY created_at DESC"
@@ -406,7 +405,6 @@ exports.updateProduct = [
   };
 
 exports.viewProducts = async (req, res) => {
-  console.log("🟢 viewProducts called");
   try {
     const [rows] = await db.query(
       `SELECT 
@@ -423,7 +421,6 @@ exports.viewProducts = async (req, res) => {
       LEFT JOIN uom_master u ON pv.uom_id = u.id
       ORDER BY p.created_at DESC`
     );
-    console.log("🔎 viewProducts query result count:", rows.length);
 
     const productsMap = {};
     rows.forEach((r) => {
@@ -664,7 +661,6 @@ exports.getProductById = async (req, res) => {
 
   /* ----------------------- UOM ----------------------- */
   exports.getUoms = async (req, res) => {
-    console.log("🟢 getUoms called");
     try {
       const [rows] = await db.query("SELECT * FROM uom_master ORDER BY uom_name ASC");
       return res.status(200).json(rows);
@@ -878,148 +874,152 @@ exports.getAllOrders = async (req, res) => {
       res.status(500).json({ message: 'Server error: ' + error.message });
     }
   };
+
+
   exports.getDashboardData = async (req, res) => {
-    try {
-      // Total customers
-      const [customersResult] = await db.query('SELECT COUNT(*) as total FROM customers');
-      const totalCustomers = customersResult[0].total;
+  try {
+    // Total customers
+    const [customersResult] = await db.query('SELECT COUNT(*) as total FROM customers');
+    const totalCustomers = customersResult[0].total;
 
-      // Customers with orders
-      const [customersWithOrdersResult] = await db.query('SELECT COUNT(DISTINCT customer_id) as total FROM orders');
-      const customersWithOrders = customersWithOrdersResult[0].total;
+    // Customers with orders
+    const [customersWithOrdersResult] = await db.query('SELECT COUNT(DISTINCT customer_id) as total FROM orders');
+    const customersWithOrders = customersWithOrdersResult[0].total;
 
-      // Customers without orders
-      const customersWithoutOrders = totalCustomers - customersWithOrders;
+    // Customers without orders
+    const customersWithoutOrders = totalCustomers - customersWithOrders;
 
-      // Total products
-      const [productsResult] = await db.query('SELECT COUNT(*) as total FROM products');
-      const totalProducts = productsResult[0].total;
+    // Total products
+    const [productsResult] = await db.query('SELECT COUNT(*) as total FROM products');
+    const totalProducts = productsResult[0].total;
 
-      // Total orders
-      const [ordersResult] = await db.query('SELECT COUNT(*) as total FROM orders');
-      const totalOrders = ordersResult[0].total;
+    // Total orders
+    const [ordersResult] = await db.query('SELECT COUNT(*) as total FROM orders');
+    const totalOrders = ordersResult[0].total;
 
-      // Total revenue (only delivered orders)
-      const [revenueResult] = await db.query(`
-        SELECT COALESCE(SUM(o.total_amount), 0) as total 
-        FROM orders o 
-        JOIN order_status os ON o.order_status_id = os.id 
-        WHERE os.status = 'delivered'
-      `);
-      const totalRevenue = parseFloat(revenueResult[0].total);
+    // Total revenue (only delivered orders)
+    const [revenueResult] = await db.query(`
+      SELECT COALESCE(SUM(o.total_amount), 0) as total 
+      FROM orders o 
+      JOIN order_status os ON o.order_status_id = os.id 
+      WHERE os.status = 'delivered'
+    `);
+    const totalRevenue = parseFloat(revenueResult[0].total);
 
-      // Orders by status
-      const [ordersByStatus] = await db.query(`
-        SELECT os.status, COUNT(o.id) as count 
-        FROM orders o 
-        JOIN order_status os ON o.order_status_id = os.id 
-        GROUP BY o.order_status_id, os.status
-        ORDER BY os.id
-      `);
+    // Orders by status
+    const [ordersByStatus] = await db.query(`
+      SELECT os.status, COUNT(o.id) as count 
+      FROM orders o 
+      JOIN order_status os ON o.order_status_id = os.id 
+      GROUP BY o.order_status_id, os.status
+      ORDER BY os.id
+    `);
 
-      // Stock statuses by products
-      const [stockStatusResult] = await db.query(`
-        SELECT ss.status, COUNT(p.id) as count 
-        FROM products p 
-        JOIN stock_statuses ss ON p.stock_status_id = ss.id 
-        GROUP BY p.stock_status_id, ss.status
-        ORDER BY ss.id
-      `);
+    // Stock statuses by products
+    const [stockStatusResult] = await db.query(`
+      SELECT ss.status, COUNT(p.id) as count 
+      FROM products p 
+      JOIN stock_statuses ss ON p.stock_status_id = ss.id 
+      GROUP BY p.stock_status_id, ss.status
+      ORDER BY ss.id
+    `);
 
-      // Top 5 wished products
-      const [topWishedProducts] = await db.query(`
-        SELECT p.id, p.name, p.thumbnail_url, COUNT(w.id) as wish_count
-        FROM wishlist w
-        JOIN products p ON w.product_id = p.id
-        WHERE w.is_liked = 1
-        GROUP BY w.product_id, p.id, p.name, p.thumbnail_url
-        ORDER BY wish_count DESC
-        LIMIT 5
-      `);
+    // Top 5 wished products
+    const [topWishedProducts] = await db.query(`
+      SELECT p.id, p.name, p.thumbnail_url, COUNT(w.id) as wish_count
+      FROM wishlist w
+      JOIN products p ON w.product_id = p.id
+      WHERE w.is_liked = 1
+      GROUP BY w.product_id, p.id, p.name, p.thumbnail_url
+      ORDER BY wish_count DESC
+      LIMIT 5
+    `);
 
-      // Today registered customers
-      const [todaySignupResult] = await db.query('SELECT COUNT(*) as count FROM customers WHERE DATE(created_at) = CURDATE()');
-      const todayRegistered = todaySignupResult[0].count;
+    // Today registered customers
+    const [todaySignupResult] = await db.query('SELECT COUNT(*) as count FROM customers WHERE DATE(created_at) = CURDATE()');
+    const todayRegistered = todaySignupResult[0].count;
 
-      // Customer signups by date
-      const [customerSignups] = await db.query(`
-        SELECT DATE(created_at) as date, COUNT(*) as count
-        FROM customers
-        GROUP BY DATE(created_at)
-        ORDER BY date DESC
-        LIMIT 30
-      `);
-      const customerDates = customerSignups.map(row => row.date);
-      const customerCounts = customerSignups.map(row => row.count);
+    // Customer signups by date
+    const [customerSignups] = await db.query(`
+      SELECT DATE(created_at) as date, COUNT(*) as count
+      FROM customers
+      GROUP BY DATE(created_at)
+      ORDER BY date DESC
+      LIMIT 30
+    `);
+    const customerDates = customerSignups.map(row => row.date);
+    const customerCounts = customerSignups.map(row => row.count);
 
-      // Sales Performance
-      const [salesResult] = await db.query(`
-        SELECT p.name, SUM(oi.quantity) as units_sold, SUM(oi.subtotal) as revenue
-        FROM orders o
-        JOIN order_items oi ON o.id = oi.order_id
-        JOIN product_variants pv ON oi.product_variant_id = pv.id
-        JOIN products p ON pv.product_id = p.id
-        JOIN order_status os ON o.order_status_id = os.id
-        WHERE os.status = 'delivered'
-        GROUP BY p.id, p.name
-        ORDER BY revenue DESC
-        LIMIT 10
-      `);
+    // Sales Performance
+    const [salesResult] = await db.query(`
+      SELECT p.name, SUM(oi.quantity) as units_sold, SUM(oi.subtotal) as revenue
+      FROM orders o
+      JOIN order_items oi ON o.id = oi.order_id
+      JOIN product_variants pv ON oi.product_variant_id = pv.id
+      JOIN products p ON pv.product_id = p.id
+      JOIN order_status os ON o.order_status_id = os.id
+      WHERE os.status = 'delivered'
+      GROUP BY p.id, p.name
+      ORDER BY revenue DESC
+      LIMIT 10
+    `);
 
-      // Locations: States
-      const [statesResult] = await db.query(`
-        SELECT a.state, COUNT(o.id) as count
-        FROM orders o
-        JOIN addresses a ON o.address_id = a.id
-        JOIN order_status os ON o.order_status_id = os.id
-        WHERE os.status = 'delivered'
-        GROUP BY a.state
-        ORDER BY count DESC
-      `);
+    // Locations: States
+    const [statesResult] = await db.query(`
+      SELECT s.name as state, COUNT(o.id) as count
+      FROM orders o
+      JOIN addresses a ON o.address_id = a.id
+      JOIN states s ON a.state_id = s.id
+      JOIN order_status os ON o.order_status_id = os.id
+      WHERE os.status = 'delivered'
+      GROUP BY s.id, s.name
+      ORDER BY count DESC
+    `);
 
-      // Locations: Cities
-      const [citiesResult] = await db.query(`
-        SELECT a.city, COUNT(o.id) as count
-        FROM orders o
-        JOIN addresses a ON o.address_id = a.id
-        JOIN order_status os ON o.order_status_id = os.id
-        WHERE os.status = 'delivered'
-        GROUP BY a.city
-        ORDER BY count DESC
-        LIMIT 10
-      `);
+    // Locations: Cities
+    const [citiesResult] = await db.query(`
+      SELECT c.name as city, COUNT(o.id) as count
+      FROM orders o
+      JOIN addresses a ON o.address_id = a.id
+      JOIN cities c ON a.city_id = c.id
+      JOIN order_status os ON o.order_status_id = os.id
+      WHERE os.status = 'delivered'
+      GROUP BY c.id, c.name
+      ORDER BY count DESC
+      LIMIT 10
+    `);
 
-      res.status(200).json({
-        customerBreakdown: {
-          total: totalCustomers,
-          orderingCustomers: customersWithOrders,
-          prospectiveCustomers: customersWithoutOrders
-        },
-        totalProducts,
-        stockStatuses: stockStatusResult,
-        totalOrders,
-        totalRevenue,
-        topWishedProducts,
-        customerSignups: {
-          labels: customerDates,
-          data: customerCounts,
-          totalRegistered: totalCustomers,
-          todayRegistered
-        },
-        ordersByStatus,
-        salesPerformance: {
-          products: salesResult
-        },
-        locations: {
-          states: statesResult,
-          cities: citiesResult
-        }
-      });
-    } catch (error) {
-      console.error('Dashboard data error:', error);
-      res.status(500).json({ message: 'Server error: ' + error.message });
-    }
-  };
+    res.status(200).json({
+      customerBreakdown: {
+        total: totalCustomers,
+        orderingCustomers: customersWithOrders,
+        prospectiveCustomers: customersWithoutOrders
+      },
+      totalProducts,
+      stockStatuses: stockStatusResult,
+      totalOrders,
+      totalRevenue,
+      topWishedProducts,
+      customerSignups: {
+        labels: customerDates,
+        data: customerCounts,
+        totalRegistered: totalCustomers,
+        todayRegistered
+      },
+      ordersByStatus,
+      salesPerformance: {
+        products: salesResult
+      },
+      locations: {
+        states: statesResult,
+        cities: citiesResult
+      }
+    });
+  } catch (error) {
+    console.error('Dashboard data error:', error);
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
+};
 
 
 
