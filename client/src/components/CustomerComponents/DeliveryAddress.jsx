@@ -67,7 +67,7 @@
 //       try {
 //         console.log("Fetching addresses for customerId:", decodedCustomerId);
         
-//         const addressResponse = await axios.get(`https://suyambufoods.com/api/customer/addresses`, {
+//         const addressResponse = await axios.get(`http://localhost:5000/customer/addresses`, {
 //           params: { customerId: decodedCustomerId },
 //           headers: {
 //             Authorization: `Bearer ${token}`,
@@ -75,7 +75,7 @@
 //         });
 //         setAddresses(addressResponse.data);
 
-//         const profileResponse = await axios.get(`https://suyambufoods.com/api/customer/profile`, {
+//         const profileResponse = await axios.get(`http://localhost:5000/customer/profile`, {
 //           params: { customerId: decodedCustomerId },
 //           headers: {
 //             Authorization: `Bearer ${token}`,
@@ -83,7 +83,7 @@
 //         });
 //         setCustomerDetails(prev => ({...prev, ...profileResponse.data}));
 
-//         const detailsResponse = await axios.get(`https://suyambufoods.com/api/customer/customer-details`, {
+//         const detailsResponse = await axios.get(`http://localhost:5000/customer/customer-details`, {
 //           params: { customerId: decodedCustomerId },
 //           headers: {
 //             Authorization: `Bearer ${token}`,
@@ -174,7 +174,7 @@
 
 //     try {
 //       await axios.post(
-//         "https://suyambufoods.com/api/customer/addresses",
+//         "http://localhost:5000/customer/addresses",
 //         { ...formData },
 //         {
 //           params: { customerId: decodedCustomerId },
@@ -184,7 +184,7 @@
 //         }
 //       );
 //       resetForm();
-//       const response = await axios.get(`https://suyambufoods.com/api/customer/addresses`, {
+//       const response = await axios.get(`http://localhost:5000/customer/addresses`, {
 //         params: { customerId: decodedCustomerId },
 //         headers: {
 //           Authorization: `Bearer ${token}`,
@@ -231,7 +231,7 @@
 
 //     try {
 //       await axios.put(
-//         "https://suyambufoods.com/api/customer/addresses",
+//         "http://localhost:5000/customer/addresses",
 //         { id: editingAddressId, ...formData },
 //         {
 //           params: { customerId: decodedCustomerId },
@@ -241,7 +241,7 @@
 //         }
 //       );
 //       resetForm();
-//       const response = await axios.get(`https://suyambufoods.com/api/customer/addresses`, {
+//       const response = await axios.get(`http://localhost:5000/customer/addresses`, {
 //         params: { customerId: decodedCustomerId },
 //         headers: {
 //           Authorization: `Bearer ${token}`,
@@ -269,7 +269,7 @@
 //     }
 
 //     try {
-//       await axios.delete("https://suyambufoods.com/api/customer/addresses", {
+//       await axios.delete("http://localhost:5000/customer/addresses", {
 //         params: { id, customerId: decodedCustomerId },
 //         headers: {
 //           Authorization: `Bearer ${token}`,
@@ -278,7 +278,7 @@
 //       if (selectedAddressId === id) {
 //         setSelectedAddressId(null);
 //       }
-//       const response = await axios.get(`https://suyambufoods.com/api/customer/addresses`, {
+//       const response = await axios.get(`http://localhost:5000/customer/addresses`, {
 //         params: { customerId: decodedCustomerId },
 //         headers: {
 //           Authorization: `Bearer ${token}`,
@@ -306,7 +306,7 @@
 //     try {
 //       const address = addresses.find(addr => addr.id === id);
 //       await axios.put(
-//         "https://suyambufoods.com/api/customer/addresses",
+//         "http://localhost:5000/customer/addresses",
 //         { 
 //           id, 
 //           street: address.street,
@@ -323,7 +323,7 @@
 //           },
 //         }
 //       );
-//       const response = await axios.get(`https://suyambufoods.com/api/customer/addresses`, {
+//       const response = await axios.get(`http://localhost:5000/customer/addresses`, {
 //         params: { customerId: decodedCustomerId },
 //         headers: {
 //           Authorization: `Bearer ${token}`,
@@ -586,7 +586,7 @@ const DeliveryAddress = ({ customerId, selectedAddressId, setSelectedAddressId }
   useEffect(() => {
     const fetchStates = async () => {
       try {
-        const res = await axios.get("https://suyambufoods.com/api/customer/states");
+        const res = await axios.get("http://localhost:5000/customer/states");
         setStatesOptions(res.data.map(s => ({ value: s.id, label: s.name })));
       } catch (err) {
         console.error("Fetch states error:", err);
@@ -613,7 +613,7 @@ const DeliveryAddress = ({ customerId, selectedAddressId, setSelectedAddressId }
       try {
         console.log("Fetching addresses for customerId:", customerId);
         
-        const addressResponse = await axios.get(`https://suyambufoods.com/api/customer/addresses`, {
+        const addressResponse = await axios.get(`http://localhost:5000/customer/addresses`, {
           params: { customerId },
           headers: {
             Authorization: `Bearer ${token}`,
@@ -621,7 +621,7 @@ const DeliveryAddress = ({ customerId, selectedAddressId, setSelectedAddressId }
         });
         setAddresses(addressResponse.data);
 
-        const profileResponse = await axios.get(`https://suyambufoods.com/api/customer/profile`, {
+        const profileResponse = await axios.get(`http://localhost:5000/customer/profile`, {
           params: { customerId },
           headers: {
             Authorization: `Bearer ${token}`,
@@ -629,7 +629,7 @@ const DeliveryAddress = ({ customerId, selectedAddressId, setSelectedAddressId }
         });
         setCustomerDetails(prev => ({...prev, ...profileResponse.data}));
 
-        const detailsResponse = await axios.get(`https://suyambufoods.com/api/customer/customer-details`, {
+        const detailsResponse = await axios.get(`http://localhost:5000/customer/customer-details`, {
           params: { customerId },
           headers: {
             Authorization: `Bearer ${token}`,
@@ -665,7 +665,7 @@ const DeliveryAddress = ({ customerId, selectedAddressId, setSelectedAddressId }
       return [];
     }
     try {
-      const res = await axios.get(`https://suyambufoods.com/api/customer/cities?stateId=${stateId}`);
+      const res = await axios.get(`http://localhost:5000/customer/cities?stateId=${stateId}`);
       const options = res.data.map(c => ({ value: c.id, label: c.name }));
       setCitiesOptions(options);
       return res.data;
@@ -751,7 +751,7 @@ const DeliveryAddress = ({ customerId, selectedAddressId, setSelectedAddressId }
 
     try {
       await axios.post(
-        "https://suyambufoods.com/api/customer/addresses",
+        "http://localhost:5000/customer/addresses",
         { ...formData },
         {
           params: { customerId },
@@ -761,7 +761,7 @@ const DeliveryAddress = ({ customerId, selectedAddressId, setSelectedAddressId }
         }
       );
       resetForm();
-      const response = await axios.get(`https://suyambufoods.com/api/customer/addresses`, {
+      const response = await axios.get(`http://localhost:5000/customer/addresses`, {
         params: { customerId },
         headers: {
           Authorization: `Bearer ${token}`,
@@ -824,7 +824,7 @@ const DeliveryAddress = ({ customerId, selectedAddressId, setSelectedAddressId }
 
     try {
       await axios.put(
-        "https://suyambufoods.com/api/customer/addresses",
+        "http://localhost:5000/customer/addresses",
         { id: editingAddressId, ...formData },
         {
           params: { customerId },
@@ -834,7 +834,7 @@ const DeliveryAddress = ({ customerId, selectedAddressId, setSelectedAddressId }
         }
       );
       resetForm();
-      const response = await axios.get(`https://suyambufoods.com/api/customer/addresses`, {
+      const response = await axios.get(`http://localhost:5000/customer/addresses`, {
         params: { customerId },
         headers: {
           Authorization: `Bearer ${token}`,
@@ -862,7 +862,7 @@ const DeliveryAddress = ({ customerId, selectedAddressId, setSelectedAddressId }
     }
 
     try {
-      await axios.delete("https://suyambufoods.com/api/customer/addresses", {
+      await axios.delete("http://localhost:5000/customer/addresses", {
         params: { id, customerId },
         headers: {
           Authorization: `Bearer ${token}`,
@@ -871,7 +871,7 @@ const DeliveryAddress = ({ customerId, selectedAddressId, setSelectedAddressId }
       if (selectedAddressId === id) {
         setSelectedAddressId(null);
       }
-      const response = await axios.get(`https://suyambufoods.com/api/customer/addresses`, {
+      const response = await axios.get(`http://localhost:5000/customer/addresses`, {
         params: { customerId },
         headers: {
           Authorization: `Bearer ${token}`,
@@ -899,7 +899,7 @@ const DeliveryAddress = ({ customerId, selectedAddressId, setSelectedAddressId }
     try {
       const address = addresses.find(addr => addr.id === id);
       await axios.put(
-        "https://suyambufoods.com/api/customer/addresses",
+        "http://localhost:5000/customer/addresses",
         { 
           id, 
           street: address.street,
@@ -916,7 +916,7 @@ const DeliveryAddress = ({ customerId, selectedAddressId, setSelectedAddressId }
           },
         }
       );
-      const response = await axios.get(`https://suyambufoods.com/api/customer/addresses`, {
+      const response = await axios.get(`http://localhost:5000/customer/addresses`, {
         params: { customerId },
         headers: {
           Authorization: `Bearer ${token}`,

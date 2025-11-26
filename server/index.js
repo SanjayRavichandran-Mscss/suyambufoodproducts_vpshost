@@ -17,7 +17,7 @@ app.use(cors({
   origin: [
     'http://localhost:5173',
     'https://suyambufoodproducts-demohost.vercel.app',
-    'https://suyambufoods.com/api',
+    'http://localhost:5000',
     'https://www.suyambufoods.com'
   ],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

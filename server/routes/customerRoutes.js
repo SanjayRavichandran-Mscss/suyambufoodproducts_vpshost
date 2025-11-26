@@ -2,6 +2,11 @@ const express = require('express');
 const router = express.Router();
 const customerController = require('../controllers/customerController');
 
+
+
+router.post('/send-registration-otp', customerController.sendRegistrationOtp);
+router.post('/verify-registration-otp', customerController.verifyRegistrationOtp);
+
 router.post('/register', customerController.register);
 router.post('/login', customerController.login);
 router.get('/profile', customerController.getProfile);
@@ -51,5 +56,11 @@ router.post('/calculate-delivery', customerController.calculateDelivery);
 
 
 router.get('/product/:id', customerController.getCustomerProduct);
+
+
+// Add these to customerRoutes.js (append to the existing router definitions)
+
+router.post('/forgot-password', customerController.forgotPassword);
+router.post('/reset-password', customerController.resetPassword);
 
 module.exports = router;

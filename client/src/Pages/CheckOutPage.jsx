@@ -33,21 +33,20 @@ const CheckOutPage = () => {
   const [loading, setLoading] = useState(true);
   const [showCartModal, setShowCartModal] = useState(false);
   const [cartAnimation, setCartAnimation] = useState("");
-  const [showOrderSummary, setShowOrderSummary] = useState(false); // Step 2
+  const [showOrderSummary, setShowOrderSummary] = useState(false);
   const [deliveryFee, setDeliveryFee] = useState(0);
-  const [buyNowItem, setBuyNowItem] = useState(state?.product || null); // Make mutable for updates
+  const [buyNowItem, setBuyNowItem] = useState(state?.product || null);
 
   const isBuyNow = identifier === "buy_now";
   const isCartFlow = identifier === "cart";
 
-  // NEW: Fetch product details if tax_percentage is missing (for Buy Now fallback)
   const fetchProductIfNeeded = async () => {
-    if (!isBuyNow || !buyNowItem || (buyNowItem.tax_percentage && buyNowItem.tax_percentage > 0)) return; // Already have tax
+    if (!isBuyNow || !buyNowItem || (buyNowItem.tax_percentage && buyNowItem.tax_percentage > 0)) return;
     try {
       console.log("Fetching product details for tax_percentage:", buyNowItem.product_id || buyNowItem.id);
       const token = localStorage.getItem("customerToken");
       const productId = buyNowItem.product_id || buyNowItem.id;
-      const response = await fetch(`https://suyambufoods.com/api/customer/product/${productId}`, {
+      const response = await fetch(`http://localhost:5000/customer/product/${productId}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -59,7 +58,6 @@ const CheckOutPage = () => {
       const fetchedProduct = await response.json();
       console.log("Fetched product with tax:", fetchedProduct.tax_percentage);
       
-      // Update buyNowItem with fetched data (merge variants if multiple, but assume single for Buy Now)
       const variant = fetchedProduct.variants.find(v => v.variant_id === buyNowItem.variant_id || v.id === buyNowItem.variant_id) || fetchedProduct.variants[0];
       setBuyNowItem({
         ...buyNowItem,
@@ -96,7 +94,7 @@ const CheckOutPage = () => {
             variant_quantity: buyNowItem.variant_quantity || "",
             uom_name: buyNowItem.uom_name || "",
             uom_id: buyNowItem.uom_id || 0,
-            tax_percentage: parseFloat(buyNowItem.tax_percentage || 0), // Now ensured via fetch or pass
+            tax_percentage: parseFloat(buyNowItem.tax_percentage || 0),
           },
         ]
       : []
@@ -111,7 +109,6 @@ const CheckOutPage = () => {
   }, 0);
   const total = subtotal + totalTax + deliveryFee;
 
-  // NEW: Function to compute delivery fee via API
   const computeDeliveryFee = async () => {
     if (!selectedAddressId || items.length === 0) {
       setDeliveryFee(0);
@@ -124,14 +121,12 @@ const CheckOutPage = () => {
         addressId: selectedAddressId,
       };
       if (isBuyNow) {
-        // For buy now, pass items (single item array)
         body.items = items.map((item) => ({
           variantId: item.variant_id || item.product_variant_id,
           quantity: item.quantity,
         }));
       }
-      // For cart, omit items to fetch from backend
-      const response = await fetch(`https://suyambufoods.com/api/customer/calculate-delivery`, {
+      const response = await fetch(`http://localhost:5000/customer/calculate-delivery`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -157,7 +152,6 @@ const CheckOutPage = () => {
     }
   };
 
-  // Compute delivery fee when selectedAddressId or items change
   useEffect(() => {
     computeDeliveryFee();
   }, [selectedAddressId, items, isBuyNow, isCartFlow]);
@@ -188,7 +182,7 @@ const CheckOutPage = () => {
     const verifyCustomer = async () => {
       try {
         const response = await fetch(
-          `https://suyambufoods.com/api/customer/profile?customerId=${storedCustomerId}`,
+          `http://localhost:5000/customer/profile?customerId=${storedCustomerId}`,
           {
             method: "GET",
             headers: {
@@ -202,7 +196,6 @@ const CheckOutPage = () => {
           const data = await response.json();
           setCustomerData(data);
           if (isBuyNow) {
-            // NEW: Fetch tax if missing in state
             await fetchProductIfNeeded();
           }
           if (!isBuyNow) {
@@ -231,7 +224,7 @@ const CheckOutPage = () => {
     if (!customerId) return;
     try {
       const token = localStorage.getItem("customerToken");
-      const response = await fetch(`https://suyambufoods.com/api/customer/cart?customerId=${customerId}`, {
+      const response = await fetch(`http://localhost:5000/customer/cart?customerId=${customerId}`, {
         headers: {
           "Content-Type": "application/json",
           Origin: "http://localhost:5173",
@@ -240,12 +233,11 @@ const CheckOutPage = () => {
       });
       if (!response.ok) throw new Error("Failed to fetch cart");
       const data = await response.json();
-      // Ensure tax_percentage is included (backend should join with products)
       const updatedData = data.map(item => ({
         ...item,
-        tax_percentage: parseFloat(item.tax_percentage || 0), // Fallback to 0 if missing
+        tax_percentage: parseFloat(item.tax_percentage || 0),
       }));
-      console.log("Cart items with tax:", updatedData); // Debug: Check tax in console
+      console.log("Cart items with tax:", updatedData);
       setCartItems(Array.isArray(updatedData) ? updatedData : []);
     } catch (error) {
       console.error("Failed to fetch cart:", error);
@@ -259,7 +251,7 @@ const CheckOutPage = () => {
     const newQuantity = Math.max(1, item.quantity + change);
     try {
       const token = localStorage.getItem("customerToken");
-      const response = await fetch(`https://suyambufoods.com/api/customer/cart`, {
+      const response = await fetch(`http://localhost:5000/customer/cart`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -270,7 +262,6 @@ const CheckOutPage = () => {
       });
       if (response.ok) {
         await fetchCart();
-        // Recompute delivery fee after cart update (if in summary view)
         if (showOrderSummary && isCartFlow) {
           computeDeliveryFee();
         }
@@ -294,7 +285,7 @@ const CheckOutPage = () => {
     try {
       const token = localStorage.getItem("customerToken");
       const response = await fetch(
-        `https://suyambufoods.com/api/customer/cart?customerId=${customerId}&variantId=${variantId}`,
+        `http://localhost:5000/customer/cart?customerId=${customerId}&variantId=${variantId}`,
         {
           method: "DELETE",
           headers: {
@@ -306,7 +297,6 @@ const CheckOutPage = () => {
       );
       if (response.ok) {
         await fetchCart();
-        // Recompute delivery fee after removal (if in summary view)
         if (showOrderSummary && isCartFlow) {
           computeDeliveryFee();
         }
@@ -379,7 +369,6 @@ const CheckOutPage = () => {
     await initiateRazorpayPayment();
   };
 
-  // NEW: Dedicated handler for Buy Now
   const handleBuyNowPayment = async () => {
     if (!selectedAddressId) {
       Swal.fire({
@@ -424,7 +413,7 @@ const CheckOutPage = () => {
     const token = localStorage.getItem("customerToken");
 
     try {
-      const createOrderResponse = await fetch(`https://suyambufoods.com/api/customer/payment/create-order`, {
+      const createOrderResponse = await fetch(`http://localhost:5000/customer/payment/create-order`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -445,7 +434,7 @@ const CheckOutPage = () => {
         description: "Order Payment",
         order_id: order.id,
         handler: async function (response) {
-          const verifyResponse = await fetch(`https://suyambufoods.com/api/customer/payment/verify`, {
+          const verifyResponse = await fetch(`http://localhost:5000/customer/payment/verify`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -478,7 +467,7 @@ const CheckOutPage = () => {
               },
             };
 
-            const placeOrderResponse = await fetch(`https://suyambufoods.com/api/customer/orders`, {
+            const placeOrderResponse = await fetch(`http://localhost:5000/customer/orders`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -567,8 +556,10 @@ const CheckOutPage = () => {
         onCartClick={handleCartClick}
         onOrdersClick={handleOrdersClick}
       />
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-6xl pt-24">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">Checkout</h1>
+      
+      {/* Fixed: Added proper top padding so "Checkout" is fully visible */}
+      <main className="flex-1 container mx-auto px-4 py-12 max-w-6xl pt-32 lg:pt-28">
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">Checkout</h1>
 
         {/* CART FLOW: STEP 1 - ONLY ADDRESS */}
         {isCartFlow && !showOrderSummary && (
@@ -610,6 +601,8 @@ const CheckOutPage = () => {
                 updateQuantity={updateQuantity}
                 handleRemoveItem={handleRemoveItem}
                 isSidebar={false}
+                hideTaxPercentage={true}
+                hideItemTaxLine={true}   /* This removes "Tax (5.00%): ₹13.00" from each item */
               />
             </div>
 
@@ -719,6 +712,8 @@ const CheckOutPage = () => {
                 updateQuantity={updateQuantity}
                 handleRemoveItem={handleRemoveItem}
                 isSidebar={true}
+                hideTaxPercentage={true}
+                hideItemTaxLine={true}   /* Removes per-item tax line in sidebar too */
               />
             </div>
           </div>

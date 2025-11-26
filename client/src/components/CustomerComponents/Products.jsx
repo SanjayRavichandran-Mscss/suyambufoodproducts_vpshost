@@ -3,7 +3,7 @@
 // import { useNavigate } from "react-router-dom";
 // import { Heart, Plus, Minus } from "lucide-react";
 
-// const IMAGE_BASE = "https://suyambufoods.com/api";
+// const IMAGE_BASE = "http://localhost:5000";
 // const BRAND = "#B6895B";
 
 // export default function Products({
@@ -30,7 +30,25 @@
 
 //   const navigate = useNavigate();
 
-//   // Category from Banner chips
+//   // Handle sessionStorage on mount (for navigation from footer)
+//   useEffect(() => {
+//     const storedCategory = sessionStorage.getItem('selectedCategory');
+//     if (storedCategory && storedCategory !== 'all') {
+//       setCategory(storedCategory);
+//       sessionStorage.removeItem('selectedCategory');
+//     }
+
+//     const scrollToShop = sessionStorage.getItem('scrollToShopSection');
+//     if (scrollToShop === 'yes') {
+//       const section = document.getElementById('shop-by-category');
+//       if (section) {
+//         section.scrollIntoView({ behavior: "smooth", block: "start" });
+//       }
+//       sessionStorage.removeItem('scrollToShopSection');
+//     }
+//   }, []);
+
+//   // Category from Banner chips or Footer events
 //   useEffect(() => {
 //     const onSetCategory = (e) => {
 //       const next = String(e.detail?.value || "all");
@@ -47,7 +65,7 @@
 //     if (!customerId) return [];
 //     try {
 //       const response = await axios.get(
-//         `https://suyambufoods.com/api/customer/cart?customerId=${customerId}`,
+//         `http://localhost:5000/customer/cart?customerId=${customerId}`,
 //         { headers: { Origin: "http://localhost:5173" } }
 //       );
 //       return Array.isArray(response.data) ? response.data : [];
@@ -77,14 +95,14 @@
 //   // Fetch products + UOMs
 //   useEffect(() => {
 //     axios
-//       .get("https://suyambufoods.com/api/admin/uoms", {
+//       .get("http://localhost:5000/admin/uoms", {
 //         headers: { Origin: "http://localhost:5173" },
 //       })
 //       .then((res) => setUoms(res.data || []))
 //       .catch(() => {});
 
 //     axios
-//       .get("https://suyambufoods.com/api/admin/products", {
+//       .get("http://localhost:5000/admin/products", {
 //         headers: { Origin: "http://localhost:5173" },
 //       })
 //       .then((res) => {
@@ -207,7 +225,6 @@
 //   // Actions
 //   const handleAddToCart = async (productId, quantity = 1) => {
 //     if (!isLoggedIn) {
-//       showMessage("Please login to add items to your cart", "warning");
 //       return;
 //     }
 //     if (!customerId) {
@@ -221,7 +238,7 @@
 //     }
 //     try {
 //       await axios.post(
-//         "https://suyambufoods.com/api/customer/cart",
+//         "http://localhost:5000/customer/cart",
 //         { customerId, variantId, quantity },
 //         { headers: { Origin: "http://localhost:5173" } }
 //       );
@@ -251,7 +268,7 @@
 //     const newQuantity = Math.max(1, item.quantity + change);
 //     try {
 //       await axios.put(
-//         "https://suyambufoods.com/api/customer/cart",
+//         "http://localhost:5000/customer/cart",
 //         { customerId, variantId, quantity: newQuantity },
 //         { headers: { Origin: "http://localhost:5173" } }
 //       );
@@ -322,7 +339,7 @@
 //       `}</style>
 
 //       <section id="shop-by-category" className="pt-2 pb-4">
-//         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-5 gap-4 md:gap-6 xl:gap-8 mt-4">
+//         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-5 gap-4 md:gap-6 xl:gap-8 mt-2">
 //           {visibleProducts.length > 0 ? (
 //             visibleProducts.map((product) => (
 //               <ProductCard
@@ -424,12 +441,11 @@
 //     return `${qty} ${uom}`;
 //   };
 
-//   // NEW: Handle plus click when not logged in
 //   const handlePlusClick = () => {
 //     if (!isLoggedIn) {
-//       // Trigger register panel open
-//       const registerEvent = new CustomEvent("openAuthPanel", { detail: { panel: "register" } });
-//       window.dispatchEvent(registerEvent);
+//       if (typeof window.openLoginPanel === "function") {
+//         window.openLoginPanel();
+//       }
 //       return;
 //     }
 //     if (isOutOfStock || !effectiveVariant) return;
@@ -560,6 +576,7 @@
 //           )}
 //         </div>
 
+//         {/* FINAL: Smaller, tighter, perfectly aligned buttons */}
 //         <div className="flex items-center justify-between pt-1">
 //           <div className="text-lg font-bold" style={{ color: BRAND }}>
 //             ₹
@@ -568,41 +585,42 @@
 //               : "0.00"}
 //           </div>
 
-//           {/* ALWAYS ENABLED PLUS BUTTON */}
-//           {quantity > 0 ? (
-//             <div className="flex items-center gap-2">
-//               <button
-//                 onClick={() => updateQuantity(effectiveVariant.id, -1)}
-//                 disabled={quantity <= 1}
-//                 className={`h-8 w-8 rounded-full border-2 grid place-items-center transition-all duration-200 ${
-//                   quantity <= 1
-//                     ? "border-gray-200 text-gray-300 cursor-not-allowed"
-//                     : "border-[#B6895B] text-[#B6895B] hover:bg-[#B6895B]/10"
-//                 }`}
-//                 title="Decrease"
-//               >
-//                 <Minus size={14} />
-//               </button>
-//               <span className="w-6 text-center text-sm font-semibold text-gray-700">
-//                 {quantity}
-//               </span>
+//           <div className="flex items-center gap-1 shrink-0">
+//             {quantity > 0 ? (
+//               <>
+//                 <button
+//                   onClick={() => updateQuantity(effectiveVariant.id, -1)}
+//                   disabled={quantity <= 1}
+//                   className={`h-6 w-6 rounded-full border-2 grid place-items-center transition-all duration-200 text-xs ${
+//                     quantity <= 1
+//                       ? "border-gray-200 text-gray-300 cursor-not-allowed"
+//                       : "border-[#B6895B] text-[#B6895B] hover:bg-[#B6895B]/10"
+//                   }`}
+//                   title="Decrease"
+//                 >
+//                   <Minus size={10} />
+//                 </button>
+//                 <span className="w-6 text-center text-sm font-semibold text-gray-700">
+//                   {quantity}
+//                 </span>
+//                 <button
+//                   onClick={handlePlusClick}
+//                   className="h-6 w-6 rounded-full border-2 border-[#B6895B] text-[#B6895B] hover:bg-[#B6895B]/10 grid place-items-center transition-all duration-200 text-xs"
+//                   title="Increase"
+//                 >
+//                   <Plus size={10} />
+//                 </button>
+//               </>
+//             ) : (
 //               <button
 //                 onClick={handlePlusClick}
-//                 className="h-8 w-8 rounded-full border-2 border-[#B6895B] text-[#B6895B] hover:bg-[#B6895B]/10 grid place-items-center transition-all duration-200"
-//                 title="Increase"
+//                 className="h-6 w-6 rounded-full border-2 border-[#B6895B] text-[#B6895B] hover:bg-[#B6895B]/10 grid place-items-center transition-all duration-200"
+//                 title="Add to cart"
 //               >
-//                 <Plus size={14} />
+//                 <Plus size={10} />
 //               </button>
-//             </div>
-//           ) : (
-//             <button
-//               onClick={handlePlusClick}
-//               className="h-8 w-8 rounded-full border-2 border-[#B6895B] text-[#B6895B] hover:bg-[#B6895B]/10 grid place-items-center transition-all duration-200"
-//               title="Add to cart"
-//             >
-//               <Plus size={14} />
-//             </button>
-//           )}
+//             )}
+//           </div>
 //         </div>
 //       </div>
 //     </div>
@@ -618,27 +636,12 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { Heart, Plus, Minus } from "lucide-react";
 
-const IMAGE_BASE = "https://suyambufoods.com/api";
+const IMAGE_BASE = "http://localhost:5000";
 const BRAND = "#B6895B";
 
 export default function Products({
@@ -662,8 +665,29 @@ export default function Products({
   const [categories, setCategories] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [visibleCount, setVisibleCount] = useState(20);
+  const [wishlistIds, setWishlistIds] = useState([]);
 
   const navigate = useNavigate();
+
+  const fetchWishlist = async () => {
+    if (!isLoggedIn || !customerId) {
+      setWishlistIds([]);
+      return;
+    }
+    try {
+      const response = await axios.get(
+        `http://localhost:5000/customer/wishlist/?customerId=${customerId}`,
+        { headers: { Origin: "http://localhost:5173" } }
+      );
+      const likedIds = response.data.wishlist
+        ? response.data.wishlist.filter(item => item.is_liked === 1).map(item => item.product_id)
+        : [];
+      setWishlistIds(likedIds);
+    } catch (err) {
+      console.error('Failed to fetch wishlist:', err);
+      setWishlistIds([]);
+    }
+  };
 
   // Handle sessionStorage on mount (for navigation from footer)
   useEffect(() => {
@@ -695,12 +719,17 @@ export default function Products({
     return () => window.removeEventListener("setCategory", onSetCategory);
   }, []);
 
+  // Fetch wishlist
+  useEffect(() => {
+    fetchWishlist();
+  }, [isLoggedIn, customerId]);
+
   // Fallback cart fetch
   const localFetchCart = async () => {
     if (!customerId) return [];
     try {
       const response = await axios.get(
-        `https://suyambufoods.com/api/customer/cart?customerId=${customerId}`,
+        `http://localhost:5000/customer/cart?customerId=${customerId}`,
         { headers: { Origin: "http://localhost:5173" } }
       );
       return Array.isArray(response.data) ? response.data : [];
@@ -730,14 +759,14 @@ export default function Products({
   // Fetch products + UOMs
   useEffect(() => {
     axios
-      .get("https://suyambufoods.com/api/admin/uoms", {
+      .get("http://localhost:5000/admin/uoms", {
         headers: { Origin: "http://localhost:5173" },
       })
       .then((res) => setUoms(res.data || []))
       .catch(() => {});
 
     axios
-      .get("https://suyambufoods.com/api/admin/products", {
+      .get("http://localhost:5000/admin/products", {
         headers: { Origin: "http://localhost:5173" },
       })
       .then((res) => {
@@ -857,10 +886,32 @@ export default function Products({
     setVisibleCount(20);
   }, [category, searchTerm]);
 
+  const handleWishlistToggle = async (productId) => {
+    const currentLiked = wishlistIds.includes(productId);
+    // Optimistic update
+    setWishlistIds((prev) =>
+      currentLiked
+        ? prev.filter((id) => id !== productId)
+        : [...prev, productId]
+    );
+    try {
+      await handleToggleWishlist(productId);
+      // Refetch to ensure sync
+      await fetchWishlist();
+    } catch (err) {
+      // Revert on error
+      setWishlistIds((prev) =>
+        currentLiked
+          ? [...prev, productId]
+          : prev.filter((id) => id !== productId)
+      );
+      showMessage("Failed to update wishlist", "error");
+    }
+  };
+
   // Actions
   const handleAddToCart = async (productId, quantity = 1) => {
     if (!isLoggedIn) {
-      showMessage("Please login to add items to your cart", "warning");
       return;
     }
     if (!customerId) {
@@ -874,7 +925,7 @@ export default function Products({
     }
     try {
       await axios.post(
-        "https://suyambufoods.com/api/customer/cart",
+        "http://localhost:5000/customer/cart",
         { customerId, variantId, quantity },
         { headers: { Origin: "http://localhost:5173" } }
       );
@@ -904,7 +955,7 @@ export default function Products({
     const newQuantity = Math.max(1, item.quantity + change);
     try {
       await axios.put(
-        "https://suyambufoods.com/api/customer/cart",
+        "http://localhost:5000/customer/cart",
         { customerId, variantId, quantity: newQuantity },
         { headers: { Origin: "http://localhost:5173" } }
       );
@@ -943,7 +994,7 @@ export default function Products({
           (product) =>
             category === "all" ||
             (category === "wishlist"
-              ? wishlist.includes(product.id)
+              ? wishlistIds.includes(product.id)
               : product.category_name &&
                 product.category_name.toLowerCase() === category)
         );
@@ -975,7 +1026,7 @@ export default function Products({
       `}</style>
 
       <section id="shop-by-category" className="pt-2 pb-4">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-5 gap-4 md:gap-6 xl:gap-8 mt-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 md:gap-4 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5 xl:gap-8 mt-2">
           {visibleProducts.length > 0 ? (
             visibleProducts.map((product) => (
               <ProductCard
@@ -985,8 +1036,8 @@ export default function Products({
                 customerId={customerId}
                 cartItems={cartItems}
                 updateQuantity={updateQuantity}
-                handleToggleWishlist={handleToggleWishlist}
-                wishlist={wishlist}
+                handleToggleWishlist={handleWishlistToggle}
+                wishlist={wishlistIds}
                 selectedUom={selectedUoms[String(product.id)]}
                 selectedVariant={selectedVariants[String(product.id)]}
                 handleUomChange={(id, value) =>
@@ -995,6 +1046,7 @@ export default function Products({
                 handleAddToCart={handleAddToCart}
                 navigate={navigate}
                 showMessage={showMessage}
+                uoms={uoms}
               />
             ))
           ) : (
@@ -1037,6 +1089,7 @@ function ProductCard({
   handleAddToCart,
   navigate,
   showMessage,
+  uoms,
 }) {
   const cartItem = Array.isArray(cartItems)
     ? cartItems.find(
@@ -1067,22 +1120,22 @@ function ProductCard({
 
   const getDisplayQuantity = (variant) => {
     const qty = variant.variant_quantity || variant.quantity || '';
-    const numQty = Number(qty);
-    const uom = variant.uom_name || '';
-    if (uom.toLowerCase().includes('gram')) {
-      return `${numQty.toFixed(0)}g`;
-    } else if (uom.toLowerCase().includes('kilogram')) {
-      return `${numQty.toFixed(2)} kg`;
+    let uomName = variant.uom_name || '';
+    // Override with correct backend UOM from uoms array if available
+    if (uoms && variant.uom_id) {
+      const uomObj = uoms.find((u) => String(u.id) === String(variant.uom_id));
+      if (uomObj && uomObj.name) {
+        uomName = uomObj.name;
+      }
     }
-    return `${qty} ${uom}`;
+    return `${qty} ${uomName}`;
   };
 
-  // NEW: Handle plus click when not logged in
   const handlePlusClick = () => {
     if (!isLoggedIn) {
-      // Trigger register panel open
-      const registerEvent = new CustomEvent("openAuthPanel", { detail: { panel: "register" } });
-      window.dispatchEvent(registerEvent);
+      if (typeof window.openLoginPanel === "function") {
+        window.openLoginPanel();
+      }
       return;
     }
     if (isOutOfStock || !effectiveVariant) return;
@@ -1213,50 +1266,58 @@ function ProductCard({
           )}
         </div>
 
-        <div className="flex items-center justify-between pt-1">
-          <div className="text-lg font-bold" style={{ color: BRAND }}>
-            ₹
-            {effectiveVariant?.price != null
-              ? Number(effectiveVariant.price).toFixed(2)
-              : "0.00"}
-          </div>
+  <div className="flex items-start justify-between pt-1 flex-wrap gap-4">
+  <div className="flex flex-col items-start flex-shrink-0">
+    <div className="text-base sm:text-lg font-bold" style={{ color: BRAND }}>
+      ₹
+      {effectiveVariant?.price != null
+        ? Number(effectiveVariant.price).toFixed(2)
+        : "0.00"}
+    </div>
+    {quantity > 0 && (
+      <div className="text-sm font-medium mt-1" style={{ color: BRAND }}>
+        Total: ₹{(effectiveVariant?.price ? Number(effectiveVariant.price) * quantity : 0).toFixed(2)}
+      </div>
+    )}
+  </div>
 
-          {/* ALWAYS ENABLED PLUS BUTTON */}
-          {quantity > 0 ? (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => updateQuantity(effectiveVariant.id, -1)}
-                disabled={quantity <= 1}
-                className={`h-8 w-8 rounded-full border-2 grid place-items-center transition-all duration-200 ${
-                  quantity <= 1
-                    ? "border-gray-200 text-gray-300 cursor-not-allowed"
-                    : "border-[#B6895B] text-[#B6895B] hover:bg-[#B6895B]/10"
-                }`}
-                title="Decrease"
-              >
-                <Minus size={14} />
-              </button>
-              <span className="w-6 text-center text-sm font-semibold text-gray-700">
-                {quantity}
-              </span>
-              <button
-                onClick={handlePlusClick}
-                className="h-8 w-8 rounded-full border-2 border-[#B6895B] text-[#B6895B] hover:bg-[#B6895B]/10 grid place-items-center transition-all duration-200"
-                title="Increase"
-              >
-                <Plus size={14} />
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={handlePlusClick}
-              className="h-8 w-8 rounded-full border-2 border-[#B6895B] text-[#B6895B] hover:bg-[#B6895B]/10 grid place-items-center transition-all duration-200"
-              title="Add to cart"
-            >
-              <Plus size={14} />
-            </button>
-          )}
-        </div>
+  <div className="flex items-center gap-1 shrink-0 self-end">
+    {quantity > 0 ? (
+      <>
+        <button
+          onClick={() => updateQuantity(effectiveVariant.id, -1)}
+          disabled={quantity <= 1}
+          className={`h-6 w-6 rounded-full border-2 grid place-items-center transition-all duration-200 text-xs flex-shrink-0 ${
+            quantity <= 1
+              ? "border-gray-200 text-gray-300 cursor-not-allowed"
+              : "border-[#B6895B] text-[#B6895B] hover:bg-[#B6895B]/10 cursor-pointer"
+          }`}
+          title="Decrease"
+        >
+          <Minus size={10} />
+        </button>
+        <span className="w-6 text-center text-sm font-semibold text-gray-700 min-w-[1.5rem] flex-shrink-0">
+          {quantity}
+        </span>
+        <button
+          onClick={handlePlusClick}
+          className="h-6 w-6 rounded-full border-2 border-[#B6895B] text-[#B6895B] hover:bg-[#B6895B]/10 grid place-items-center transition-all duration-200 text-xs flex-shrink-0 cursor-pointer"
+          title="Increase"
+        >
+          <Plus size={10} />
+        </button>
+      </>
+    ) : (
+      <button
+        onClick={handlePlusClick}
+        className="h-6 w-6 rounded-full border-2 border-[#B6895B] text-[#B6895B] hover:bg-[#B6895B]/10 grid place-items-center transition-all duration-200 flex-shrink-0 cursor-pointer"
+        title="Add to cart"
+      >
+        <Plus size={10} />
+      </button>
+    )}
+  </div>
+</div>
       </div>
     </div>
   );

@@ -6,7 +6,7 @@ import {
   PackageCheck, Box, Cookie, Cake, Grape,
 } from "lucide-react";
 
-const IMAGE_BASE = "https://suyambufoods.com/api";
+const IMAGE_BASE = "http://localhost:5000";
 const normalizeImage = (img) => {
   if (!img) return "https://via.placeholder.com/1920x1080";
   if (img.startsWith("http://") || img.startsWith("https://")) return img;
@@ -29,11 +29,10 @@ export default function Banner({ customerId }) {
   const isUserInteractingRef = useRef(false);
   const restartTimerRef = useRef(null);
 
-
   // 1. Get all products from the main endpoint
   useEffect(() => {
     let mounted = true;
-    axios.get("https://suyambufoods.com/api/admin/products", {
+    axios.get("http://localhost:5000/admin/products", {
       headers: { Origin: "http://localhost:5173" },
     }).then(res => {
       if (!mounted) return;
@@ -52,7 +51,7 @@ export default function Banner({ customerId }) {
   // 2. Get categories as before
   useEffect(() => {
     let mounted = true;
-    axios.get("https://suyambufoods.com/api/admin/categories", {
+    axios.get("http://localhost:5000/admin/categories", {
       headers: { Origin: "http://localhost:5173" },
     }).then(res => {
       if (!mounted) return;
@@ -80,7 +79,6 @@ export default function Banner({ customerId }) {
   const categoryCounts = useMemo(() => {
     const counts = {};
     counts["all"] = products.length;
-    // Count for each actual category
     products.forEach(p => {
       const cat = (p.category_name || "").toLowerCase();
       if (!cat) return;
@@ -93,13 +91,12 @@ export default function Banner({ customerId }) {
   const bannerProducts = useMemo(() => products.filter((_, i) => i < 4), [products]);
   const totalSlides = bannerProducts.length;
 
-  // Create infinite slides for seamless looping by cloning the first slide to the end
   const slides = useMemo(() => {
     if (totalSlides === 0) return [];
     return [...bannerProducts, bannerProducts[0]];
   }, [bannerProducts, totalSlides]);
 
-  // Consolidated Slider Logic: Auto-scroll, seamless loop, and user interaction
+  // Consolidated Slider Logic (unchanged)
   useEffect(() => {
     const scroller = scrollerRef.current;
     if (!scroller || totalSlides <= 1) return;
@@ -119,19 +116,15 @@ export default function Banner({ customerId }) {
       const scrollPos = scroller.scrollLeft;
       const currentIndex = Math.round(scrollPos / w);
 
-      // Update the indicator dots, looping back to 0 for the cloned slide
       setIdx(currentIndex % totalSlides);
 
-      // When the smooth scroll to the cloned slide is complete, this detects it.
       if (currentIndex >= totalSlides) {
-        // Instantly jump back to the real first slide without animation.
         scroller.style.scrollBehavior = 'auto';
         scroller.scrollTo({ left: 0, behavior: 'auto' });
-        // Restore smooth scrolling for the next transition in the next frame.
         requestAnimationFrame(() => {
-            if (scrollerRef.current) {
-                scrollerRef.current.style.scrollBehavior = 'smooth';
-            }
+          if (scrollerRef.current) {
+            scrollerRef.current.style.scrollBehavior = 'smooth';
+          }
         });
       }
     };
@@ -143,11 +136,10 @@ export default function Banner({ customerId }) {
     };
 
     const onInteractionEnd = () => {
-      // Use a timeout to wait for a moment before restarting auto-play
       restartTimerRef.current = setTimeout(() => {
         isUserInteractingRef.current = false;
         startAutoSlide();
-      }, 2500); // Wait 2.5s before restarting
+      }, 2500);
     };
 
     scroller.addEventListener('scroll', handleScroll, { passive: true });
@@ -156,7 +148,7 @@ export default function Banner({ customerId }) {
     scroller.addEventListener("touchstart", onInteractionStart, { passive: true });
     scroller.addEventListener("touchend", onInteractionEnd);
 
-    startAutoSlide(); // Initial start
+    startAutoSlide();
 
     return () => {
       clearInterval(timerRef.current);
@@ -169,7 +161,7 @@ export default function Banner({ customerId }) {
         scroller.removeEventListener("touchend", onInteractionEnd);
       }
     };
-  }, [totalSlides]); // This effect re-runs only when the number of slides changes.
+  }, [totalSlides]);
 
   const handleViewProduct = (productId) => {
     const encodedCustomerId = btoa(customerId || "");
@@ -178,7 +170,6 @@ export default function Banner({ customerId }) {
     setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 0);
   };
 
-  // Updated manual slide handler to work with the new loop logic
   const handleSlide = (dir) => {
     const el = scrollerRef.current;
     if (!el || totalSlides <= 1) return;
@@ -188,20 +179,15 @@ export default function Banner({ customerId }) {
     const targetIndex = currentIndex + dir;
 
     if (dir === -1 && targetIndex < 0) {
-      // When clicking "prev" on the first slide, we create a seamless wrap-around.
-      // 1. Instantly jump to the cloned last slide.
       el.style.scrollBehavior = 'auto';
       el.scrollTo({ left: totalSlides * w, behavior: 'auto' });
-      // 2. In the next frame, smoothly scroll back to the last *real* slide.
       requestAnimationFrame(() => {
-          if (scrollerRef.current) {
-              scrollerRef.current.style.scrollBehavior = 'smooth';
-              scrollerRef.current.scrollTo({ left: (totalSlides - 1) * w, behavior: 'smooth' });
-          }
+        if (scrollerRef.current) {
+          scrollerRef.current.style.scrollBehavior = 'smooth';
+          scrollerRef.current.scrollTo({ left: (totalSlides - 1) * w, behavior: 'smooth' });
+        }
       });
     } else {
-      // For "next" and other "prev" clicks, just scroll normally.
-      // The `onScroll` handler will automatically manage the loop at the end.
       el.scrollTo({ left: targetIndex * w, behavior: 'smooth' });
     }
   };
@@ -217,7 +203,7 @@ export default function Banner({ customerId }) {
 
   return (
     <>
-      {/* HERO SLIDER */}
+      {/* HERO SLIDER - INCREASED HEIGHT */}
       <section className="relative overflow-hidden group mt-[-35px]">
         <button
           type="button"
@@ -241,7 +227,7 @@ export default function Banner({ customerId }) {
         </button>
         <div
           ref={scrollerRef}
-          className="relative flex overflow-x-auto snap-x snap-mandatory scroll-smooth h-[52vh] md:h-[60vh] lg:h-[66vh] [-ms-overflow-style:none] [scrollbar-width:none]"
+          className="relative flex overflow-x-auto snap-x snap-mandatory scroll-smooth h-[70vh] md:h-[80vh] lg:h-[85vh] [-ms-overflow-style:none] [scrollbar-width:none]"
           style={{ scrollBehavior: "smooth" }}
         >
           <style>{`.snap-track::-webkit-scrollbar{display:none}`}</style>
@@ -339,7 +325,7 @@ export default function Banner({ customerId }) {
                   <t.Icon size={18} className={active ? "text-white" : "text-gray-600"} />
                   <span className="text-sm">
                     {t.label}
-                    <span className="ml-1 text-xs font-semibold text-gray-500">
+                    <span className="ml-2 text-sm text-inherit">
                       ({count})
                     </span>
                   </span>

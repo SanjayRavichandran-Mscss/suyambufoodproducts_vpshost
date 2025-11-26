@@ -103,7 +103,7 @@ async function generateInvoiceData(orderId) {
     const totalAmount = parseFloat(order.total_amount);
 
     const templateData = {
-      baseUrl: process.env.BASE_URL || 'https://suyambufoods.com/api',
+      baseUrl: process.env.BASE_URL || 'http://localhost:5000',
       customerName: order.customer_name,
       customerEmail: order.customer_email,
       customerMobile: order.customer_mobile,
@@ -191,22 +191,151 @@ async function sendInvoiceEmail(order, templateData, pdfBuffer) {
     }
 }
 
+
+
+exports.sendRegistrationOtp = async (req, res) => {
+    const { email } = req.body;
+    if (!email || email.length > 100 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ message: 'Valid email is required and must be 100 characters or less' });
+    }
+    try {
+        // Check if email already exists (to prevent dummy registrations on existing users)
+        const [existingUser] = await db.query('SELECT id FROM customers WHERE email = ?', [email]);
+        if (existingUser.length > 0) {
+            return res.status(400).json({ message: 'Email already registered. Please login instead.' });
+        }
+
+        // Delete any existing unused OTPs for this email
+        await db.query('DELETE FROM registration_email_verification_otp WHERE email = ? AND used = 0 AND expires_at > NOW()', [email]);
+
+        // Generate 8-digit OTP
+        const otp = Math.floor(10000000 + Math.random() * 90000000).toString();
+
+        // Store OTP with 5-minute expiry
+        const [result] = await db.query(
+            'INSERT INTO registration_email_verification_otp (email, otp, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 5 MINUTE))',
+            [email, otp]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(500).json({ message: 'Failed to send OTP. Please try again.' });
+        }
+
+        // Send email
+        const mailOptions = {
+            from: { name: 'Suyambu Stores', address: process.env.EMAIL_USER },
+            to: email,
+            subject: 'Verify Your Email - Suyambu Stores Registration',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2>Email Verification for Registration</h2>
+                    <p>Thank you for registering with Suyambu Stores!</p>
+                    <p>Your verification code is: <strong style="font-size: 24px; color: #B6895B;">${otp}</strong></p>
+                    <p>This code is valid for 5 minutes. Enter it to complete your registration.</p>
+                    <p>If you did not request this, please ignore this email.</p>
+                    <hr />
+                    <p style="color: #666; font-size: 12px;">Suyambu Stores &bull; ${new Date().toLocaleString('en-IN')}</p>
+                </div>
+            `,
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log(`Registration OTP sent to ${email}`);
+
+        res.status(200).json({ message: 'OTP sent successfully. Please check your inbox (and spam folder).' });
+    } catch (error) {
+        console.error('Send registration OTP error:', error);
+        if (error.code === 'EAUTH' || error.responseCode === 535 || error.message.includes('auth')) {
+            return res.status(500).json({ message: 'Network issue: Failed to send email. Please check your connection and try again.' });
+        }
+        res.status(500).json({ message: 'Server error: Failed to send OTP. Please try again.' });
+    }
+};
+
+// Verify Registration OTP
+exports.verifyRegistrationOtp = async (req, res) => {
+    const { email, otp } = req.body;
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ message: 'Valid email is required' });
+    }
+    if (!otp || otp.length !== 8 || !/^\d{8}$/.test(otp)) {
+        return res.status(400).json({ message: 'Valid 8-digit OTP is required' });
+    }
+    try {
+        // Find and verify OTP
+        const [otpRows] = await db.query(
+            'SELECT id FROM registration_email_verification_otp WHERE email = ? AND otp = ? AND used = 0 AND expires_at > NOW()',
+            [email, otp]
+        );
+
+        if (otpRows.length === 0) {
+            return res.status(400).json({ message: 'Invalid or expired OTP. Please request a new one.' });
+        }
+
+        const otpId = otpRows[0].id;
+
+        // Mark as used
+        await db.query('UPDATE registration_email_verification_otp SET used = 1 WHERE id = ?', [otpId]);
+
+        // Generate short-lived verification token (10 min expiry)
+        const verificationToken = jwt.sign(
+            { email: email, verified: true },
+            process.env.JWT_SECRET || 'your_jwt_secret',
+            { expiresIn: '10m' }
+        );
+
+        res.status(200).json({ 
+            success: true, 
+            message: 'Email verified successfully. You can now complete registration.', 
+            verificationToken 
+        });
+    } catch (error) {
+        console.error('Verify registration OTP error:', error);
+        res.status(500).json({ message: 'Server error: ' + error.message });
+    }
+};
+
+
+
+
 exports.register = async (req, res) => {
-    const { username, email, password, full_name, phone } = req.body;
+    const { username, password, full_name, phone, email, verificationToken } = req.body;
+    
+    // Validate basic fields
     if (!username || username.length > 50) return res.status(400).json({ message: 'Username is required and must be 50 characters or less' });
     if (!email || email.length > 100 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ message: 'Valid email is required and must be 100 characters or less' });
     if (!password || password.length > 255 || password.length < 6) return res.status(400).json({ message: 'Password is required, must be 6-255 characters' });
     if (!full_name || full_name.length > 100) return res.status(400).json({ message: 'Full name is required and must be 100 characters or less' });
     if (!phone || phone.length > 20 || !/^\+?[\d\s-]{7,20}$/.test(phone)) return res.status(400).json({ message: 'Valid phone number is required and must be 20 characters or less' });
+    if (!verificationToken) return res.status(400).json({ message: 'Email verification is required. Please verify your OTP first.' });
+
     try {
+        // Verify the verification token
+        const decoded = jwt.verify(verificationToken, process.env.JWT_SECRET || 'your_jwt_secret');
+        if (!decoded.verified || decoded.email !== email) {
+            return res.status(401).json({ message: 'Invalid or expired verification. Please verify your email again.' });
+        }
+
+        // Double-check no existing user (email or username)
         const [existingUser] = await db.query('SELECT * FROM customers WHERE email = ? OR username = ?', [email, username]);
         if (existingUser.length > 0) return res.status(400).json({ message: 'Email or username already exists' });
+
+        // Hash password and insert
         const hashedPassword = await bcrypt.hash(password, 10);
-        const [result] = await db.query('INSERT INTO customers (username, email, password, full_name, phone, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())', [username, email, hashedPassword, full_name, phone]);
+        const [result] = await db.query(
+            'INSERT INTO customers (username, email, password, full_name, phone, email_verified, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 1, NOW(), NOW())',
+            [username, email, hashedPassword, full_name, phone]
+        );
+
         if (result.affectedRows === 0) return res.status(500).json({ message: 'Failed to register user' });
-        res.status(201).json({ message: 'Registration successful' });
+
+        // Optional: Clean up old OTPs for this email
+        await db.query('DELETE FROM registration_email_verification_otp WHERE email = ? AND used = 0', [email]);
+
+        res.status(201).json({ message: 'Registration successful. Welcome to Suyambu Stores!' });
     } catch (error) {
         console.error('Registration error:', error);
+        if (error.name === 'JsonWebTokenError') return res.status(401).json({ message: 'Invalid verification token. Please start over.' });
         if (error.code === 'ER_DUP_ENTRY') return res.status(400).json({ message: 'Email or username already exists' });
         res.status(500).json({ message: 'Server error: ' + error.message });
     }
@@ -1085,4 +1214,140 @@ exports.getCustomerProduct = async (req, res) => {
     console.error("Error fetching product:", error);
     res.status(500).json({ message: "Server error" });
   }
+};
+
+
+
+
+
+
+// Updated exports for customerController.js (replace the existing forgotPassword and resetPassword functions)
+
+// Forgot Password - Send reset code
+exports.forgotPassword = async (req, res) => {
+    const { email } = req.body;
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ message: 'Valid email is required' });
+    }
+    try {
+        // Check if email exists
+        const [existing] = await db.query('SELECT id, full_name FROM customers WHERE email = ?', [email]);
+        if (existing.length === 0) {
+            return res.status(400).json({ message: 'Email not found.' }); // Reveal email not found for user feedback
+        }
+
+        // Generate 8-digit passkey
+        const passkey = Math.floor(10000000 + Math.random() * 90000000).toString();
+
+        // Delete any existing unused codes for this email
+        await db.query('DELETE FROM password_reset_codes WHERE email = ? AND used = 0 AND expires_at > NOW()', [email]);
+
+        // Insert new code
+        const [result] = await db.query(
+            'INSERT INTO password_reset_codes (email, passkey, created_at, expires_at, used) VALUES (?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 10 MINUTE), 0)',
+            [email, passkey]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(500).json({ message: 'Failed to generate reset code' });
+        }
+
+        // Send email
+        const customerName = existing[0].full_name;
+        const mailOptions = {
+            from: { name: 'Suyambu Stores', address: process.env.EMAIL_USER },
+            to: email,
+            subject: 'Password Reset Code - Suyambu Stores',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2>Password Reset Request</h2>
+                    <p>Hi ${customerName},</p>
+                    <p>Your password reset code is: <strong style="font-size: 24px; color: #B6895B;">${passkey}</strong></p>
+                    <p>This code expires in 10 minutes. If you did not request this, please ignore this email.</p>
+                    <hr />
+                    <p style="color: #666; font-size: 12px;">Suyambu Stores &bull; ${new Date().toLocaleString('en-IN')}</p>
+                </div>
+            `,
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log(`Reset code sent to ${email}`);
+
+        res.status(200).json({ message: 'Reset code sent to your email. Please check your inbox.' });
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        res.status(500).json({ message: 'Server error: ' + error.message });
+    }
+};
+
+exports.resetPassword = async (req, res) => {
+    const { email, passkey, newPassword, confirmPassword } = req.body;
+
+    // Validation for email and passkey (always required)
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ message: 'Valid email is required' });
+    }
+    if (!passkey || passkey.length !== 8 || !/^\d{8}$/.test(passkey)) {
+        return res.status(400).json({ message: 'Valid 8-digit code is required' });
+    }
+
+    // If newPassword is provided, validate it (for full reset)
+    if (newPassword !== undefined && newPassword !== null && newPassword !== '') {
+        if (newPassword.length < 6 || newPassword.length > 255) {
+            return res.status(400).json({ message: 'New password must be 6-255 characters' });
+        }
+        if (newPassword !== confirmPassword) {
+            return res.status(400).json({ message: 'Passwords do not match' });
+        }
+    }
+
+    const connection = await db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // Verify code: match on email, passkey, used=0, expires_at > NOW() (covers created_at implicitly via expiration)
+        const [codeRows] = await connection.query(
+            'SELECT id FROM password_reset_codes WHERE email = ? AND passkey = ? AND used = 0 AND expires_at > NOW()',
+            [email, passkey]
+        );
+
+        if (codeRows.length === 0) {
+            await connection.rollback();
+            return res.status(400).json({ message: 'Invalid or expired code. Please request a new one.' });
+        }
+
+        const codeId = codeRows[0].id;
+
+        // If no newPassword (verification only), just confirm
+        if (newPassword === undefined || newPassword === null || newPassword === '') {
+            await connection.commit();
+            return res.status(200).json({ message: 'Code verified successfully. Please enter your new password.' });
+        }
+
+        // Full reset: hash and update password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        const [updateResult] = await connection.query(
+            'UPDATE customers SET password = ?, updated_at = NOW() WHERE email = ?',
+            [hashedPassword, email]
+        );
+
+        if (updateResult.affectedRows === 0) {
+            await connection.rollback();
+            return res.status(500).json({ message: 'Failed to update password' });
+        }
+
+        // Mark code as used
+        await connection.query('UPDATE password_reset_codes SET used = 1 WHERE id = ?', [codeId]);
+
+        await connection.commit();
+
+        res.status(200).json({ message: 'Password reset successfully. You can now login with your new password.' });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Reset password error:', error);
+        res.status(500).json({ message: 'Server error: ' + error.message });
+    } finally {
+        connection.release();
+    }
 };

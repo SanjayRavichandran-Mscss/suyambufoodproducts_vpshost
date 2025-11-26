@@ -17,7 +17,7 @@ const OrderSummary = ({
   handleRemoveItem,
   isSidebar = false, // Optional prop from CheckoutPage
 }) => {
-  const baseUrl = "https://suyambufoods.com/api";
+  const baseUrl = "http://localhost:5000";
   const [showCartModal, setShowCartModal] = useState(false);
   const [cartAnimation, setCartAnimation] = useState("");
 
@@ -139,13 +139,13 @@ const OrderSummary = ({
             <span>Subtotal</span>
             <span className="text-lg font-extrabold text-[#B6895B]">₹{subtotal.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between text-gray-700 mb-2">
-            <span>Total Tax ({items.reduce((sum, item) => {
-              const taxPerc = parseFloat(item.tax_percentage || 0);
-              return taxPerc > 0 ? taxPerc : sum;
-            }, 0).toFixed(2)}%)</span>
+          {/* <div className="flex justify-between text-gray-700 mb-2">
+              <span>Total Tax ({items.reduce((sum, item) => {
+                const taxPerc = parseFloat(item.tax_percentage || 0);
+                return taxPerc > 0 ? taxPerc : sum;
+              }, 0).toFixed(2)}%)</span>
             <span className="text-lg font-extrabold text-[#B6895B]">₹{totalTax.toFixed(2)}</span>
-          </div>
+          </div> */}
           <div className="flex justify-between text-gray-700 mb-2">
             <span>Shipping</span>
             <span>{shipping === 0 ? "Free" : `₹${shipping.toFixed(2)}`}</span>
