@@ -27,7 +27,7 @@ const DeliveryCharge = () => {
   const fetchDeliveryCharges = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("http://localhost:5000/admin/delivery-charges", {
+      const res = await axios.get("https://suyambufoods.com/api/admin/delivery-charges", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setDeliveryCharges(res.data);
@@ -41,7 +41,7 @@ const DeliveryCharge = () => {
 
   const fetchStates = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/customer/states");
+      const res = await axios.get("https://suyambufoods.com/api/customer/states");
       setStatesOptions(res.data.map(s => ({ value: s.id, label: s.name })));
     } catch (err) {
       console.error("Fetch states error:", err);
@@ -139,11 +139,11 @@ const DeliveryCharge = () => {
 
     try {
       if (id) {
-        await axios.put(`http://localhost:5000/admin/delivery-charges/${id}`, data, {
+        await axios.put(`https://suyambufoods.com/api/admin/delivery-charges/${id}`, data, {
           headers: { Authorization: `Bearer ${token}` },
         });
       } else {
-        await axios.post("http://localhost:5000/admin/delivery-charges", data, {
+        await axios.post("https://suyambufoods.com/api/admin/delivery-charges", data, {
           headers: { Authorization: `Bearer ${token}` },
         });
       }
@@ -182,7 +182,7 @@ const DeliveryCharge = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this delivery range?")) return;
     try {
-      await axios.delete(`http://localhost:5000/admin/delivery-charges/${id}`, {
+      await axios.delete(`https://suyambufoods.com/api/admin/delivery-charges/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       fetchDeliveryCharges();

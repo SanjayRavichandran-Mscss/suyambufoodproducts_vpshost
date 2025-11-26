@@ -25,7 +25,7 @@ const WishList = ({ onClose, customerId, onWishlistCountUpdate }) => {
         if (!token) {
           throw new Error('No authentication token');
         }
-        const response = await fetch(`http://localhost:5000/customer/wishlist?customerId=${customerId}`, {
+        const response = await fetch(`https://suyambufoods.com/api/customer/wishlist?customerId=${customerId}`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -103,7 +103,7 @@ const WishList = ({ onClose, customerId, onWishlistCountUpdate }) => {
                   className="flex gap-4 p-3 border-b border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors rounded-lg"
                 >
                   <img
-                    src={`http://localhost:5000${item.thumbnail_url}`}
+                    src={`https://suyambufoods.com/api${item.thumbnail_url}`}
                     alt={item.name}
                     className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
                     onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/64"; }}

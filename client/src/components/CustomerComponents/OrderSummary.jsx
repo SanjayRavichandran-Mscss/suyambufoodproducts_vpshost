@@ -17,7 +17,7 @@ const OrderSummary = ({
   handleRemoveItem,
   isSidebar = false, // Optional prop from CheckoutPage
 }) => {
-  const baseUrl = "http://localhost:5000";
+  const baseUrl = "https://suyambufoods.com/api";
   const [showCartModal, setShowCartModal] = useState(false);
   const [cartAnimation, setCartAnimation] = useState("");
 

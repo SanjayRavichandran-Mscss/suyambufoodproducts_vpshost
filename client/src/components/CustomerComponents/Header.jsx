@@ -80,7 +80,7 @@
 //   }, [location.pathname]);
 
 //   useEffect(() => {
-//     axios.get("http://localhost:5000/admin/categories", {
+//     axios.get("https://suyambufoods.com/api/admin/categories", {
 //       headers: { Origin: "http://localhost:5173" },
 //     }).then(res => {
 //       const raw = Array.isArray(res.data) ? res.data : [];
@@ -93,7 +93,7 @@
 //   }, []);
 
 //   useEffect(() => {
-//     axios.get("http://localhost:5000/admin/products", {
+//     axios.get("https://suyambufoods.com/api/admin/products", {
 //       headers: { Origin: "http://localhost:5173" },
 //     }).then(res => {
 //       const raw = Array.isArray(res.data) ? res.data : [];
@@ -102,7 +102,7 @@
 //         name: p.name,
 //         category_name: p.category_name || "Uncategorized",
 //         thumbnail_url: p.thumbnail_url
-//           ? (p.thumbnail_url.startsWith("http") ? p.thumbnail_url : `http://localhost:5000${p.thumbnail_url}`)
+//           ? (p.thumbnail_url.startsWith("http") ? p.thumbnail_url : `https://suyambufoods.com/api${p.thumbnail_url}`)
 //           : "https://via.placeholder.com/100",
 //         variants: p.variants || [],
 //         price: (p.variants && p.variants.length > 0 ? p.variants[0].price : p.price) || 0,
@@ -122,7 +122,7 @@
 //       return;
 //     }
 //     try {
-//       const res = await axios.get(`http://localhost:5000/customer/wishlist?customerId=${customerId}`, {
+//       const res = await axios.get(`https://suyambufoods.com/api/customer/wishlist?customerId=${customerId}`, {
 //         headers: { 
 //           Origin: "http://localhost:5173",
 //           Authorization: `Bearer ${token}`
@@ -200,7 +200,7 @@
 //     const fetchSuggestions = async () => {
 //       try {
 //         const res = await axios.get(
-//           `http://localhost:5000/admin/search-products?query=${encodeURIComponent(query.trim())}`,
+//           `https://suyambufoods.com/api/admin/search-products?query=${encodeURIComponent(query.trim())}`,
 //           { headers: { Origin: "http://localhost:5173" } }
 //         );
 //         const products = Array.isArray(res.data) ? res.data : [];
@@ -210,7 +210,7 @@
 //               id: p.id,
 //               name: p.name,
 //               image: p.banner_url
-//                 ? (p.banner_url.startsWith("http") ? p.banner_url : `http://localhost:5000${p.banner_url}`)
+//                 ? (p.banner_url.startsWith("http") ? p.banner_url : `https://suyambufoods.com/api${p.banner_url}`)
 //                 : "https://via.placeholder.com/50",
 //               price: p.variants && p.variants.length > 0 ? p.variants[0].price : p.price || 0
 //             }))
@@ -896,7 +896,7 @@ export default function Header({
   }, [location.pathname]);
 
   useEffect(() => {
-    axios.get("http://localhost:5000/admin/categories", {
+    axios.get("https://suyambufoods.com/api/admin/categories", {
       headers: { Origin: "http://localhost:5173" },
     }).then(res => {
       const raw = Array.isArray(res.data) ? res.data : [];
@@ -909,7 +909,7 @@ export default function Header({
   }, []);
 
   useEffect(() => {
-    axios.get("http://localhost:5000/admin/products", {
+    axios.get("https://suyambufoods.com/api/admin/products", {
       headers: { Origin: "http://localhost:5173" },
     }).then(res => {
       const raw = Array.isArray(res.data) ? res.data : [];
@@ -918,7 +918,7 @@ export default function Header({
         name: p.name,
         category_name: p.category_name || "Uncategorized",
         thumbnail_url: p.thumbnail_url
-          ? (p.thumbnail_url.startsWith("http") ? p.thumbnail_url : `http://localhost:5000${p.thumbnail_url}`)
+          ? (p.thumbnail_url.startsWith("http") ? p.thumbnail_url : `https://suyambufoods.com/api${p.thumbnail_url}`)
           : "https://via.placeholder.com/100",
         variants: p.variants || [],
         price: (p.variants && p.variants.length > 0 ? p.variants[0].price : p.price) || 0,
@@ -938,7 +938,7 @@ export default function Header({
       return;
     }
     try {
-      const res = await axios.get(`http://localhost:5000/customer/wishlist/?customerId=${customerId}`, {
+      const res = await axios.get(`https://suyambufoods.com/api/customer/wishlist/?customerId=${customerId}`, {
         headers: {
           Origin: "http://localhost:5173",
           Authorization: `Bearer ${token}`

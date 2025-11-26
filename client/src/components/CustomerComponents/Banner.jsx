@@ -6,7 +6,7 @@ import {
   PackageCheck, Box, Cookie, Cake, Grape,
 } from "lucide-react";
 
-const IMAGE_BASE = "http://localhost:5000";
+const IMAGE_BASE = "https://suyambufoods.com/api";
 const normalizeImage = (img) => {
   if (!img) return "https://via.placeholder.com/1920x1080";
   if (img.startsWith("http://") || img.startsWith("https://")) return img;
@@ -32,7 +32,7 @@ export default function Banner({ customerId }) {
   // 1. Get all products from the main endpoint
   useEffect(() => {
     let mounted = true;
-    axios.get("http://localhost:5000/admin/products", {
+    axios.get("https://suyambufoods.com/api/admin/products", {
       headers: { Origin: "http://localhost:5173" },
     }).then(res => {
       if (!mounted) return;
@@ -51,7 +51,7 @@ export default function Banner({ customerId }) {
   // 2. Get categories as before
   useEffect(() => {
     let mounted = true;
-    axios.get("http://localhost:5000/admin/categories", {
+    axios.get("https://suyambufoods.com/api/admin/categories", {
       headers: { Origin: "http://localhost:5173" },
     }).then(res => {
       if (!mounted) return;

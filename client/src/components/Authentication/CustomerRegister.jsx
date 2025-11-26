@@ -46,7 +46,7 @@
     
 //     try {
 //       const { confirmPassword, ...registerData } = form;
-//       await axios.post("http://localhost:5000/customer/register", registerData);
+//       await axios.post("https://suyambufoods.com/api/customer/register", registerData);
 //       setSuccess("Registration successful! Please login.");
 //       setTimeout(() => {
 //         setIsClosing(true);
@@ -331,7 +331,7 @@ export default function CustomerRegister({ onLoginClick, onClose }) {
     setOtpError("");
     setLoading(true);
     try {
-      await axios.post("http://localhost:5000/customer/send-registration-otp", { email: form.email });
+      await axios.post("https://suyambufoods.com/api/customer/send-registration-otp", { email: form.email });
       setIsOtpSent(true);
       setOtp("");
       setOtpDisabled(false);
@@ -377,7 +377,7 @@ export default function CustomerRegister({ onLoginClick, onClose }) {
     setOtpError("");
     setLoading(true);
     try {
-      const response = await axios.post("http://localhost:5000/customer/verify-registration-otp", { 
+      const response = await axios.post("https://suyambufoods.com/api/customer/verify-registration-otp", { 
         email: form.email, 
         otp 
       });
@@ -410,7 +410,7 @@ export default function CustomerRegister({ onLoginClick, onClose }) {
     try {
       const { confirmPassword, ...registerData } = form;
       registerData.verificationToken = verificationToken;
-      await axios.post("http://localhost:5000/customer/register", registerData);
+      await axios.post("https://suyambufoods.com/api/customer/register", registerData);
       setSuccess("Registration successful! Please login.");
       setTimeout(() => {
         setIsClosing(true);
