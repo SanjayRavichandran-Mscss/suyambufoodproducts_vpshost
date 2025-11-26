@@ -1173,8 +1173,7 @@ export default function Header({
             <div className="flex-1 mx-2">
               <div className="marquee-container">
                 <div className="marquee-text">
-                  Free Shipping | 45% Discount | Limited Time Offer | Free Shipping | 45% Discount | Limited Time Offer
-                </div>
+Free shipping for orders above 999 | 100% secure payments | Quality packaging |                </div>
               </div>
             </div>
             <div className="flex items-center min-w-[120px] justify-end">
