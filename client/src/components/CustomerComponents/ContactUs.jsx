@@ -281,8 +281,11 @@ export default function ContactUs() {
                       <div>
                         <h3 className="font-semibold text-gray-900">Address</h3>
                         <p className="text-gray-700">
-                          82C5+97M, Mettupalayam<br />
-                          Tamil Nadu 641302
+                      No.12/486, Sathy Main Road, <br />
+Theater Road,  <br />
+Sirumugai, <br />
+Coimbatore – 641302, <br /> 
+Tamil Nadu, India.
                         </p>
                       </div>
                     </div>
