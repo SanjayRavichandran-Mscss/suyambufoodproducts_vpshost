@@ -423,9 +423,8 @@ export default function CustomerPage() {
         </svg>
       </button>
 
-      <div className="h-full overflow-y-auto custom-scrollbar"> {/* Ensure full height with vertical scroll */}
-        <div
-          className={`transition-opacity duration-300 ${
+<div className="h-screen bg-gray-50 flex flex-col custom-scrollbar">
+          <div className={`transition-opacity duration-300 ${
             modalAnimation === "fade-in"
               ? "opacity-100"
               : modalAnimation === "fade-out"

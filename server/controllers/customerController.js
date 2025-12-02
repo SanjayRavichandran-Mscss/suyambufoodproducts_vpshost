@@ -20,13 +20,32 @@ const razorpayInstance = new Razorpay({
 
 const SESSIONS = new Map();
 
+// const transporter = nodemailer.createTransport({
+//     service: 'gmail',
+//     auth: {
+//         user: process.env.EMAIL_USER,
+//         pass: process.env.EMAIL_PASS
+//     }
+// });
+
+
+
+
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.resend.com',
+    port: 587,
+    secure: false, // TLS
     auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+        user: 'resend',
+        pass: process.env.RESEND_API_KEY
     }
 });
+
+// Global "from" so you don't repeat it everywhere
+const DEFAULT_FROM = {
+    name: 'Suyambu Stores',
+    address: process.env.EMAIL_FROM || 'no-reply@suyambufoods.com'  // ← This is correct
+};
 
 function getDecodedCustomerId(req) {
     const customerIdBase64 = req.query.customerId;
@@ -172,7 +191,8 @@ async function sendInvoiceEmail(order, templateData, pdfBuffer) {
         const emailTemplate = handlebars.compile(emailTemplateSource);
         const emailContent = emailTemplate({ customerName: templateData.customerName, orderId: templateData.orderId, orderDate: templateData.orderDate, totalAmount: templateData.totalAmount, baseUrl: templateData.baseUrl });
         const mailOptions = {
-            from: { name: 'Suyambu Stores', address: process.env.EMAIL_USER },
+            // from: { name: 'Suyambu Stores', address: process.env.EMAIL_USER },
+            from: DEFAULT_FROM,
             to: order.customer_email,
             subject: `Order Confirmation & Invoice - Order #${templateData.orderId} - Suyambu Stores`,
             html: emailContent,
@@ -297,48 +317,76 @@ exports.verifyRegistrationOtp = async (req, res) => {
 
 
 
-
 exports.register = async (req, res) => {
-    const { username, password, full_name, phone, email, verificationToken } = req.body;
-    
-    // Validate basic fields
-    if (!username || username.length > 50) return res.status(400).json({ message: 'Username is required and must be 50 characters or less' });
-    if (!email || email.length > 100 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ message: 'Valid email is required and must be 100 characters or less' });
-    if (!password || password.length > 255 || password.length < 6) return res.status(400).json({ message: 'Password is required, must be 6-255 characters' });
-    if (!full_name || full_name.length > 100) return res.status(400).json({ message: 'Full name is required and must be 100 characters or less' });
-    if (!phone || phone.length > 20 || !/^\+?[\d\s-]{7,20}$/.test(phone)) return res.status(400).json({ message: 'Valid phone number is required and must be 20 characters or less' });
-    if (!verificationToken) return res.status(400).json({ message: 'Email verification is required. Please verify your OTP first.' });
+  const { username, password, full_name, phone, email, verificationToken } = req.body;
 
+  // === Basic validation ===
+  if (!username || username.length > 50)
+    return res.status(400).json({ message: "Username is required (max 50 chars)" });
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    return res.status(400).json({ message: "Valid email is required" });
+
+  if (!password || password.length < 6)
+    return res.status(400).json({ message: "Password must be at least 6 characters" });
+
+  if (!full_name || full_name.length > 100)
+    return res.status(400).json({ message: "Full name is required (max 100 chars)" });
+
+  if (!phone || !/^\+?[\d\s-]{7,20}$/.test(phone))
+    return res.status(400).json({ message: "Valid phone number is required" });
+
+  if (!verificationToken)
+    return res.status(400).json({ message: "Email verification required. Please complete OTP step." });
+
+  try {
+    // === Verify JWT token from OTP step ===
+    let decoded;
     try {
-        // Verify the verification token
-        const decoded = jwt.verify(verificationToken, process.env.JWT_SECRET || 'your_jwt_secret');
-        if (!decoded.verified || decoded.email !== email) {
-            return res.status(401).json({ message: 'Invalid or expired verification. Please verify your email again.' });
-        }
-
-        // Double-check no existing user (email or username)
-        const [existingUser] = await db.query('SELECT * FROM customers WHERE email = ? OR username = ?', [email, username]);
-        if (existingUser.length > 0) return res.status(400).json({ message: 'Email or username already exists' });
-
-        // Hash password and insert
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const [result] = await db.query(
-            'INSERT INTO customers (username, email, password, full_name, phone, email_verified, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 1, NOW(), NOW())',
-            [username, email, hashedPassword, full_name, phone]
-        );
-
-        if (result.affectedRows === 0) return res.status(500).json({ message: 'Failed to register user' });
-
-        // Optional: Clean up old OTPs for this email
-        await db.query('DELETE FROM registration_email_verification_otp WHERE email = ? AND used = 0', [email]);
-
-        res.status(201).json({ message: 'Registration successful. Welcome to Suyambu Stores!' });
-    } catch (error) {
-        console.error('Registration error:', error);
-        if (error.name === 'JsonWebTokenError') return res.status(401).json({ message: 'Invalid verification token. Please start over.' });
-        if (error.code === 'ER_DUP_ENTRY') return res.status(400).json({ message: 'Email or username already exists' });
-        res.status(500).json({ message: 'Server error: ' + error.message });
+      decoded = jwt.verify(verificationToken, process.env.JWT_SECRET || "your_jwt_secret");
+    } catch (err) {
+      return res.status(401).json({ message: "Invalid or expired verification token. Please start again." });
     }
+
+    // Token must contain email and be marked as verified
+    if (!decoded.email || decoded.email.toLowerCase() !== email.toLowerCase() || !decoded.verified) {
+      return res.status(401).json({ message: "Email not verified. Please verify OTP first." });
+    }
+
+    // === Check duplicate email or username ===
+    const [existing] = await db.query(
+      "SELECT id FROM customers WHERE email = ? OR username = ? LIMIT 1",
+      [email, username]
+    );
+    if (existing.length > 0) {
+      return res.status(400).json({ message: "Email or username already taken" });
+    }
+
+    // === Hash password & register user ===
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const [result] = await db.query(
+      `INSERT INTO customers 
+       (username, email, password, full_name, phone, created_at, updated_at) 
+       VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
+      [username, email, hashedPassword, full_name, phone]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(500).json({ message: "Failed to create account. Try again." });
+    }
+
+    // Optional: Clean old OTPs
+    await db.query("DELETE FROM registration_email_verification_otp WHERE email = ?", [email]);
+
+    return res.status(201).json({
+      message: "Account created successfully! Welcome to Suyambu Stores!",
+    });
+
+  } catch (error) {
+    console.error("Registration error:", error);
+    return res.status(500).json({ message: "Server error. Please try again later." });
+  }
 };
 
 exports.login = async (req, res) => {
@@ -987,9 +1035,11 @@ exports.verifyPayment = async (req, res) => {
 
 
 
-// Send contact form email
+// Send contact form email - Updated with WhatsApp Number
 exports.sendContactEmail = async (req, res) => {
-    const { name, email, message } = req.body;
+    const { name, email, whatsapp, message } = req.body;
+
+    // Validation
     if (!name || !email || !message) {
         return res.status(400).json({ message: 'Name, email, and message are required' });
     }
@@ -1002,19 +1052,44 @@ exports.sendContactEmail = async (req, res) => {
 
     try {
         const mailOptions = {
-            from: `"${name}" <${email}>`, // Spoof from user's email (actual sender is EMAIL_USER)
-            replyTo: email, // Allows server to reply to the user's email
-            to: process.env.EMAIL_USER, // suyambufoodstores@gmail.com
+            // from: `"${name}" <${email}>`,
+
+            from: DEFAULT_FROM,
+replyTo: email,
+            replyTo: email,
+            to: process.env.EMAIL_USER, // Your email: suyambufoodstores@gmail.com
             subject: `Contact Form Submission from ${name}`,
             html: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h2>New Contact Form Submission</h2>
-                    <p><strong>Name:</strong> ${name}</p>
-                    <p><strong>Email:</strong> ${email}</p>
-                    <p><strong>Message:</strong></p>
-                    <p style="background: #f5f5f5; padding: 15px; border-left: 4px solid #B6895B;">${message}</p>
-                    <hr />
-                    <p style="color: #666; font-size: 12px;">This email was submitted via the Suyambu Stores contact form on ${new Date().toLocaleString('en-IN')}</p>
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px; background-color: #f9f9f9;">
+                    <h2 style="color: #3 | D2F23; border-bottom: 2px solid #B6895B; padding-bottom: 10px;">
+                        New Contact Form Submission
+                    </h2>
+                    
+                    <div style="background: white; padding: 20px; border-radius: 8px; margin-top: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                        <p><strong style="color: #333;">Name:</strong> <span style="color: #555;">${name}</span></p>
+                        <p><strong style="color: #333;">Email:</strong> <span style="color: #555;">${email}</span></p>
+                        
+                        ${whatsapp ? `
+                        <p><strong style="color: #333;">WhatsApp Number:</strong> 
+                            <span style="color: #25D366; font-weight: bold; background: #ECF7E8; padding: 4px 10px; border-radius: 6px; display: inline-block; margin-top: 5px;">
+                                ${whatsapp}
+                            </span>
+                        </p>` : ''}
+                        
+                        <p><strong style="color: #333; margin-top: 20px;">Message:</strong></p>
+                        <div style="background: #f5f5f5; padding: 18px; border-left: 5px solid #B6895B; border-radius: 6px; margin-top: 10px; font-size: 15px; line-height: 1.6;">
+                            ${message.replace(/\n/g, '<br>')}
+                        </div>
+                    </div>
+
+                    <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;" />
+                    
+                    <p style="color: #888; font-size: 12px; text-align: center;">
+                        Submitted on ${new Date().toLocaleString('en-IN', { 
+                            dateStyle: 'medium', 
+                            timeStyle: 'medium' 
+                        })}
+                    </p>
                 </div>
             `,
         };
@@ -1022,13 +1097,14 @@ exports.sendContactEmail = async (req, res) => {
         const info = await transporter.sendMail(mailOptions);
         console.log(`Contact email sent successfully: ${info.messageId}`);
 
-        res.status(200).json({ message: 'Email sent successfully. Thank you for contacting us!' });
+        res.status(200).json({ 
+            message: 'Thank you! Your message has been sent successfully. We will contact you soon.' 
+        });
     } catch (error) {
         console.error('Error sending contact email:', error);
-        res.status(500).json({ message: 'Failed to send email. Please try again later.' });
+        res.status(500).json({ message: 'Failed to send message. Please try again later.' });
     }
 };
-
 
 
 exports.calculateDelivery = async (req, res) => {
@@ -1255,7 +1331,9 @@ exports.forgotPassword = async (req, res) => {
         // Send email
         const customerName = existing[0].full_name;
         const mailOptions = {
-            from: { name: 'Suyambu Stores', address: process.env.EMAIL_USER },
+            // from: { name: 'Suyambu Stores', address: process.env.EMAIL_USER },
+
+            from: DEFAULT_FROM,
             to: email,
             subject: 'Password Reset Code - Suyambu Stores',
             html: `
