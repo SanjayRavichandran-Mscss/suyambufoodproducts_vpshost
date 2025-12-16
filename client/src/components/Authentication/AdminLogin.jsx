@@ -58,7 +58,7 @@ export default function AdminLogin({ onCustomerLoginClick, onClose }) {
 
       <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center">
         <img
-          src="/Assets/Suyambu_Eng_logo.png"
+          src="/Assets/suyambulogo.png"
           alt="Suyambu Stores Logo"
           className="h-16 w-auto mb-6"
         />
