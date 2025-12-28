@@ -1,7 +1,7 @@
 // // client/src/components/CustomerComponents/Footer.jsx
 // import React, { useEffect, useState } from "react";
 // import { Link, useNavigate, useLocation } from "react-router-dom";
-// import { Facebook, Youtube } from "lucide-react";
+// import { Facebook, Youtube, CreditCard, Lock, Shield } from "lucide-react";
 
 // export default function Footer() {
 //   const navigate = useNavigate();
@@ -74,7 +74,7 @@
 //         </div>
 //       </section>
 
-//       {/* Main Footer + Full Green Background Extension - EXACT SAME AS BEFORE */}
+//       {/* Main Footer + Full Green Background Extension */}
 //       <div className="bg-[#4E7E37] min-h-0 relative mb-[-100px]">
 //         <footer className="bg-[#4E7E37] text-white">
 //           <div className="container mx-auto px-4 py-10">
@@ -147,6 +147,23 @@
 //               </div>
 //             </div>
 
+//             {/* NEW: 100% Secure Payment Section */}
+//             <div className="mt-10 pt-8 border-t border-white/20">
+//               <div className="flex flex-col items-center gap-4 text-center">
+//                 <div className="flex items-center gap-3">
+//                   <Lock size={20} className="text-white/90" />
+//                   <Shield size={20} className="text-white/90" />
+//                   <CreditCard size={20} className="text-white/90" />
+//                 </div>
+//                 <p className="text-lg font-semibold text-white">
+//                   100% Secure Payment
+//                 </p>
+//                 <p className="text-sm text-white/80 max-w-md">
+//                   Your transactions are protected with industry-standard encryption and secure payment gateways.
+//                 </p>
+//               </div>
+//             </div>
+
 //             <div className="mt-8 h-px w-full bg-white/20" />
 
 //             <p className="text-center text-white/90 mt-6">
@@ -155,11 +172,11 @@
 //           </div>
 //         </footer>
 
-//         {/* Invisible green filler - kept exactly as you had */}
+//         {/* Invisible green filler */}
 //         <div className="h-32 w-full bg-[#4E7E37] -mb-1"></div>
 
 //         {/* Scroll to Top Button */}
-//         {showScrollTop && (
+//         {/* {showScrollTop && (
 //           <button
 //             onClick={scrollToTop}
 //             className="fixed bottom-20 right-4 md:right-8 z-50 w-14 h-14 bg-green-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-green-700 transition-all duration-300 hover:scale-110 animate-bounce"
@@ -176,18 +193,11 @@
 //               <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
 //             </svg>
 //           </button>
-//         )}
+//         )} */}
 //       </div>
 //     </>
 //   );
 // }
-
-
-
-
-
-
-
 
 
 
@@ -236,9 +246,37 @@ export default function Footer() {
 
   const currentYear = new Date().getFullYear();
 
+  const handleLegalLinkClick = (sectionId) => {
+    // If already on legal-info page, just scroll smoothly to section
+    if (location.pathname === "/legal-info") {
+      const element = document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      return;
+    }
+
+    // Otherwise, navigate to the page with hash
+    navigate(`/legal-info#${sectionId}`);
+
+    // After navigation, scroll to the section once the page is ready
+    const scrollToSection = () => {
+      const element = document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else {
+        // Retry once if element not found immediately
+        setTimeout(scrollToSection, 100);
+      }
+    };
+
+    // Start checking after a short delay to allow page render
+    setTimeout(scrollToSection, 150);
+  };
+
   return (
     <>
-      {/* Stay Connected Section - Now Pure White Background */}
+      {/* Stay Connected Section */}
       <section className="bg-white py-16">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-4xl md:text-5xl font-extrabold text-[#3D2F23] mb-4">
@@ -247,7 +285,6 @@ export default function Footer() {
           <div className="w-24 h-1 bg-[#B6895B] mx-auto mb-10"></div>
 
           <div className="flex justify-center items-center gap-10">
-            {/* Facebook Icon */}
             <a
               href="https://www.facebook.com/suyambufoodproducts/"
               target="_blank"
@@ -258,7 +295,6 @@ export default function Footer() {
               <Facebook size={56} className="text-[#1877F2]" />
             </a>
 
-            {/* YouTube Icon - Replaced Instagram */}
             <a
               href="https://www.youtube.com/@suyambu-foods"
               target="_blank"
@@ -272,11 +308,11 @@ export default function Footer() {
         </div>
       </section>
 
-      {/* Main Footer + Full Green Background Extension */}
+      {/* Main Footer */}
       <div className="bg-[#4E7E37] min-h-0 relative mb-[-100px]">
         <footer className="bg-[#4E7E37] text-white">
           <div className="container mx-auto px-4 py-10">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:justify-between lg:items-start gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 lg:justify-between lg:items-start gap-8">
               {/* Brand */}
               <div>
                 <h3 className="text-2xl font-extrabold">Suyambu</h3>
@@ -311,7 +347,7 @@ export default function Footer() {
                 <h4 className="text-lg font-semibold">Quick Links</h4>
                 <ul className="mt-4 space-y-3">
                   <li>
-                    <button onClick={handleShopClick} className="hover:underline">
+                    <button onClick={handleShopClick} className="hover:underline cursor-pointer">
                       Shop
                     </button>
                   </li>
@@ -324,6 +360,45 @@ export default function Footer() {
                     <Link to="/contact" className="hover:underline">
                       Contact
                     </Link>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Legal Info */}
+              <div>
+                <h4 className="text-lg font-semibold">Legal Info</h4>
+                <ul className="mt-4 space-y-3">
+                  <li>
+                    <button
+                      onClick={() => handleLegalLinkClick("terms")}
+                      className="hover:underline text-left cursor-pointer"
+                    >
+                      Terms & Conditions
+                    </button>
+                  </li>
+                  {/* <li>
+                    <button
+                      onClick={() => handleLegalLinkClick("privacy")}
+                      className="hover:underline text-left cursor-pointer"
+                    >
+                      Privacy Policy
+                    </button>
+                  </li> */}
+                  <li>
+                    <button
+                      onClick={() => handleLegalLinkClick("shipping")}
+                      className="hover:underline text-left cursor-pointer"
+                    >
+                      Shipping Policy
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      onClick={() => handleLegalLinkClick("refund")}
+                      className="hover:underline text-left cursor-pointer"
+                    >
+                      Returns & Refund
+                    </button>
                   </li>
                 </ul>
               </div>
@@ -345,7 +420,7 @@ export default function Footer() {
               </div>
             </div>
 
-            {/* NEW: 100% Secure Payment Section */}
+            {/* Secure Payment Section */}
             <div className="mt-10 pt-8 border-t border-white/20">
               <div className="flex flex-col items-center gap-4 text-center">
                 <div className="flex items-center gap-3">
@@ -370,28 +445,7 @@ export default function Footer() {
           </div>
         </footer>
 
-        {/* Invisible green filler */}
         <div className="h-32 w-full bg-[#4E7E37] -mb-1"></div>
-
-        {/* Scroll to Top Button */}
-        {/* {showScrollTop && (
-          <button
-            onClick={scrollToTop}
-            className="fixed bottom-20 right-4 md:right-8 z-50 w-14 h-14 bg-green-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-green-700 transition-all duration-300 hover:scale-110 animate-bounce"
-            aria-label="Scroll to top"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-8 w-8"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2.5}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
-            </svg>
-          </button>
-        )} */}
       </div>
     </>
   );

@@ -9,6 +9,7 @@ import CheckOutPage from "./Pages/CheckOutPage";
 import Aboutus from "./components/CustomerComponents/AboutUs";
 import ContactUs from "./components/CustomerComponents/ContactUs";
 import { AdminProtectedRoute, CustomerProtectedRoute } from "./components/ProtectedRoutes/ProtectedRoutes";
+import LegalInfo from "./components/CustomerComponents/LegalInfo";
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
         <Route path="/about" element={<Aboutus />} />
         <Route path="/contact" element={<ContactUs />} />
         <Route path="/customer" element={<CustomerPage />} /> {/* Made public - handles single product via query params */}
+        <Route path="/legal-info" element={<LegalInfo />} />
         <Route path="/customerlogin" element={<CustomerLogin />} />
         <Route path="/customerregister" element={<CustomerRegister />} />
         <Route path="/adminlogin" element={<AdminLogin />} />

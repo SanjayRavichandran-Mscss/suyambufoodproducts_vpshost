@@ -160,11 +160,10 @@
 
 
 
-
-  import React, { useState } from "react";
+import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { User, Eye, EyeOff } from "lucide-react"; // X removed
+import { Eye, EyeOff, ArrowLeft } from "lucide-react"; // Added ArrowLeft
 import CustomerRegister from "./CustomerRegister";
 import CustomerPasswordReset from "./CustomerPasswordReset";
 
@@ -223,17 +222,22 @@ export default function CustomerLogin({ onClose }) {
 
   return (
     <div className="h-full flex flex-col bg-white">
-      <div className="flex items-center justify-between p-4 border-b">
-        <h2 className="text-xl font-semibold text-gray-800">Welcome Back</h2>
-        {/* Remove this button if parent modal already provides a close/X */}
-        {/* <button
-          type="button"
-          onClick={onClose}
-          className="p-1 rounded-md hover:bg-gray-100 transition-colors"
-        >
-          <X size={20} className="text-gray-400" />
-        </button> */}
-      </div>
+      {/* Header with Left Arrow and Title */}
+    <div className="flex items-center p-4 border-b">
+  {/* Left Arrow Button */}
+  <button
+    type="button"
+    onClick={onClose}
+    className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+  >
+    <ArrowLeft size={24} className="text-gray-600" />
+  </button>
+
+  {/* Welcome Back - Left aligned */}
+  <h2 className="text-xl font-semibold text-gray-800 ml-3">
+    Welcome Back
+  </h2>
+</div>
 
       <div className="flex-1 overflow-y-auto p-6">
         <form onSubmit={handleSubmit} className="space-y-4">

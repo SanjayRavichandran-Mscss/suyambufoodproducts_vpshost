@@ -493,10 +493,6 @@
 
 
 
-
-
-
-
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
@@ -881,28 +877,21 @@ export default function CustomerPage() {
         )}
       </main>
 
-      {/* Authentication Side Panel (Login/Register) - 20% width */}
+      {/* Authentication Side Panel (Login/Register) - Clean without left X button */}
       {showAuthModal && (
         <div
           className={`fixed inset-0 z-50 transition-opacity duration-300 ${
             modalAnimation.includes("in") ? "bg-black/30 backdrop-blur-sm" : "bg-transparent"
           } ${modalAnimation.includes("in") ? "opacity-100" : "opacity-0 pointer-events-none"}`}
-          onClick={handleCloseModal}
+          onClick={handleCloseModal} // Close when clicking overlay
         >
           <div
             className={`absolute right-0 top-0 h-full w-full sm:w-96 md:w-4/5 lg:w-3/5 xl:w-2/5 bg-white shadow-2xl transform transition-transform duration-300 ${
               modalAnimation === "slide-in" ? "translate-x-0" : "translate-x-full"
             } overflow-y-auto custom-scrollbar`}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
           >
-            <button
-              onClick={handleCloseModal}
-              className="absolute top-4 left-4 text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100 z-10"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            {/* REMOVED: Left-side close button */}
 
             <div className="h-full bg-gray-50 flex flex-col">
               <div className={`transition-opacity duration-300 ${modalAnimation.includes("fade") ? (modalAnimation === "fade-in" ? "opacity-100" : "opacity-0") : "opacity-100"}`}>
@@ -917,7 +906,7 @@ export default function CustomerPage() {
         </div>
       )}
 
-      {/* Cart Side Panel - 20% width */}
+      {/* Cart Side Panel */}
       {showCartModal && customerData && (
         <div
           className={`fixed inset-0 z-50 transition-opacity duration-300 ${
@@ -944,7 +933,7 @@ export default function CustomerPage() {
         </div>
       )}
 
-      {/* Orders Side Panel - 20% width */}
+      {/* Orders Side Panel */}
       {showOrdersModal && customerData && (
         <div
           className={`fixed inset-0 z-50 transition-opacity duration-300 ${
