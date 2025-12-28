@@ -234,7 +234,7 @@ export default function AdminMenus({ adminId }) {
       <nav className="fixed top-0 left-0 w-full bg-white flex items-center justify-between px-2 sm:px-4 lg:px-6 py-3 sm:py-4 border-b border-[#E3E8EE] z-50">
         <div className="flex items-center">
           <img
-            src="/Assets/Suyambu_Eng_logo.png"
+            src="/Assets/suyambulogo.png"
             alt="Suyambu Stores Logo"
             className="h-10 sm:h-12 w-auto object-contain"
           />

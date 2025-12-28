@@ -222,6 +222,13 @@
 //     setFormData((prev) => ({ ...prev, additional_images: newImages }));
 //   };
 
+//   // NEW: Handle remove new additional image
+//   const removeNewAdditionalImage = (index) => {
+//     const newImages = [...formData.additional_images];
+//     newImages[index] = null;
+//     setFormData(prev => ({ ...prev, additional_images: newImages }));
+//   };
+
 //   // NEW: Handle remove existing additional image
 //   const removeExistingAdditionalImage = (index) => {
 //     const updatedExisting = [...formData.existing_additional_images];
@@ -528,7 +535,7 @@
 //           />
 //           <button
 //             onClick={() => removeExistingAdditionalImage(index)}
-//             className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 text-xs hover:bg-red-600 transition-colors"
+//             className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 text-xs hover:bg-red-600 transition-colors z-10"
 //           >
 //             ×
 //           </button>
@@ -539,8 +546,9 @@
 //     // New upload slots
 //     for (let i = 0; i < newSlotsNeeded; i++) {
 //       const newIndex = i + existingCount;
+//       const currentImage = formData.additional_images[newIndex];
 //       gridItems.push(
-//         <div key={`new-${i}`} className="aspect-square border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-[#4A6572] transition-colors duration-200">
+//         <div key={`new-${i}`} className="relative aspect-square border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-[#4A6572] transition-colors duration-200 overflow-hidden">
 //           <input
 //             type="file"
 //             accept="image/*"
@@ -548,18 +556,30 @@
 //             className="hidden"
 //             id={`additional-image-${newIndex}`}
 //           />
-//           <label htmlFor={`additional-image-${newIndex}`} className="cursor-pointer block w-full h-full flex flex-col items-center justify-center">
+//           <label htmlFor={`additional-image-${newIndex}`} className="cursor-pointer block w-full h-full flex flex-col items-center justify-center relative z-0">
 //             <svg className="w-6 h-6 text-gray-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 //               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
 //             </svg>
 //             <span className="text-xs text-gray-500">Add Image</span>
 //           </label>
-//           {formData.additional_images[newIndex] && (
-//             <img
-//               src={URL.createObjectURL(formData.additional_images[newIndex])}
-//               alt={`New additional ${newIndex + 1}`}
-//               className="absolute inset-0 w-full h-full object-cover"
-//             />
+//           {currentImage && (
+//             <>
+//               <img
+//                 src={URL.createObjectURL(currentImage)}
+//                 alt={`New additional ${newIndex + 1}`}
+//                 className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+//               />
+//               <button
+//                 onClick={(e) => {
+//                   e.preventDefault();
+//                   e.stopPropagation();
+//                   removeNewAdditionalImage(newIndex);
+//                 }}
+//                 className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 text-xs hover:bg-red-600 transition-colors z-10"
+//               >
+//                 ×
+//               </button>
+//             </>
 //           )}
 //         </div>
 //       );
@@ -1140,13 +1160,58 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import Select from 'react-select';
+import ReactQuill from "react-quill-new";
+import "quill/dist/quill.snow.css";  // This works perfectly with react-quill-new
+
 
 const API_BASE = "https://suyambufoods.com/api/admin";
 const IMAGE_BASE = "https://suyambufoods.com/api";  // Updated: Root domain for static images
 const FALLBACK_IMAGE = `${IMAGE_BASE}/fallback-image.png`;
+
+
+
+const quillModules = {
+  toolbar: [
+    [{ header: [1, 2, 3, false] }],
+    ["bold", "italic", "underline", "strike"],
+    [{ list: "ordered" }, { list: "bullet" }],
+    [{ align: [] }],
+    ["link"],
+    ["clean"]
+  ]
+};
+
+const quillFormats = [
+  "header",
+  "bold",
+  "italic",
+  "underline",
+  "strike",
+  "list",
+  "bullet",
+  "align",
+  "link"
+];
 
 const ManageProducts = () => {
   const [products, setProducts] = useState([]);
@@ -1884,12 +1949,9 @@ const ManageProducts = () => {
                     </div>
 
                     {/* Description */}
-                    {prod.description && (
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                        {prod.description}
-                      </p>
-                    )}
-
+                  <div className="ql-editor text-gray-600 text-sm mb-4 prose prose-sm max-w-none">
+  <div dangerouslySetInnerHTML={{ __html: prod.description || "" }} />
+</div>
                     {/* Actions */}
                     <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
                       <button
@@ -2017,22 +2079,24 @@ const ManageProducts = () => {
                       />
                       <p className="text-xs text-gray-500 mt-1">Enter tax rate (0-100). Defaults to 0.</p>
                     </div>
-
                     {/* Description */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Description
-                      </label>
-                      <textarea
-                        name="description"
-                        value={formData.description}
-                        onChange={handleChange}
-                        rows="4"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A6572] focus:border-transparent transition-colors duration-200 resize-none"
-                        placeholder="Enter product description"
-                      />
-                    </div>
-
+<div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">
+    Description
+  </label>
+  {modalOpen && (
+    <ReactQuill
+      theme="snow"
+      value={formData.description}
+      onChange={(value) =>
+        setFormData((prev) => ({ ...prev, description: value }))
+      }
+      modules={quillModules}
+      formats={quillFormats}
+      placeholder="Enter product description..."
+    />
+  )}
+</div>
                     {/* Stock Status */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
