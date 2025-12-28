@@ -5,15 +5,10 @@ import axios from "axios";
 import Swal from "sweetalert2";
 import Header from "./Header";
 import Footer from "./Footer";
-
-function decodeCustomerId(encodedId) {
-  try {
-    return atob(encodedId);
-  } catch {
-    console.error("Error decoding customerId:", encodedId);
-    return null;
-  }
-}
+import CustomerLogin from "../Authentication/CustomerLogin";
+import CustomerRegister from "../Authentication/CustomerRegister";
+import Cart from "./Cart";
+import MyOrders from "./MyOrders";
 
 export default function PrivacyPolicy() {
   const navigate = useNavigate();
@@ -21,12 +16,20 @@ export default function PrivacyPolicy() {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Modal states for side panels
+  const [showAuthModal, setShowAuthModal] = useState(null); // "login" | "register" | null
+  const [modalAnimation, setModalAnimation] = useState("");
+  const [showCartModal, setShowCartModal] = useState(false);
+  const [cartAnimation, setCartAnimation] = useState("");
+  const [showOrdersModal, setShowOrdersModal] = useState(false);
+  const [ordersAnimation, setOrdersAnimation] = useState("");
+
   const customerId = localStorage.getItem("customerId");
 
   const showMessage = (msg, icon = "success") => {
     Swal.fire({
       text: msg,
-      icon: icon,
+      icon,
       toast: true,
       position: "bottom-end",
       timer: 2000,
@@ -89,20 +92,74 @@ export default function PrivacyPolicy() {
     }
   };
 
+  // Header button handlers
   const handleLoginClick = () => {
-    window.openLoginPanel?.();
+    setModalAnimation("slide-in");
+    setShowAuthModal("login");
   };
 
   const handleRegisterClick = () => {
-    window.openRegisterPanel?.();
+    setModalAnimation("slide-in");
+    setShowAuthModal("register");
   };
 
   const handleCartClick = () => {
-    if (!customerData) handleLoginClick();
+    if (!customerData) {
+      handleLoginClick();
+      return;
+    }
+    setCartAnimation("slide-in");
+    setShowCartModal(true);
   };
 
   const handleOrdersClick = () => {
-    if (!customerData) handleLoginClick();
+    if (!customerData) {
+      handleLoginClick();
+      return;
+    }
+    setOrdersAnimation("slide-in");
+    setShowOrdersModal(true);
+  };
+
+  // Close handlers
+  const closeAuthModal = () => {
+    setModalAnimation("slide-out");
+    setTimeout(() => {
+      setShowAuthModal(null);
+      setModalAnimation("");
+    }, 300);
+  };
+
+  const closeCartModal = () => {
+    setCartAnimation("slide-out");
+    setTimeout(() => {
+      setShowCartModal(false);
+      setCartAnimation("");
+    }, 300);
+  };
+
+  const closeOrdersModal = () => {
+    setOrdersAnimation("slide-out");
+    setTimeout(() => {
+      setShowOrdersModal(false);
+      setOrdersAnimation("");
+    }, 300);
+  };
+
+  const switchToRegister = () => {
+    setModalAnimation("fade-out");
+    setTimeout(() => {
+      setShowAuthModal("register");
+      setModalAnimation("fade-in");
+    }, 300);
+  };
+
+  const switchToLogin = () => {
+    setModalAnimation("fade-out");
+    setTimeout(() => {
+      setShowAuthModal("login");
+      setModalAnimation("fade-in");
+    }, 300);
   };
 
   if (loading) {
@@ -340,6 +397,80 @@ export default function PrivacyPolicy() {
       </main>
 
       <Footer />
+
+      {/* Authentication Side Panel */}
+      {showAuthModal && (
+        <div
+          className={`fixed inset-0 z-50 transition-opacity duration-300 ${
+            modalAnimation.includes("in") ? "bg-black/30 backdrop-blur-sm" : "bg-transparent"
+          } ${modalAnimation.includes("in") ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+          onClick={closeAuthModal}
+        >
+          <div
+            className={`absolute right-0 top-0 h-full w-full sm:w-96 md:w-4/5 lg:w-3/5 xl:w-2/5 bg-white shadow-2xl transform transition-transform duration-300 ${
+              modalAnimation === "slide-in" || modalAnimation === "fade-in" ? "translate-x-0" : "translate-x-full"
+            } overflow-y-auto`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="h-full flex flex-col">
+              <div className={`transition-opacity duration-300 ${modalAnimation.includes("fade") ? (modalAnimation === "fade-in" ? "opacity-100" : "opacity-0") : "opacity-100"}`}>
+                {showAuthModal === "login" ? (
+                  <CustomerLogin onRegisterClick={switchToRegister} onClose={closeAuthModal} />
+                ) : (
+                  <CustomerRegister onLoginClick={switchToLogin} onClose={closeAuthModal} />
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cart Side Panel */}
+      {showCartModal && customerData && (
+        <div
+          className={`fixed inset-0 z-50 transition-opacity duration-300 ${
+            cartAnimation === "slide-in" ? "bg-black/30 backdrop-blur-sm" : "bg-transparent"
+          } ${cartAnimation === "slide-in" ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+          onClick={closeCartModal}
+        >
+          <div
+            className={`absolute right-0 top-0 h-full w-full sm:w-96 md:w-4/5 lg:w-3/5 xl:w-2/5 bg-white shadow-2xl transform transition-transform duration-300 ${
+              cartAnimation === "slide-in" ? "translate-x-0" : "translate-x-full"
+            } overflow-y-auto`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Cart
+              customerId={customerId}
+              cartItems={cartItems}
+              updateQuantity={() => fetchCart()}
+              handleRemoveItem={() => fetchCart()}
+              handleCloseCart={closeCartModal}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Orders Side Panel */}
+      {showOrdersModal && customerData && (
+        <div
+          className={`fixed inset-0 z-50 transition-opacity duration-300 ${
+            ordersAnimation === "slide-in" ? "bg-black/30 backdrop-blur-sm" : "bg-transparent"
+          } ${ordersAnimation === "slide-in" ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+          onClick={closeOrdersModal}
+        >
+          <div
+            className={`absolute right-0 top-0 h-full w-full sm:w-96 md:w-4/5 lg:w-3/5 xl:w-2/5 bg-white shadow-2xl transform transition-transform duration-300 ${
+              ordersAnimation === "slide-in" ? "translate-x-0" : "translate-x-full"
+            } overflow-y-auto`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MyOrders
+              customerId={customerId}
+              handleCloseOrders={closeOrdersModal}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
