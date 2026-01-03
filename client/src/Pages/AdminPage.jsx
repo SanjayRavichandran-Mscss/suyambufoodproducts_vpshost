@@ -42,7 +42,7 @@
 
 //     const verifyAdmin = async () => {
 //       try {
-//         const response = await fetch("https://suyambufoods.com/api/admin/verify", {
+//         const response = await fetch("https://suyambuoils.com/api/admin/verify", {
 //           method: "GET",
 //           headers: {
 //             "Content-Type": "application/json",
@@ -155,7 +155,7 @@ export default function AdminPages() {
 
     const verifyAdmin = async () => {
       try {
-        const response = await fetch("https://suyambufoods.com/api/admin/verify", {
+        const response = await fetch("https://suyambuoils.com/api/admin/verify", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

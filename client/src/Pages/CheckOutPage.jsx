@@ -46,7 +46,7 @@ const CheckOutPage = () => {
       console.log("Fetching product details for tax_percentage:", buyNowItem.product_id || buyNowItem.id);
       const token = localStorage.getItem("customerToken");
       const productId = buyNowItem.product_id || buyNowItem.id;
-      const response = await fetch(`https://suyambufoods.com/api/customer/product/${productId}`, {
+      const response = await fetch(`https://suyambuoils.com/api/customer/product/${productId}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -126,7 +126,7 @@ const CheckOutPage = () => {
           quantity: item.quantity,
         }));
       }
-      const response = await fetch(`https://suyambufoods.com/api/customer/calculate-delivery`, {
+      const response = await fetch(`https://suyambuoils.com/api/customer/calculate-delivery`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -182,7 +182,7 @@ const CheckOutPage = () => {
     const verifyCustomer = async () => {
       try {
         const response = await fetch(
-          `https://suyambufoods.com/api/customer/profile?customerId=${storedCustomerId}`,
+          `https://suyambuoils.com/api/customer/profile?customerId=${storedCustomerId}`,
           {
             method: "GET",
             headers: {
@@ -224,7 +224,7 @@ const CheckOutPage = () => {
     if (!customerId) return;
     try {
       const token = localStorage.getItem("customerToken");
-      const response = await fetch(`https://suyambufoods.com/api/customer/cart?customerId=${customerId}`, {
+      const response = await fetch(`https://suyambuoils.com/api/customer/cart?customerId=${customerId}`, {
         headers: {
           "Content-Type": "application/json",
           Origin: "http://localhost:5173",
@@ -251,7 +251,7 @@ const CheckOutPage = () => {
     const newQuantity = Math.max(1, item.quantity + change);
     try {
       const token = localStorage.getItem("customerToken");
-      const response = await fetch(`https://suyambufoods.com/api/customer/cart`, {
+      const response = await fetch(`https://suyambuoils.com/api/customer/cart`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -285,7 +285,7 @@ const CheckOutPage = () => {
     try {
       const token = localStorage.getItem("customerToken");
       const response = await fetch(
-        `https://suyambufoods.com/api/customer/cart?customerId=${customerId}&variantId=${variantId}`,
+        `https://suyambuoils.com/api/customer/cart?customerId=${customerId}&variantId=${variantId}`,
         {
           method: "DELETE",
           headers: {
@@ -413,7 +413,7 @@ const CheckOutPage = () => {
     const token = localStorage.getItem("customerToken");
 
     try {
-      const createOrderResponse = await fetch(`https://suyambufoods.com/api/customer/payment/create-order`, {
+      const createOrderResponse = await fetch(`https://suyambuoils.com/api/customer/payment/create-order`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -434,7 +434,7 @@ const CheckOutPage = () => {
         description: "Order Payment",
         order_id: order.id,
         handler: async function (response) {
-          const verifyResponse = await fetch(`https://suyambufoods.com/api/customer/payment/verify`, {
+          const verifyResponse = await fetch(`https://suyambuoils.com/api/customer/payment/verify`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -467,7 +467,7 @@ const CheckOutPage = () => {
               },
             };
 
-            const placeOrderResponse = await fetch(`https://suyambufoods.com/api/customer/orders`, {
+            const placeOrderResponse = await fetch(`https://suyambuoils.com/api/customer/orders`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",

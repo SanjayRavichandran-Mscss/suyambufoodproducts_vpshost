@@ -17,7 +17,7 @@
 //   handleRemoveItem,
 //   isSidebar = false, // Optional prop from CheckoutPage
 // }) => {
-//   const baseUrl = "https://suyambufoods.com/api";
+//   const baseUrl = "https://suyambuoils.com/api";
 //   const [showCartModal, setShowCartModal] = useState(false);
 //   const [cartAnimation, setCartAnimation] = useState("");
 
@@ -217,7 +217,7 @@ const OrderSummary = ({
   handleRemoveItem,
   isSidebar = false, // Optional prop from CheckoutPage
 }) => {
-  const baseUrl = "https://suyambufoods.com/api";
+  const baseUrl = "https://suyambuoils.com/api";
   const [showCartModal, setShowCartModal] = useState(false);
   const [cartAnimation, setCartAnimation] = useState("");
 

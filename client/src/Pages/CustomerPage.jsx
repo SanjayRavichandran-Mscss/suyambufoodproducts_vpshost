@@ -121,7 +121,7 @@
 //     const verifyCustomer = async () => {
 //       try {
 //         const response = await axios.get(
-//          `https://suyambufoods.com/api/customer/profile?customerId=${storedCustomerId}`,
+//          `https://suyambuoils.com/api/customer/profile?customerId=${storedCustomerId}`,
 //          {
 //            headers: {
 //              "Content-Type": "application/json",
@@ -170,7 +170,7 @@
 
 //     try {
 //       const response = await axios.get(
-//         `https://suyambufoods.com/api/customer/cart?customerId=${customerId}`,
+//         `https://suyambuoils.com/api/customer/cart?customerId=${customerId}`,
 //         { headers: { Authorization: `Bearer ${token}` } }
 //       );
 //       setCartItems(Array.isArray(response.data) ? response.data : []);
@@ -189,7 +189,7 @@
 
 //     try {
 //       const response = await axios.get(
-//         `https://suyambufoods.com/api/customer/wishlist?customerId=${customerId}`,
+//         `https://suyambuoils.com/api/customer/wishlist?customerId=${customerId}`,
 //         { headers: { Authorization: `Bearer ${token}` } }
 //       );
 //       setWishlist(
@@ -210,7 +210,7 @@
 //     const token = localStorage.getItem("customerToken");
 //     try {
 //       const response = await axios.post(
-//         "https://suyambufoods.com/api/customer/wishlist",
+//         "https://suyambuoils.com/api/customer/wishlist",
 //         { customerId, productId },
 //         { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
 //       );
@@ -293,7 +293,7 @@
 //     const token = localStorage.getItem("customerToken");
 //     try {
 //       await axios.put(
-//         "https://suyambufoods.com/api/customer/cart",
+//         "https://suyambuoils.com/api/customer/cart",
 //         { customerId, variantId, quantity: newQuantity },
 //         { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
 //       );
@@ -311,7 +311,7 @@
 //     const token = localStorage.getItem("customerToken");
 //     try {
 //       await axios.delete(
-//         `https://suyambufoods.com/api/customer/cart?customerId=${customerId}&variantId=${variantId}`,
+//         `https://suyambuoils.com/api/customer/cart?customerId=${customerId}&variantId=${variantId}`,
 //         { headers: { Authorization: `Bearer ${token}` } }
 //       );
 //       const updatedCart = await fetchCart();
@@ -613,7 +613,7 @@ export default function CustomerPage() {
     const verifyCustomer = async () => {
       try {
         const response = await axios.get(
-          `https://suyambufoods.com/api/customer/profile?customerId=${storedCustomerId}`,
+          `https://suyambuoils.com/api/customer/profile?customerId=${storedCustomerId}`,
           {
             headers: {
               "Content-Type": "application/json",
@@ -660,7 +660,7 @@ export default function CustomerPage() {
 
     try {
       const response = await axios.get(
-        `https://suyambufoods.com/api/customer/cart?customerId=${customerId}`,
+        `https://suyambuoils.com/api/customer/cart?customerId=${customerId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setCartItems(Array.isArray(response.data) ? response.data : []);
@@ -679,7 +679,7 @@ export default function CustomerPage() {
 
     try {
       const response = await axios.get(
-        `https://suyambufoods.com/api/customer/wishlist?customerId=${customerId}`,
+        `https://suyambuoils.com/api/customer/wishlist?customerId=${customerId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setWishlist(
@@ -700,7 +700,7 @@ export default function CustomerPage() {
     const token = localStorage.getItem("customerToken");
     try {
       const response = await axios.post(
-        "https://suyambufoods.com/api/customer/wishlist",
+        "https://suyambuoils.com/api/customer/wishlist",
         { customerId, productId },
         { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
       );
@@ -783,7 +783,7 @@ export default function CustomerPage() {
     const token = localStorage.getItem("customerToken");
     try {
       await axios.put(
-        "https://suyambufoods.com/api/customer/cart",
+        "https://suyambuoils.com/api/customer/cart",
         { customerId, variantId, quantity: newQuantity },
         { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
       );
@@ -801,7 +801,7 @@ export default function CustomerPage() {
     const token = localStorage.getItem("customerToken");
     try {
       await axios.delete(
-        `https://suyambufoods.com/api/customer/cart?customerId=${customerId}&variantId=${variantId}`,
+        `https://suyambuoils.com/api/customer/cart?customerId=${customerId}&variantId=${variantId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const updatedCart = await fetchCart();

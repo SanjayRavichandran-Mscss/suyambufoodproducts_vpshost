@@ -2,8 +2,8 @@
 // import Swal from "sweetalert2";
 // import Select from 'react-select';
 
-// const API_BASE = "https://suyambufoods.com/api/admin";
-// const IMAGE_BASE = "https://suyambufoods.com/api";  // Updated: Root domain for static images
+// const API_BASE = "https://suyambuoils.com/api/admin";
+// const IMAGE_BASE = "https://suyambuoils.com/api";  // Updated: Root domain for static images
 // const FALLBACK_IMAGE = `${IMAGE_BASE}/fallback-image.png`;
 
 // const ManageProducts = () => {
@@ -1184,8 +1184,8 @@ import ReactQuill from "react-quill-new";
 import "quill/dist/quill.snow.css";  // This works perfectly with react-quill-new
 
 
-const API_BASE = "https://suyambufoods.com/api/admin";
-const IMAGE_BASE = "https://suyambufoods.com/api";  // Updated: Root domain for static images
+const API_BASE = "https://suyambuoils.com/api/admin";
+const IMAGE_BASE = "https://suyambuoils.com/api";  // Updated: Root domain for static images
 const FALLBACK_IMAGE = `${IMAGE_BASE}/fallback-image.png`;
 
 

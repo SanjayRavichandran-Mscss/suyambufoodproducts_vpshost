@@ -53,7 +53,7 @@ export default function PrivacyPolicy() {
     const verifyCustomer = async () => {
       try {
         const response = await axios.get(
-          `https://suyambufoods.com/api/customer/profile?customerId=${storedCustomerId}`,
+          `https://suyambuoils.com/api/customer/profile?customerId=${storedCustomerId}`,
           {
             headers: {
               "Content-Type": "application/json",
@@ -82,7 +82,7 @@ export default function PrivacyPolicy() {
 
     try {
       const response = await axios.get(
-        `https://suyambufoods.com/api/customer/cart?customerId=${customerId}`,
+        `https://suyambuoils.com/api/customer/cart?customerId=${customerId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setCartItems(Array.isArray(response.data) ? response.data : []);

@@ -40,7 +40,7 @@
 //     if (!plainId) return;
 //     const fetchProfile = async () => {
 //       try {
-//         const response = await fetch(`https://suyambufoods.com/api/admin/profile/${plainId}`);
+//         const response = await fetch(`https://suyambuoils.com/api/admin/profile/${plainId}`);
 //         const data = await response.json();
 //         if (response.ok) {
 //           setProfile(data);
@@ -200,7 +200,7 @@ export default function AdminMenus({ adminId }) {
     if (!plainId) return;
     const fetchProfile = async () => {
       try {
-        const response = await fetch(`https://suyambufoods.com/api/admin/profile/${plainId}`);
+        const response = await fetch(`https://suyambuoils.com/api/admin/profile/${plainId}`);
         const data = await response.json();
         if (response.ok) {
           setProfile(data);

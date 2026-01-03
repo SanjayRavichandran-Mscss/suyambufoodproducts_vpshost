@@ -125,7 +125,7 @@
 //   }, [location.pathname]);
 
 //   useEffect(() => {
-//     axios.get("https://suyambufoods.com/api/admin/categories", {
+//     axios.get("https://suyambuoils.com/api/admin/categories", {
 //       headers: { Origin: "http://localhost:5173" },
 //     }).then(res => {
 //       const raw = Array.isArray(res.data) ? res.data : [];
@@ -138,7 +138,7 @@
 //   }, []);
 
 //   useEffect(() => {
-//     axios.get("https://suyambufoods.com/api/admin/products", {
+//     axios.get("https://suyambuoils.com/api/admin/products", {
 //       headers: { Origin: "http://localhost:5173" },
 //     }).then(res => {
 //       const raw = Array.isArray(res.data) ? res.data : [];
@@ -147,7 +147,7 @@
 //         name: p.name,
 //         category_name: p.category_name || "Uncategorized",
 //         thumbnail_url: p.thumbnail_url
-//           ? (p.thumbnail_url.startsWith("http") ? p.thumbnail_url : `https://suyambufoods.com/api${p.thumbnail_url}`)
+//           ? (p.thumbnail_url.startsWith("http") ? p.thumbnail_url : `https://suyambuoils.com/api${p.thumbnail_url}`)
 //           : "https://via.placeholder.com/100",
 //         variants: p.variants || [],
 //         price: (p.variants && p.variants.length > 0 ? p.variants[0].price : p.price) || 0,
@@ -167,7 +167,7 @@
 //       return;
 //     }
 //     try {
-//       const res = await axios.get(`https://suyambufoods.com/api/customer/wishlist/?customerId=${customerId}`, {
+//       const res = await axios.get(`https://suyambuoils.com/api/customer/wishlist/?customerId=${customerId}`, {
 //         headers: {
 //           Origin: "http://localhost:5173",
 //           Authorization: `Bearer ${token}`
@@ -859,7 +859,7 @@ export default function Header({
   }, [location.pathname]);
 
   useEffect(() => {
-    axios.get("https://suyambufoods.com/api/admin/categories", {
+    axios.get("https://suyambuoils.com/api/admin/categories", {
       headers: { Origin: "http://localhost:5173" },
     }).then(res => {
       const raw = Array.isArray(res.data) ? res.data : [];
@@ -872,7 +872,7 @@ export default function Header({
   }, []);
 
   useEffect(() => {
-    axios.get("https://suyambufoods.com/api/admin/products", {
+    axios.get("https://suyambuoils.com/api/admin/products", {
       headers: { Origin: "http://localhost:5173" },
     }).then(res => {
       const raw = Array.isArray(res.data) ? res.data : [];
@@ -881,7 +881,7 @@ export default function Header({
         name: p.name,
         category_name: p.category_name || "Uncategorized",
         thumbnail_url: p.thumbnail_url
-          ? (p.thumbnail_url.startsWith("http") ? p.thumbnail_url : `https://suyambufoods.com/api${p.thumbnail_url}`)
+          ? (p.thumbnail_url.startsWith("http") ? p.thumbnail_url : `https://suyambuoils.com/api${p.thumbnail_url}`)
           : "https://via.placeholder.com/100",
         variants: p.variants || [],
         price: (p.variants && p.variants.length > 0 ? p.variants[0].price : p.price) || 0,
@@ -901,7 +901,7 @@ export default function Header({
       return;
     }
     try {
-      const res = await axios.get(`https://suyambufoods.com/api/customer/wishlist/?customerId=${customerId}`, {
+      const res = await axios.get(`https://suyambuoils.com/api/customer/wishlist/?customerId=${customerId}`, {
         headers: {
           Origin: "http://localhost:5173",
           Authorization: `Bearer ${token}`

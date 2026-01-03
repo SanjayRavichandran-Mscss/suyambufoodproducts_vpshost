@@ -19,7 +19,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-const IMAGE_BASE = "https://suyambufoods.com/api";
+const IMAGE_BASE = "https://suyambuoils.com/api";
 
 const normalizeImage = (img) => {
   if (!img) return "https://via.placeholder.com/1920x1080";
@@ -38,7 +38,7 @@ export default function Banner({ customerId }) {
   // Fetch Products
   useEffect(() => {
     axios
-      .get("https://suyambufoods.com/api/admin/products")
+      .get("https://suyambuoils.com/api/admin/products")
       .then((res) => {
         const data = Array.isArray(res.data) ? res.data : [];
         setProducts(
@@ -55,7 +55,7 @@ export default function Banner({ customerId }) {
   // Fetch Categories
   useEffect(() => {
     axios
-      .get("https://suyambufoods.com/api/admin/categories")
+      .get("https://suyambuoils.com/api/admin/categories")
       .then((res) => {
         const data = Array.isArray(res.data) ? res.data : [];
         const mapped = data.map((c) => ({

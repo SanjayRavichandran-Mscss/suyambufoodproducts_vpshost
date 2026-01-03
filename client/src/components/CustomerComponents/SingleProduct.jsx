@@ -18,7 +18,7 @@
 
 // import "react-quill-new/dist/quill.snow.css";
 
-// const IMAGE_BASE = "https://suyambufoods.com/api";
+// const IMAGE_BASE = "https://suyambuoils.com/api";
 
 // const magnifierStyles = `
 // .single-product-magnifier-container { position: relative; overflow: hidden; border-radius: 1rem; background: #ffffff; }
@@ -98,7 +98,7 @@
 //     }
 
 //     axios
-//       .get(`https://suyambufoods.com/api/admin/products/${idNum}`, {
+//       .get(`https://suyambuoils.com/api/admin/products/${idNum}`, {
 //         headers: { Origin: "http://localhost:5173" },
 //       })
 //       .then((res) => {
@@ -191,7 +191,7 @@
 
 //     if (item) {
 //       axios
-//         .put("https://suyambufoods.com/api/customer/cart", body, {
+//         .put("https://suyambuoils.com/api/customer/cart", body, {
 //           headers: { Origin: "http://localhost:5173" },
 //         })
 //         .then(() => {
@@ -204,7 +204,7 @@
 //         });
 //     } else {
 //       axios
-//         .post("https://suyambufoods.com/api/customer/cart", body, {
+//         .post("https://suyambuoils.com/api/customer/cart", body, {
 //           headers: { Origin: "http://localhost:5173" },
 //         })
 //         .then(() => {
@@ -252,7 +252,7 @@
 
 //     if (!item) {
 //       axios
-//         .post("https://suyambufoods.com/api/customer/cart", body, {
+//         .post("https://suyambuoils.com/api/customer/cart", body, {
 //           headers: { Origin: "http://localhost:5173" },
 //         })
 //         .then(() => {
@@ -749,7 +749,7 @@ import { animated, useSpring } from "@react-spring/web";
 
 import "react-quill-new/dist/quill.snow.css";
 
-const IMAGE_BASE = "https://suyambufoods.com/api";
+const IMAGE_BASE = "https://suyambuoils.com/api";
 
 const magnifierStyles = `
 .single-product-magnifier-container { position: relative; overflow: hidden; border-radius: 1rem; background: #ffffff; }
@@ -880,7 +880,7 @@ export default function SingleProduct({
     }
 
     axios
-      .get(`https://suyambufoods.com/api/admin/products/${idNum}`, {
+      .get(`https://suyambuoils.com/api/admin/products/${idNum}`, {
         headers: { Origin: "http://localhost:5173" },
       })
       .then((res) => {
@@ -973,7 +973,7 @@ export default function SingleProduct({
 
     if (item) {
       axios
-        .put("https://suyambufoods.com/api/customer/cart", body, {
+        .put("https://suyambuoils.com/api/customer/cart", body, {
           headers: { Origin: "http://localhost:5173" },
         })
         .then(() => {
@@ -986,7 +986,7 @@ export default function SingleProduct({
         });
     } else {
       axios
-        .post("https://suyambufoods.com/api/customer/cart", body, {
+        .post("https://suyambuoils.com/api/customer/cart", body, {
           headers: { Origin: "http://localhost:5173" },
         })
         .then(() => {
@@ -1034,7 +1034,7 @@ export default function SingleProduct({
 
     if (!item) {
       axios
-        .post("https://suyambufoods.com/api/customer/cart", body, {
+        .post("https://suyambuoils.com/api/customer/cart", body, {
           headers: { Origin: "http://localhost:5173" },
         })
         .then(() => {

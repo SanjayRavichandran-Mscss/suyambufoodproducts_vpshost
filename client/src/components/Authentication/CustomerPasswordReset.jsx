@@ -11,7 +11,7 @@ const CustomerPasswordReset = ({ onClose, onLoginClick }) => {
   const [loading, setLoading] = useState(false);
   const inputRefs = useRef([]);
 
-  const API_BASE = 'https://suyambufoods.com/api/customer'; // Adjust if your base path differs
+  const API_BASE = 'https://suyambuoils.com/api/customer'; // Adjust if your base path differs
 
   const getStepTitle = () => {
     switch (step) {

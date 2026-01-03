@@ -46,7 +46,7 @@
     
 //     try {
 //       const { confirmPassword, ...registerData } = form;
-//       await axios.post("https://suyambufoods.com/api/customer/register", registerData);
+//       await axios.post("https://suyambuoils.com/api/customer/register", registerData);
 //       setSuccess("Registration successful! Please login.");
 //       setTimeout(() => {
 //         setIsClosing(true);
@@ -361,7 +361,7 @@ export default function CustomerRegister({ onLoginClick, onClose }) {
     }
     setLoading(true); setError("");
     try {
-      await axios.post("https://suyambufoods.com/api/customer/send-registration-otp", { email: form.email });
+      await axios.post("https://suyambuoils.com/api/customer/send-registration-otp", { email: form.email });
       setIsOtpSent(true);
       setOtp(["", "", "", "", "", "", "", ""]);
       otpRefs.current[0]?.focus();
@@ -381,7 +381,7 @@ export default function CustomerRegister({ onLoginClick, onClose }) {
     }
     setLoading(true); setError("");
     try {
-      const res = await axios.post("https://suyambufoods.com/api/customer/verify-registration-otp", {
+      const res = await axios.post("https://suyambuoils.com/api/customer/verify-registration-otp", {
         email: form.email,
         otp: otp.join("")
       });
@@ -401,7 +401,7 @@ export default function CustomerRegister({ onLoginClick, onClose }) {
     try {
       const { confirmPassword, ...data } = form;
       data.verificationToken = verificationToken;
-      await axios.post("https://suyambufoods.com/api/customer/register", data);
+      await axios.post("https://suyambuoils.com/api/customer/register", data);
       setSuccess("Registration successful! Please login.");
       setTimeout(() => {
         setIsClosing(true);

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import { Edit, Trash2 } from "lucide-react";
 
-const API_BASE = "https://suyambufoods.com/api/admin";
+const API_BASE = "https://suyambuoils.com/api/admin";
 
 const ManageCategories = () => {
   const [categories, setCategories] = useState([]);
