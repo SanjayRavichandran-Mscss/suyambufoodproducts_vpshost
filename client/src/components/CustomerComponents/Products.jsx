@@ -27,8 +27,29 @@
 //   const [categories, setCategories] = useState([]);
 //   const [searchTerm, setSearchTerm] = useState("");
 //   const [visibleCount, setVisibleCount] = useState(20);
+//   const [wishlistIds, setWishlistIds] = useState([]);
 
 //   const navigate = useNavigate();
+
+//   const fetchWishlist = async () => {
+//     if (!isLoggedIn || !customerId) {
+//       setWishlistIds([]);
+//       return;
+//     }
+//     try {
+//       const response = await axios.get(
+//         `https://suyambuoils.com/api/customer/wishlist/?customerId=${customerId}`,
+//         { headers: { Origin: "http://localhost:5173" } }
+//       );
+//       const likedIds = response.data.wishlist
+//         ? response.data.wishlist.filter(item => item.is_liked === 1).map(item => item.product_id)
+//         : [];
+//       setWishlistIds(likedIds);
+//     } catch (err) {
+//       console.error('Failed to fetch wishlist:', err);
+//       setWishlistIds([]);
+//     }
+//   };
 
 //   // Handle sessionStorage on mount (for navigation from footer)
 //   useEffect(() => {
@@ -59,6 +80,11 @@
 //     window.addEventListener("setCategory", onSetCategory);
 //     return () => window.removeEventListener("setCategory", onSetCategory);
 //   }, []);
+
+//   // Fetch wishlist
+//   useEffect(() => {
+//     fetchWishlist();
+//   }, [isLoggedIn, customerId]);
 
 //   // Fallback cart fetch
 //   const localFetchCart = async () => {
@@ -222,6 +248,29 @@
 //     setVisibleCount(20);
 //   }, [category, searchTerm]);
 
+//   const handleWishlistToggle = async (productId) => {
+//     const currentLiked = wishlistIds.includes(productId);
+//     // Optimistic update
+//     setWishlistIds((prev) =>
+//       currentLiked
+//         ? prev.filter((id) => id !== productId)
+//         : [...prev, productId]
+//     );
+//     try {
+//       await handleToggleWishlist(productId);
+//       // Refetch to ensure sync
+//       await fetchWishlist();
+//     } catch (err) {
+//       // Revert on error
+//       setWishlistIds((prev) =>
+//         currentLiked
+//           ? [...prev, productId]
+//           : prev.filter((id) => id !== productId)
+//       );
+//       showMessage("Failed to update wishlist", "error");
+//     }
+//   };
+
 //   // Actions
 //   const handleAddToCart = async (productId, quantity = 1) => {
 //     if (!isLoggedIn) {
@@ -307,7 +356,7 @@
 //           (product) =>
 //             category === "all" ||
 //             (category === "wishlist"
-//               ? wishlist.includes(product.id)
+//               ? wishlistIds.includes(product.id)
 //               : product.category_name &&
 //                 product.category_name.toLowerCase() === category)
 //         );
@@ -339,7 +388,7 @@
 //       `}</style>
 
 //       <section id="shop-by-category" className="pt-2 pb-4">
-//         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-5 gap-4 md:gap-6 xl:gap-8 mt-2">
+//         <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 md:gap-4 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5 xl:gap-8 mt-2">
 //           {visibleProducts.length > 0 ? (
 //             visibleProducts.map((product) => (
 //               <ProductCard
@@ -349,8 +398,8 @@
 //                 customerId={customerId}
 //                 cartItems={cartItems}
 //                 updateQuantity={updateQuantity}
-//                 handleToggleWishlist={handleToggleWishlist}
-//                 wishlist={wishlist}
+//                 handleToggleWishlist={handleWishlistToggle}
+//                 wishlist={wishlistIds}
 //                 selectedUom={selectedUoms[String(product.id)]}
 //                 selectedVariant={selectedVariants[String(product.id)]}
 //                 handleUomChange={(id, value) =>
@@ -359,6 +408,7 @@
 //                 handleAddToCart={handleAddToCart}
 //                 navigate={navigate}
 //                 showMessage={showMessage}
+//                 uoms={uoms}
 //               />
 //             ))
 //           ) : (
@@ -401,6 +451,7 @@
 //   handleAddToCart,
 //   navigate,
 //   showMessage,
+//   uoms,
 // }) {
 //   const cartItem = Array.isArray(cartItems)
 //     ? cartItems.find(
@@ -431,14 +482,15 @@
 
 //   const getDisplayQuantity = (variant) => {
 //     const qty = variant.variant_quantity || variant.quantity || '';
-//     const numQty = Number(qty);
-//     const uom = variant.uom_name || '';
-//     if (uom.toLowerCase().includes('gram')) {
-//       return `${numQty.toFixed(0)}g`;
-//     } else if (uom.toLowerCase().includes('kilogram')) {
-//       return `${numQty.toFixed(2)} kg`;
+//     let uomName = variant.uom_name || '';
+//     // Override with correct backend UOM from uoms array if available
+//     if (uoms && variant.uom_id) {
+//       const uomObj = uoms.find((u) => String(u.id) === String(variant.uom_id));
+//       if (uomObj && uomObj.name) {
+//         uomName = uomObj.name;
+//       }
 //     }
-//     return `${qty} ${uom}`;
+//     return `${qty} ${uomName}`;
 //   };
 
 //   const handlePlusClick = () => {
@@ -576,52 +628,58 @@
 //           )}
 //         </div>
 
-//         {/* FINAL: Smaller, tighter, perfectly aligned buttons */}
-//         <div className="flex items-center justify-between pt-1">
-//           <div className="text-lg font-bold" style={{ color: BRAND }}>
-//             ₹
-//             {effectiveVariant?.price != null
-//               ? Number(effectiveVariant.price).toFixed(2)
-//               : "0.00"}
-//           </div>
+//   <div className="flex items-start justify-between pt-1 flex-wrap gap-4">
+//   <div className="flex flex-col items-start flex-shrink-0">
+//     <div className="text-base sm:text-lg font-bold" style={{ color: BRAND }}>
+//       ₹
+//       {effectiveVariant?.price != null
+//         ? Number(effectiveVariant.price).toFixed(2)
+//         : "0.00"}
+//     </div>
+//     {quantity > 0 && (
+//       <div className="text-sm font-medium mt-1" style={{ color: BRAND }}>
+//         Total: ₹{(effectiveVariant?.price ? Number(effectiveVariant.price) * quantity : 0).toFixed(2)}
+//       </div>
+//     )}
+//   </div>
 
-//           <div className="flex items-center gap-1 shrink-0">
-//             {quantity > 0 ? (
-//               <>
-//                 <button
-//                   onClick={() => updateQuantity(effectiveVariant.id, -1)}
-//                   disabled={quantity <= 1}
-//                   className={`h-6 w-6 rounded-full border-2 grid place-items-center transition-all duration-200 text-xs ${
-//                     quantity <= 1
-//                       ? "border-gray-200 text-gray-300 cursor-not-allowed"
-//                       : "border-[#B6895B] text-[#B6895B] hover:bg-[#B6895B]/10"
-//                   }`}
-//                   title="Decrease"
-//                 >
-//                   <Minus size={10} />
-//                 </button>
-//                 <span className="w-6 text-center text-sm font-semibold text-gray-700">
-//                   {quantity}
-//                 </span>
-//                 <button
-//                   onClick={handlePlusClick}
-//                   className="h-6 w-6 rounded-full border-2 border-[#B6895B] text-[#B6895B] hover:bg-[#B6895B]/10 grid place-items-center transition-all duration-200 text-xs"
-//                   title="Increase"
-//                 >
-//                   <Plus size={10} />
-//                 </button>
-//               </>
-//             ) : (
-//               <button
-//                 onClick={handlePlusClick}
-//                 className="h-6 w-6 rounded-full border-2 border-[#B6895B] text-[#B6895B] hover:bg-[#B6895B]/10 grid place-items-center transition-all duration-200"
-//                 title="Add to cart"
-//               >
-//                 <Plus size={10} />
-//               </button>
-//             )}
-//           </div>
-//         </div>
+//   <div className="flex items-center gap-1 shrink-0 self-end">
+//     {quantity > 0 ? (
+//       <>
+//         <button
+//           onClick={() => updateQuantity(effectiveVariant.id, -1)}
+//           disabled={quantity <= 1}
+//           className={`h-6 w-6 rounded-full border-2 grid place-items-center transition-all duration-200 text-xs flex-shrink-0 ${
+//             quantity <= 1
+//               ? "border-gray-200 text-gray-300 cursor-not-allowed"
+//               : "border-[#B6895B] text-[#B6895B] hover:bg-[#B6895B]/10 cursor-pointer"
+//           }`}
+//           title="Decrease"
+//         >
+//           <Minus size={10} />
+//         </button>
+//         <span className="w-6 text-center text-sm font-semibold text-gray-700 min-w-[1.5rem] flex-shrink-0">
+//           {quantity}
+//         </span>
+//         <button
+//           onClick={handlePlusClick}
+//           className="h-6 w-6 rounded-full border-2 border-[#B6895B] text-[#B6895B] hover:bg-[#B6895B]/10 grid place-items-center transition-all duration-200 text-xs flex-shrink-0 cursor-pointer"
+//           title="Increase"
+//         >
+//           <Plus size={10} />
+//         </button>
+//       </>
+//     ) : (
+//       <button
+//         onClick={handlePlusClick}
+//         className="h-6 w-6 rounded-full border-2 border-[#B6895B] text-[#B6895B] hover:bg-[#B6895B]/10 grid place-items-center transition-all duration-200 flex-shrink-0 cursor-pointer"
+//         title="Add to cart"
+//       >
+//         <Plus size={10} />
+//       </button>
+//     )}
+//   </div>
+// </div>
 //       </div>
 //     </div>
 //   );
@@ -636,13 +694,47 @@
 
 
 
-import React, { useEffect, useState } from "react";
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { Heart, Plus, Minus } from "lucide-react";
+import { Heart, Plus, Minus, Box } from "lucide-react";
 
 const IMAGE_BASE = "https://suyambuoils.com/api";
 const BRAND = "#B6895B";
+
+const IconMap = {
+  Box,
+  // Add more mappings if needed in future
+};
+
+const normalizeImage = (img) => {
+  if (!img) return "https://via.placeholder.com/600x400";
+  if (img.startsWith("http://") || img.startsWith("https://")) return img;
+  if (img.startsWith("/")) return `${IMAGE_BASE}${img}`;
+  return `${IMAGE_BASE}/${img}`;
+};
 
 export default function Products({
   isLoggedIn,
@@ -666,9 +758,11 @@ export default function Products({
   const [searchTerm, setSearchTerm] = useState("");
   const [visibleCount, setVisibleCount] = useState(20);
   const [wishlistIds, setWishlistIds] = useState([]);
+  const [categoryCounts, setCategoryCounts] = useState({ all: 0 });
 
   const navigate = useNavigate();
 
+  // Fetch wishlist
   const fetchWishlist = async () => {
     if (!isLoggedIn || !customerId) {
       setWishlistIds([]);
@@ -680,34 +774,39 @@ export default function Products({
         { headers: { Origin: "http://localhost:5173" } }
       );
       const likedIds = response.data.wishlist
-        ? response.data.wishlist.filter(item => item.is_liked === 1).map(item => item.product_id)
+        ? response.data.wishlist
+            .filter((item) => item.is_liked === 1)
+            .map((item) => item.product_id)
         : [];
       setWishlistIds(likedIds);
     } catch (err) {
-      console.error('Failed to fetch wishlist:', err);
+      console.error("Failed to fetch wishlist:", err);
       setWishlistIds([]);
     }
   };
 
-  // Handle sessionStorage on mount (for navigation from footer)
   useEffect(() => {
-    const storedCategory = sessionStorage.getItem('selectedCategory');
-    if (storedCategory && storedCategory !== 'all') {
+    fetchWishlist();
+  }, [isLoggedIn, customerId]);
+
+  // Handle sessionStorage + custom event from banner/footer
+  useEffect(() => {
+    const storedCategory = sessionStorage.getItem("selectedCategory");
+    if (storedCategory) {
       setCategory(storedCategory);
-      sessionStorage.removeItem('selectedCategory');
+      sessionStorage.removeItem("selectedCategory");
     }
 
-    const scrollToShop = sessionStorage.getItem('scrollToShopSection');
-    if (scrollToShop === 'yes') {
-      const section = document.getElementById('shop-by-category');
+    const scrollToShop = sessionStorage.getItem("scrollToShopSection");
+    if (scrollToShop === "yes") {
+      const section = document.getElementById("shop-by-category");
       if (section) {
         section.scrollIntoView({ behavior: "smooth", block: "start" });
       }
-      sessionStorage.removeItem('scrollToShopSection');
+      sessionStorage.removeItem("scrollToShopSection");
     }
   }, []);
 
-  // Category from Banner chips or Footer events
   useEffect(() => {
     const onSetCategory = (e) => {
       const next = String(e.detail?.value || "all");
@@ -719,12 +818,152 @@ export default function Products({
     return () => window.removeEventListener("setCategory", onSetCategory);
   }, []);
 
-  // Fetch wishlist
+  // Fetch products + uoms + prepare categories & counts
   useEffect(() => {
-    fetchWishlist();
-  }, [isLoggedIn, customerId]);
+    const fetchData = async () => {
+      setLoading(true);
 
-  // Fallback cart fetch
+      try {
+        // 1. Fetch UOMs
+        const uomRes = await axios.get("https://suyambuoils.com/api/admin/uoms", {
+          headers: { Origin: "http://localhost:5173" },
+        });
+        setUoms(uomRes.data || []);
+
+        // 2. Fetch Products
+        const prodRes = await axios.get("https://suyambuoils.com/api/admin/products", {
+          headers: { Origin: "http://localhost:5173" },
+        });
+
+        const raw = prodRes.data || [];
+        const productsWithImages = raw.map((p) => {
+          const seen = new Set();
+          const variants = Array.isArray(p.variants)
+            ? p.variants
+                .map((v) => ({
+                  ...v,
+                  id: v.id,
+                  uom_id: v.uom_id != null ? String(v.uom_id) : undefined,
+                  price: v.price != null ? Number(v.price) : undefined,
+                  variant_quantity: v.quantity != null ? v.quantity : v.variant_quantity || "",
+                  uom_name: v.uom_name || "",
+                }))
+                .filter((v) => {
+                  const key = `${v.uom_id}::${v.variant_quantity}::${v.price}`;
+                  if (seen.has(key)) return false;
+                  seen.add(key);
+                  return true;
+                })
+            : [];
+
+          return {
+            ...p,
+            thumbnail_url: p.thumbnail_url ? normalizeImage(p.thumbnail_url) : "https://via.placeholder.com/600x400",
+            additional_images: Array.isArray(p.additional_images)
+              ? p.additional_images.map(normalizeImage)
+              : [],
+            variants,
+          };
+        });
+
+        setProducts(productsWithImages);
+
+        // Category counts
+        const counts = { all: productsWithImages.length };
+        productsWithImages.forEach((p) => {
+          const cat = p.category_name?.toLowerCase().trim();
+          if (cat) counts[cat] = (counts[cat] || 0) + 1;
+        });
+        setCategoryCounts(counts);
+
+        // Categories list for chips
+        const uniqueCats = [
+          ...new Set(productsWithImages.map((p) => p.category_name).filter(Boolean)),
+        ];
+
+        const catList = [
+          { key: "all", label: "All Products", value: "all", Icon: Box },
+          ...uniqueCats.map((name) => ({
+            key: name,
+            label: name,
+            value: name.toLowerCase().trim(),
+            Icon: IconMap[name] || Box,
+          })),
+          { key: "wishlist", label: "My Wishlist", value: "wishlist", Icon: Heart },
+        ];
+
+        setCategories(catList);
+
+        // Default variant selections
+        const initUom = {};
+        const initVar = {};
+        productsWithImages.forEach((p) => {
+          if (p.variants?.length) {
+            const first = p.variants[0];
+            initUom[String(p.id)] = String(first.uom_id);
+            initVar[String(p.id)] = first;
+          }
+        });
+        setSelectedUoms((prev) => ({ ...prev, ...initUom }));
+        setSelectedVariants((prev) => ({ ...prev, ...initVar }));
+
+      } catch (err) {
+        setErr("Failed to load products");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Sync search from header
+  useEffect(() => {
+    if (headerSearchTerm !== undefined) {
+      setSearchTerm(headerSearchTerm || "");
+    }
+  }, [headerSearchTerm]);
+
+  // Reset visible count when filters change
+  useEffect(() => {
+    setVisibleCount(20);
+  }, [category, searchTerm]);
+
+  // Filter products
+  const filteredProducts = useMemo(() => {
+    let result = products;
+
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter((p) => p.name.toLowerCase().includes(term));
+    } else if (category !== "all") {
+      if (category === "wishlist") {
+        result = result.filter((p) => wishlistIds.includes(p.id));
+      } else {
+        result = result.filter(
+          (p) => p.category_name?.toLowerCase().trim() === category
+        );
+      }
+    }
+
+    return result;
+  }, [products, searchTerm, category, wishlistIds]);
+
+  const visibleProducts = filteredProducts.slice(0, visibleCount);
+
+  // Category chip click handler
+  const handleCategoryClick = (value) => {
+    setCategory(value);
+    const section = document.getElementById("shop-by-category");
+    if (section) {
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  // ────────────────────────────────────────────────
+  // Cart & Wishlist actions
+  // ────────────────────────────────────────────────
   const localFetchCart = async () => {
     if (!customerId) return [];
     try {
@@ -742,178 +981,8 @@ export default function Products({
     }
   };
 
-  // Sync with header search
-  useEffect(() => {
-    if (headerSearchTerm !== undefined) {
-      setSearchTerm(headerSearchTerm || "");
-    }
-  }, [headerSearchTerm]);
-
-  const normalizeImage = (img) => {
-    if (!img) return "https://via.placeholder.com/600x400";
-    if (img.startsWith("http://") || img.startsWith("https://")) return img;
-    if (img.startsWith("/")) return `${IMAGE_BASE}${img}`;
-    return `${IMAGE_BASE}/${img}`;
-  };
-
-  // Fetch products + UOMs
-  useEffect(() => {
-    axios
-      .get("https://suyambuoils.com/api/admin/uoms", {
-        headers: { Origin: "http://localhost:5173" },
-      })
-      .then((res) => setUoms(res.data || []))
-      .catch(() => {});
-
-    axios
-      .get("https://suyambuoils.com/api/admin/products", {
-        headers: { Origin: "http://localhost:5173" },
-      })
-      .then((res) => {
-        const raw = res.data || [];
-        const productsWithImages = raw.map((p) => {
-          const seen = new Set();
-          const variants = Array.isArray(p.variants)
-            ? p.variants
-                .map((v) => ({
-                  ...v,
-                  id: v.id,
-                  uom_id: v.uom_id != null ? String(v.uom_id) : undefined,
-                  price: v.price != null ? Number(v.price) : undefined,
-                  variant_quantity:
-                    v.quantity != null ? v.quantity : v.variant_quantity || "",
-                  uom_name: v.uom_name || "",
-                }))
-                .filter((v) => {
-                  const key = `${v.uom_id}::${v.variant_quantity}::${v.price}`;
-                  if (seen.has(key)) return false;
-                  seen.add(key);
-                  return true;
-                })
-            : [];
-
-          const thumbnail_url = p.thumbnail_url
-            ? normalizeImage(p.thumbnail_url)
-            : "https://via.placeholder.com/600x400";
-
-          const additional_images = Array.isArray(p.additional_images)
-            ? p.additional_images.map((img) => normalizeImage(img))
-            : [];
-
-          return {
-            ...p,
-            thumbnail_url,
-            additional_images,
-            variants,
-          };
-        });
-
-        setProducts(productsWithImages);
-
-        // Default selections
-        setSelectedUoms((prev) => {
-          const next = { ...prev };
-          productsWithImages.forEach((p) => {
-            if (!next[String(p.id)] && p.variants?.length) {
-              next[String(p.id)] = String(p.variants[0].uom_id);
-            }
-          });
-          return next;
-        });
-
-        setSelectedVariants(() => {
-          const next = {};
-          productsWithImages.forEach((p) => {
-            if (p.variants?.length) next[String(p.id)] = p.variants[0];
-          });
-          return next;
-        });
-
-        const uniqueCategories = [
-          ...new Set(productsWithImages.map((product) => product.category_name)),
-        ];
-        setCategories([
-          { label: "All Products", value: "all" },
-          ...uniqueCategories.map((cat) => ({
-            label: cat,
-            value: cat ? cat.toLowerCase() : cat,
-          })),
-          { label: "My Wishlist", value: "wishlist" },
-        ]);
-        setLoading(false);
-      })
-      .catch(() => {
-        setErr("Failed to load products");
-        setLoading(false);
-      });
-  }, []);
-
-  // Keep selections aligned with cart
-  useEffect(() => {
-    if (!products.length) return;
-    setSelectedUoms((prevUoms) => {
-      const nextUoms = { ...prevUoms };
-      setSelectedVariants((prevVariants) => {
-        const nextVariants = { ...prevVariants };
-        products.forEach((p) => {
-          const cartEntry = Array.isArray(cartItems)
-            ? cartItems.find(
-                (ci) =>
-                  String(ci.product_variant_id) ===
-                  String(nextVariants[String(p.id)]?.id)
-              )
-            : undefined;
-
-          if (cartEntry && cartEntry.uom_id != null) {
-            nextUoms[String(p.id)] = String(cartEntry.uom_id);
-            const matchingVariant = p.variants?.find(
-              (v) => String(v.uom_id) === String(cartEntry.uom_id)
-            );
-            if (matchingVariant) nextVariants[String(p.id)] = matchingVariant;
-          } else if (!nextUoms[String(p.id)] && p.variants?.length) {
-            nextUoms[String(p.id)] = String(p.variants[0].uom_id);
-            if (!nextVariants[String(p.id)]) nextVariants[String(p.id)] = p.variants[0];
-          }
-        });
-        return nextVariants;
-      });
-      return nextUoms;
-    });
-  }, [cartItems, products]);
-
-  // Reset visible count when category or search changes
-  useEffect(() => {
-    setVisibleCount(20);
-  }, [category, searchTerm]);
-
-  const handleWishlistToggle = async (productId) => {
-    const currentLiked = wishlistIds.includes(productId);
-    // Optimistic update
-    setWishlistIds((prev) =>
-      currentLiked
-        ? prev.filter((id) => id !== productId)
-        : [...prev, productId]
-    );
-    try {
-      await handleToggleWishlist(productId);
-      // Refetch to ensure sync
-      await fetchWishlist();
-    } catch (err) {
-      // Revert on error
-      setWishlistIds((prev) =>
-        currentLiked
-          ? [...prev, productId]
-          : prev.filter((id) => id !== productId)
-      );
-      showMessage("Failed to update wishlist", "error");
-    }
-  };
-
-  // Actions
   const handleAddToCart = async (productId, quantity = 1) => {
-    if (!isLoggedIn) {
-      return;
-    }
+    if (!isLoggedIn) return;
     if (!customerId) {
       showMessage("Error: No customer ID found", "error");
       return;
@@ -929,8 +998,7 @@ export default function Products({
         { customerId, variantId, quantity },
         { headers: { Origin: "http://localhost:5173" } }
       );
-      const fetchCartFunction =
-        typeof fetchCart === "function" ? fetchCart : localFetchCart;
+      const fetchCartFunction = typeof fetchCart === "function" ? fetchCart : localFetchCart;
       const updatedCart = await fetchCartFunction();
       setCartItems(updatedCart || []);
       showMessage("Item added to cart successfully");
@@ -944,9 +1012,7 @@ export default function Products({
 
   const updateQuantity = async (variantId, change) => {
     const item = Array.isArray(cartItems)
-      ? cartItems.find(
-          (item) => String(item.product_variant_id) === String(variantId)
-        )
+      ? cartItems.find((item) => String(item.product_variant_id) === String(variantId))
       : undefined;
     if (!item) {
       showMessage("Item not found in cart", "error");
@@ -959,8 +1025,7 @@ export default function Products({
         { customerId, variantId, quantity: newQuantity },
         { headers: { Origin: "http://localhost:5173" } }
       );
-      const fetchCartFunction =
-        typeof fetchCart === "function" ? fetchCart : localFetchCart;
+      const fetchCartFunction = typeof fetchCart === "function" ? fetchCart : localFetchCart;
       const updatedCart = await fetchCartFunction();
       setCartItems(updatedCart || []);
       showMessage("Cart updated successfully");
@@ -984,26 +1049,30 @@ export default function Products({
     setSelectedVariants((prev) => ({ ...prev, [String(productId)]: variant || null }));
   };
 
-  // Filter logic
-  const filteredProducts =
-    searchTerm && searchTerm.trim() !== ""
-      ? products.filter((product) =>
-          product.name.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      : products.filter(
-          (product) =>
-            category === "all" ||
-            (category === "wishlist"
-              ? wishlistIds.includes(product.id)
-              : product.category_name &&
-                product.category_name.toLowerCase() === category)
-        );
+  const handleWishlistToggle = async (productId) => {
+    const currentLiked = wishlistIds.includes(productId);
+    // Optimistic update
+    setWishlistIds((prev) =>
+      currentLiked ? prev.filter((id) => id !== productId) : [...prev, productId]
+    );
+    try {
+      await handleToggleWishlist(productId);
+      await fetchWishlist();
+    } catch (err) {
+      // Revert on error
+      setWishlistIds((prev) =>
+        currentLiked ? [...prev, productId] : prev.filter((id) => id !== productId)
+      );
+      showMessage("Failed to update wishlist", "error");
+    }
+  };
 
-  const visibleProducts = filteredProducts.slice(0, visibleCount);
-
+  // ────────────────────────────────────────────────
+  // Render
+  // ────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-8">
+      <div className="flex justify-center items-center py-20">
         <div className="text-gray-600">Loading products...</div>
       </div>
     );
@@ -1013,20 +1082,69 @@ export default function Products({
     <div
       className="container mx-auto px-4 md:px-6 lg:px-10"
       style={{
-        fontFamily:
-          "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'",
+        fontFamily: "Inter, system-ui, sans-serif",
         WebkitFontSmoothing: "antialiased",
         MozOsxFontSmoothing: "grayscale",
       }}
     >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .variant-select option:hover { background-color: #22c55e33; color: #14532d; }
-        .variant-select option:checked { background-color: #22c55e !important; color: #ffffff !important; }
       `}</style>
 
-      <section id="shop-by-category" className="pt-2 pb-4">
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 md:gap-4 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5 xl:gap-8 mt-2">
+{/* ─── SHOP BY CATEGORY  ─── */}
+<section id="shop-by-category" className="pt-8 pb-12 bg-white">
+  <div className="container mx-auto px-4">
+    <h2 className="text-center text-3xl md:text-4xl font-bold text-[#3D2F23] mb-8 md:mb-10">
+      Shop by Category
+    </h2>
+
+    <div className="flex overflow-x-auto gap-4 md:gap-6 pb-6 hide-scrollbar snap-x snap-mandatory">
+      {categories.map((cat) => {
+        const isActive = cat.value === category;
+        const count =
+          cat.value === "all"
+            ? categoryCounts.all || 0
+            : cat.value === "wishlist"
+            ? wishlistIds.length
+            : categoryCounts[cat.value] || 0;
+
+        return (
+          <button
+            key={cat.key}
+            onClick={() => handleCategoryClick(cat.value)}
+            className={`
+              flex items-center gap-3 px-6 md:px-8 py-4 md:py-5 
+              rounded-2xl font-semibold whitespace-nowrap shadow-sm transition-all duration-300 snap-center
+              border border-transparent
+              ${
+                isActive
+                  ? "bg-[#B6895B] text-white shadow-lg scale-105 border-[#B6895B]"
+                  : "bg-white text-[#3D2F23] hover:bg-[#B6895B]/10 hover:shadow-md hover:border-[#B6895B]/30"
+              }
+            `}
+          >
+            <cat.Icon 
+              size={22} 
+              className={`md:size-6 ${isActive ? "text-white" : "text-[#B6895B]"}`}
+            />
+            <span className="flex items-center gap-2">
+              {cat.label}
+              <span className={`font-bold text-base md:text-lg ${isActive ? "opacity-100" : "opacity-80"}`}>
+                ({count})
+              </span>
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  </div>
+</section>
+      {/* Product Grid */}
+      <section className="pb-12">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 md:gap-4 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5 xl:gap-8">
           {visibleProducts.length > 0 ? (
             visibleProducts.map((product) => (
               <ProductCard
@@ -1050,19 +1168,21 @@ export default function Products({
               />
             ))
           ) : (
-            <div className="text-center py-8 text-gray-600 col-span-full">
+            <div className="text-center py-12 text-gray-600 col-span-full">
               {category === "wishlist"
                 ? "No products in your wishlist."
-                : "No products available in this category or search."}
+                : searchTerm.trim()
+                ? "No products match your search."
+                : "No products available in this category."}
             </div>
           )}
         </div>
 
         {visibleCount < filteredProducts.length && filteredProducts.length > 0 && (
-          <div className="text-center py-8">
+          <div className="text-center py-10">
             <button
               onClick={() => setVisibleCount((prev) => prev + 20)}
-              className="bg-[#B6895B] hover:bg-[#B6895B]/90 text-white font-medium px-8 py-3 rounded-full transition-colors duration-300 shadow-md hover:shadow-lg"
+              className="bg-[#B6895B] hover:bg-[#a0784a] text-white font-medium px-10 py-3.5 rounded-full transition-all shadow-md hover:shadow-lg"
             >
               View More
             </button>
@@ -1119,14 +1239,11 @@ function ProductCard({
     : "";
 
   const getDisplayQuantity = (variant) => {
-    const qty = variant.variant_quantity || variant.quantity || '';
-    let uomName = variant.uom_name || '';
-    // Override with correct backend UOM from uoms array if available
+    const qty = variant.variant_quantity || variant.quantity || "";
+    let uomName = variant.uom_name || "";
     if (uoms && variant.uom_id) {
       const uomObj = uoms.find((u) => String(u.id) === String(variant.uom_id));
-      if (uomObj && uomObj.name) {
-        uomName = uomObj.name;
-      }
+      if (uomObj && uomObj.name) uomName = uomObj.name;
     }
     return `${qty} ${uomName}`;
   };
@@ -1196,7 +1313,7 @@ function ProductCard({
           />
         </button>
 
-        <span 
+        <span
           className={`
             absolute top-3 left-3 text-xs font-semibold px-2 py-1 rounded-full shadow-lg backdrop-blur-sm z-10
             ${product.stock_status_id === 1 ? 'bg-green-100/90 text-green-700' : 'bg-red-100/90 text-red-700'}
@@ -1266,58 +1383,58 @@ function ProductCard({
           )}
         </div>
 
-  <div className="flex items-start justify-between pt-1 flex-wrap gap-4">
-  <div className="flex flex-col items-start flex-shrink-0">
-    <div className="text-base sm:text-lg font-bold" style={{ color: BRAND }}>
-      ₹
-      {effectiveVariant?.price != null
-        ? Number(effectiveVariant.price).toFixed(2)
-        : "0.00"}
-    </div>
-    {quantity > 0 && (
-      <div className="text-sm font-medium mt-1" style={{ color: BRAND }}>
-        Total: ₹{(effectiveVariant?.price ? Number(effectiveVariant.price) * quantity : 0).toFixed(2)}
-      </div>
-    )}
-  </div>
+        <div className="flex items-start justify-between pt-1 flex-wrap gap-4">
+          <div className="flex flex-col items-start flex-shrink-0">
+            <div className="text-base sm:text-lg font-bold" style={{ color: BRAND }}>
+              ₹
+              {effectiveVariant?.price != null
+                ? Number(effectiveVariant.price).toFixed(2)
+                : "0.00"}
+            </div>
+            {quantity > 0 && (
+              <div className="text-sm font-medium mt-1" style={{ color: BRAND }}>
+                Total: ₹{(effectiveVariant?.price ? Number(effectiveVariant.price) * quantity : 0).toFixed(2)}
+              </div>
+            )}
+          </div>
 
-  <div className="flex items-center gap-1 shrink-0 self-end">
-    {quantity > 0 ? (
-      <>
-        <button
-          onClick={() => updateQuantity(effectiveVariant.id, -1)}
-          disabled={quantity <= 1}
-          className={`h-6 w-6 rounded-full border-2 grid place-items-center transition-all duration-200 text-xs flex-shrink-0 ${
-            quantity <= 1
-              ? "border-gray-200 text-gray-300 cursor-not-allowed"
-              : "border-[#B6895B] text-[#B6895B] hover:bg-[#B6895B]/10 cursor-pointer"
-          }`}
-          title="Decrease"
-        >
-          <Minus size={10} />
-        </button>
-        <span className="w-6 text-center text-sm font-semibold text-gray-700 min-w-[1.5rem] flex-shrink-0">
-          {quantity}
-        </span>
-        <button
-          onClick={handlePlusClick}
-          className="h-6 w-6 rounded-full border-2 border-[#B6895B] text-[#B6895B] hover:bg-[#B6895B]/10 grid place-items-center transition-all duration-200 text-xs flex-shrink-0 cursor-pointer"
-          title="Increase"
-        >
-          <Plus size={10} />
-        </button>
-      </>
-    ) : (
-      <button
-        onClick={handlePlusClick}
-        className="h-6 w-6 rounded-full border-2 border-[#B6895B] text-[#B6895B] hover:bg-[#B6895B]/10 grid place-items-center transition-all duration-200 flex-shrink-0 cursor-pointer"
-        title="Add to cart"
-      >
-        <Plus size={10} />
-      </button>
-    )}
-  </div>
-</div>
+          <div className="flex items-center gap-1 shrink-0 self-end">
+            {quantity > 0 ? (
+              <>
+                <button
+                  onClick={() => updateQuantity(effectiveVariant.id, -1)}
+                  disabled={quantity <= 1}
+                  className={`h-6 w-6 rounded-full border-2 grid place-items-center transition-all duration-200 text-xs flex-shrink-0 ${
+                    quantity <= 1
+                      ? "border-gray-200 text-gray-300 cursor-not-allowed"
+                      : "border-[#B6895B] text-[#B6895B] hover:bg-[#B6895B]/10 cursor-pointer"
+                  }`}
+                  title="Decrease"
+                >
+                  <Minus size={10} />
+                </button>
+                <span className="w-6 text-center text-sm font-semibold text-gray-700 min-w-[1.5rem] flex-shrink-0">
+                  {quantity}
+                </span>
+                <button
+                  onClick={handlePlusClick}
+                  className="h-6 w-6 rounded-full border-2 border-[#B6895B] text-[#B6895B] hover:bg-[#B6895B]/10 grid place-items-center transition-all duration-200 text-xs flex-shrink-0 cursor-pointer"
+                  title="Increase"
+                >
+                  <Plus size={10} />
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={handlePlusClick}
+                className="h-6 w-6 rounded-full border-2 border-[#B6895B] text-[#B6895B] hover:bg-[#B6895B]/10 grid place-items-center transition-all duration-200 flex-shrink-0 cursor-pointer"
+                title="Add to cart"
+              >
+                <Plus size={10} />
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

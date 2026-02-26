@@ -44,7 +44,7 @@ const transporter = nodemailer.createTransport({
 // Global "from" so you don't repeat it everywhere
 const DEFAULT_FROM = {
     name: 'Suyambu Stores',
-    address: process.env.EMAIL_FROM || 'no-reply@suyambufoods.com'  // ← This is correct
+    address: process.env.EMAIL_FROM || 'no-reply@suyambuoils.com'  // ← This is correct
 };
 
 function getDecodedCustomerId(req) {
@@ -317,77 +317,142 @@ exports.verifyRegistrationOtp = async (req, res) => {
 
 
 
+// exports.register = async (req, res) => {
+//   const { username, password, full_name, phone, email, verificationToken } = req.body;
+
+//   // === Basic validation ===
+//   if (!username || username.length > 50)
+//     return res.status(400).json({ message: "Username is required (max 50 chars)" });
+
+//   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+//     return res.status(400).json({ message: "Valid email is required" });
+
+//   if (!password || password.length < 6)
+//     return res.status(400).json({ message: "Password must be at least 6 characters" });
+
+//   if (!full_name || full_name.length > 100)
+//     return res.status(400).json({ message: "Full name is required (max 100 chars)" });
+
+//   if (!phone || !/^\+?[\d\s-]{7,20}$/.test(phone))
+//     return res.status(400).json({ message: "Valid phone number is required" });
+
+//   if (!verificationToken)
+//     return res.status(400).json({ message: "Email verification required. Please complete OTP step." });
+
+//   try {
+//     // === Verify JWT token from OTP step ===
+//     let decoded;
+//     try {
+//       decoded = jwt.verify(verificationToken, process.env.JWT_SECRET || "your_jwt_secret");
+//     } catch (err) {
+//       return res.status(401).json({ message: "Invalid or expired verification token. Please start again." });
+//     }
+
+//     // Token must contain email and be marked as verified
+//     if (!decoded.email || decoded.email.toLowerCase() !== email.toLowerCase() || !decoded.verified) {
+//       return res.status(401).json({ message: "Email not verified. Please verify OTP first." });
+//     }
+
+//     // === Check duplicate email or username ===
+//     const [existing] = await db.query(
+//       "SELECT id FROM customers WHERE email = ? OR username = ? LIMIT 1",
+//       [email, username]
+//     );
+//     if (existing.length > 0) {
+//       return res.status(400).json({ message: "Email or username already taken" });
+//     }
+
+//     // === Hash password & register user ===
+//     const hashedPassword = await bcrypt.hash(password, 10);
+
+//     const [result] = await db.query(
+//       `INSERT INTO customers 
+//        (username, email, password, full_name, phone, created_at, updated_at) 
+//        VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
+//       [username, email, hashedPassword, full_name, phone]
+//     );
+
+//     if (result.affectedRows === 0) {
+//       return res.status(500).json({ message: "Failed to create account. Try again." });
+//     }
+
+//     // Optional: Clean old OTPs
+//     await db.query("DELETE FROM registration_email_verification_otp WHERE email = ?", [email]);
+
+//     return res.status(201).json({
+//       message: "Account created successfully! Welcome to Suyambu Stores!",
+//     });
+
+//   } catch (error) {
+//     console.error("Registration error:", error);
+//     return res.status(500).json({ message: "Server error. Please try again later." });
+//   }
+// };
+
+
+
+
 exports.register = async (req, res) => {
-  const { username, password, full_name, phone, email, verificationToken } = req.body;
+  const { email, password, full_name, phone } = req.body;
 
-  // === Basic validation ===
-  if (!username || username.length > 50)
-    return res.status(400).json({ message: "Username is required (max 50 chars)" });
-
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+  // Basic validation
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return res.status(400).json({ message: "Valid email is required" });
+  }
 
-  if (!password || password.length < 6)
+  if (!password || password.length < 6) {
     return res.status(400).json({ message: "Password must be at least 6 characters" });
+  }
 
-  if (!full_name || full_name.length > 100)
+  if (!full_name || full_name.length > 100) {
     return res.status(400).json({ message: "Full name is required (max 100 chars)" });
+  }
 
-  if (!phone || !/^\+?[\d\s-]{7,20}$/.test(phone))
+  if (!phone || !/^\+?[\d\s-]{7,20}$/.test(phone)) {
     return res.status(400).json({ message: "Valid phone number is required" });
-
-  if (!verificationToken)
-    return res.status(400).json({ message: "Email verification required. Please complete OTP step." });
+  }
 
   try {
-    // === Verify JWT token from OTP step ===
-    let decoded;
-    try {
-      decoded = jwt.verify(verificationToken, process.env.JWT_SECRET || "your_jwt_secret");
-    } catch (err) {
-      return res.status(401).json({ message: "Invalid or expired verification token. Please start again." });
-    }
-
-    // Token must contain email and be marked as verified
-    if (!decoded.email || decoded.email.toLowerCase() !== email.toLowerCase() || !decoded.verified) {
-      return res.status(401).json({ message: "Email not verified. Please verify OTP first." });
-    }
-
-    // === Check duplicate email or username ===
+    // Check duplicate email only (username removed)
     const [existing] = await db.query(
-      "SELECT id FROM customers WHERE email = ? OR username = ? LIMIT 1",
-      [email, username]
+      "SELECT id FROM customers WHERE email = ?",
+      [email]
     );
+
     if (existing.length > 0) {
-      return res.status(400).json({ message: "Email or username already taken" });
+      return res.status(400).json({ message: "Email already registered. Please login." });
     }
 
-    // === Hash password & register user ===
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Insert – username is now NULL by default
     const [result] = await db.query(
       `INSERT INTO customers 
-       (username, email, password, full_name, phone, created_at, updated_at) 
-       VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
-      [username, email, hashedPassword, full_name, phone]
+       (email, password, full_name, phone, created_at, updated_at) 
+       VALUES (?, ?, ?, ?, NOW(), NOW())`,
+      [email, hashedPassword, full_name, phone]
     );
 
     if (result.affectedRows === 0) {
       return res.status(500).json({ message: "Failed to create account. Try again." });
     }
 
-    // Optional: Clean old OTPs
-    await db.query("DELETE FROM registration_email_verification_otp WHERE email = ?", [email]);
-
     return res.status(201).json({
       message: "Account created successfully! Welcome to Suyambu Stores!",
     });
-
   } catch (error) {
     console.error("Registration error:", error);
+    if (error.code === "ER_DUP_ENTRY") {
+      return res.status(400).json({ message: "Email already taken" });
+    }
     return res.status(500).json({ message: "Server error. Please try again later." });
   }
 };
+
+
+
+
 
 exports.login = async (req, res) => {
     const { login, password } = req.body;

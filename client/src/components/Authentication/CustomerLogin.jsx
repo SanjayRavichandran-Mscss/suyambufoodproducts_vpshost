@@ -243,13 +243,13 @@ export default function CustomerLogin({ onClose }) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="login" className="block text-sm font-medium text-gray-700 mb-1">
-              Username or Email
+              Email
             </label>
             <input
               id="login"
               name="login"
               type="text"
-              placeholder="Username or email"
+              placeholder="Enter your Email"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               value={form.login}
               onChange={handleChange}

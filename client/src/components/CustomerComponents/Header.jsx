@@ -1135,7 +1135,7 @@ export default function Header({
             <div className="flex-1 mx-2 t">
               <div className="marquee-container text-sm">
                 <div className="marquee-text">
-                  <div className="text-sm"> Free shipping for orders above ₹ 999 | 100% secure payments | Quality packaging | Bulk Orders available      </div>
+                  <div className="text-sm"> Free shipping for orders above ₹ 1499 | 100% secure payments | Quality packaging | Bulk Orders available      </div>
                 </div>
               </div>
             </div>
