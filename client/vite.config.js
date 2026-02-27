@@ -8,6 +8,9 @@ export default defineConfig({
       jsxRuntime: 'automatic',  // Forces modern runtime (no React import needed)
     }),    tailwindcss(),
 ],
+server: {
+host: true,
+},
 base: '/',
 })
 
