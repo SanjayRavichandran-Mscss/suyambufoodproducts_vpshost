@@ -16,9 +16,9 @@ app.use('/productImages', express.static(path.join(__dirname, 'public/productIma
 app.use(cors({
   origin: [
     'http://localhost:5173',
-    'https://suyambufoodproducts-demohost.vercel.app',
     'https://suyambuoils.com/api',
-    'https://www.suyambufoods.com'
+    'https://suyambuoils.com',
+    'https://www.suyambuoils.com',
   ],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
