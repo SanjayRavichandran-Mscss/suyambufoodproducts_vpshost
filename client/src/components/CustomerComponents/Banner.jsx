@@ -23,30 +23,53 @@
 // import SesameLadduMobile from "../../Assets/BannerImages/SesameLadduMobileVersion.png";
 
 // const bannerSlides = [
-//   { desktop: AthirisamDesktop, mobile: AthirisamMobile, alt: "Athirasam Traditional Sweet", productId: null },
-//   { desktop: GroundnutOilDesktop, mobile: GroundnutOilMobile, alt: "Pure Groundnut Oil", productId: null },
-//   { desktop: MurukkuDesktop, mobile: MurukkuMobile, alt: "Crispy Murukku", productId: null },
-//   { desktop: SesameLadduDesktop, mobile: SesameLadduMobile, alt: "Sesame Laddu", productId: null },
+//   { 
+//     desktop: AthirisamDesktop, 
+//     mobile: AthirisamMobile, 
+//     alt: "Athirasam Traditional Sweet", 
+//     productId: "OA==", 
+//     variantId: "264" 
+//   },
+//   { 
+//     desktop: GroundnutOilDesktop, 
+//     mobile: GroundnutOilMobile, 
+//     alt: "Pure Groundnut Oil", 
+//     productId: "MQ==", 
+//     variantId: "259" 
+//   },
+//   { 
+//     desktop: MurukkuDesktop, 
+//     mobile: MurukkuMobile, 
+//     alt: "Crispy Murukku", 
+//     productId: "OQ==", 
+//     variantId: "237" 
+//   },
+//   { 
+//     desktop: SesameLadduDesktop, 
+//     mobile: SesameLadduMobile, 
+//     alt: "Thinai Laddu", 
+//     productId: "Ng==", 
+//     variantId: "222" 
+//   },
 // ];
 
 // export default function Banner({ customerId }) {
 //   const navigate = useNavigate();
 
-//   // Autoplay configuration - Enabled for both Mobile & Desktop
 //   const autoplayPlugin = useMemo(() => {
-//     return Autoplay({ 
-//       delay: 4000, 
-//       stopOnInteraction: false, // Keeps sliding even after user touch/swipe
-//       stopOnMouseEnter: true    // Pauses only when mouse is hovering (desktop)
+//     return Autoplay({
+//       delay: 4000,
+//       stopOnInteraction: false,
+//       stopOnMouseEnter: true
 //     });
 //   }, []);
 
 //   const [emblaRef, emblaApi] = useEmblaCarousel(
-//     { 
-//       loop: true, 
-//       align: "start", 
+//     {
+//       loop: true,
+//       align: "start",
 //       containScroll: "trimSnaps",
-//       duration: 30 // Smooth transition speed
+//       duration: 30
 //     },
 //     [autoplayPlugin]
 //   );
@@ -72,11 +95,16 @@
 //     };
 //   }, [emblaApi, onSelect]);
 
-//   const handleViewProduct = (productId) => {
+//   const handleViewProduct = (productId, variantId) => {
 //     if (!productId) return;
-//     const encodedCustomerId = btoa(customerId || "");
-//     const encodedProductId = btoa(String(productId));
-//     navigate(`/customer?customerId=${encodedCustomerId}&productId=${encodedProductId}`);
+    
+//     // Encoding customerId if it exists
+//     const encodedCustomerId = customerId ? btoa(customerId) : "";
+    
+//     // Constructing the navigation URL to match your provided links
+//     // Note: The productId is already base64 encoded in your provided links (e.g., 'OA==')
+//     navigate(`/customer?customerId=${encodedCustomerId}&productId=${productId}&variantId=${variantId}`);
+    
 //     setTimeout(() => window.scrollTo(0, 0), 100);
 //   };
 
@@ -95,20 +123,15 @@
 
 //   return (
 //     <>
-//       {/* HERO BANNER 
-//         - Removed mt-[-35px] to fix header overlap.
-//         - Background white to maintain professional clean look.
-//       */}
 //       <section className="relative w-full bg-white overflow-hidden group">
         
-//         {/* Navigation Arrows - Hidden on small mobile to keep UI clean, visible on hover for desktop */}
+//         {/* Navigation Arrows */}
 //         <button
 //           onClick={scrollPrev}
 //           className="absolute left-4 top-1/2 -translate-y-1/2 z-30 size-10 rounded-full bg-white/90 shadow-lg hover:bg-white transition-all opacity-0 group-hover:opacity-100 hidden md:flex items-center justify-center"
 //         >
 //           <ChevronLeft className="h-6 w-6 text-gray-800" />
 //         </button>
-
 //         <button
 //           onClick={scrollNext}
 //           className="absolute right-4 top-1/2 -translate-y-1/2 z-30 size-10 rounded-full bg-white/90 shadow-lg hover:bg-white transition-all opacity-0 group-hover:opacity-100 hidden md:flex items-center justify-center"
@@ -123,12 +146,10 @@
 //               <div
 //                 key={index}
 //                 className="relative flex-[0_0_100%] min-w-0 cursor-pointer"
-//                 onClick={() => handleViewProduct(slide.productId)}
+//                 onClick={() => handleViewProduct(slide.productId, slide.variantId)}
 //               >
 //                 <picture>
-//                   {/* Mobile View: High clarity, no stretching */}
 //                   <source media="(max-width: 767px)" srcSet={slide.mobile} />
-//                   {/* Desktop View */}
 //                   <img
 //                     src={slide.desktop}
 //                     alt={slide.alt}
@@ -136,10 +157,6 @@
 //                     loading={index === 0 ? "eager" : "lazy"}
 //                   />
 //                 </picture>
-                
-//                 {/* NO SHADE OR GRADIENT OVERLAY 
-//                    This ensures 100% original clarity of your banner images.
-//                 */}
 //               </div>
 //             ))}
 //           </div>
@@ -172,7 +189,6 @@
 //               celebration of purity, tradition, and the finest organic ingredients.
 //             </p>
 //           </div>
-
 //           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-y-10 gap-x-4">
 //             {whyChooseFeatures.map(({ Icon, title, desc }, i) => (
 //               <div key={i} className="flex flex-col items-center text-center group">
@@ -189,12 +205,6 @@
 //     </>
 //   );
 // }
-
-
-
-
-
-
 
 
 
@@ -240,6 +250,10 @@ import MurukkuDesktop from "../../Assets/BannerImages/MurukkuDesktopVersion.webp
 import MurukkuMobile from "../../Assets/BannerImages/MurukkuMobileVersion.webp";
 import SesameLadduDesktop from "../../Assets/BannerImages/SesameLadduDesktopVersion.png";
 import SesameLadduMobile from "../../Assets/BannerImages/SesameLadduMobileVersion.png";
+
+// Why Choose section images
+import GheeImage from "../../Assets/BannerImages/ghee.png";
+import MaltsImage from "../../Assets/BannerImages/malts.png";
 
 const bannerSlides = [
   { 
@@ -316,14 +330,8 @@ export default function Banner({ customerId }) {
 
   const handleViewProduct = (productId, variantId) => {
     if (!productId) return;
-    
-    // Encoding customerId if it exists
     const encodedCustomerId = customerId ? btoa(customerId) : "";
-    
-    // Constructing the navigation URL to match your provided links
-    // Note: The productId is already base64 encoded in your provided links (e.g., 'OA==')
     navigate(`/customer?customerId=${encodedCustomerId}&productId=${productId}&variantId=${variantId}`);
-    
     setTimeout(() => window.scrollTo(0, 0), 100);
   };
 
@@ -408,7 +416,7 @@ export default function Banner({ customerId }) {
               celebration of purity, tradition, and the finest organic ingredients.
             </p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-y-10 gap-x-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-y-10 gap-x-4 mb-16">
             {whyChooseFeatures.map(({ Icon, title, desc }, i) => (
               <div key={i} className="flex flex-col items-center text-center group">
                 <div className="w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-green-100 transition-colors">
@@ -419,11 +427,26 @@ export default function Banner({ customerId }) {
               </div>
             ))}
           </div>
+
+          {/* Bottom Images Section: Responsive Layout */}
+          <div className="flex flex-col md:flex-row w-full gap-4">
+            <div className="w-full md:w-1/2">
+              <img 
+                src={GheeImage} 
+                alt="Pure Ghee" 
+                className="w-full h-auto object-cover rounded-lg shadow-sm"
+              />
+            </div>
+            <div className="w-full md:w-1/2">
+              <img 
+                src={MaltsImage} 
+                alt="Healthy Malts" 
+                className="w-full h-auto object-cover rounded-lg shadow-sm"
+              />
+            </div>
+          </div>
         </div>
       </section>
     </>
   );
 }
-
-
-
