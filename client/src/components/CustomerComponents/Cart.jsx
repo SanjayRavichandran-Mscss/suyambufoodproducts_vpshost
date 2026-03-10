@@ -61,6 +61,7 @@
 //         style={{
 //           transform:
 //             cartAnimation === "slide-in" ? "translateX(0)" : "translateX(100%)",
+//           width: window.innerWidth < 640 ? "90%" : undefined, // Leaves ~5% space on right in mobile
 //         }}
 //         onClick={(e) => e.stopPropagation()}
 //       >
@@ -247,6 +248,17 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 import React from "react";
 import { Minus, Plus, SquareX, ShoppingCart, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -306,11 +318,12 @@ const Cart = ({
       onClick={handleCloseCart}
     >
       <div
-        className="ml-auto h-full w-full sm:w-[460px] bg-white shadow-xl relative transition-transform duration-300 p-0 flex flex-col"
+        className="ml-auto h-full w-full sm:w-[500px] bg-white shadow-xl relative transition-transform duration-300 p-0 flex flex-col"
         style={{
           transform:
             cartAnimation === "slide-in" ? "translateX(0)" : "translateX(100%)",
-          width: window.innerWidth < 640 ? "90%" : undefined, // Leaves ~5% space on right in mobile
+          // Optional: more breathing room on very small screens
+          width: window.innerWidth < 640 ? "94%" : undefined,
         }}
         onClick={(e) => e.stopPropagation()}
       >

@@ -11,6 +11,17 @@
 //   const [error, setError] = useState(null);
 //   const navigate = useNavigate();
 
+//   // Detect mobile for responsive width
+//   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+//   useEffect(() => {
+//     const handleResize = () => {
+//       setIsMobile(window.innerWidth < 768);
+//     };
+//     window.addEventListener("resize", handleResize);
+//     return () => window.removeEventListener("resize", handleResize);
+//   }, []);
+
 //   useEffect(() => {
 //     const fetchWishlist = async () => {
 //       if (!customerId) {
@@ -39,7 +50,6 @@
 //         setWishlist(likedWishlist);
 //         const count = likedWishlist.length;
 //         setTotalWished(count);
-//         // console.log('Total wishlist count:', count);
 //         if (onWishlistCountUpdate) {
 //           onWishlistCountUpdate(count);
 //         }
@@ -63,13 +73,17 @@
 //   };
 
 //   if (!customerId) {
-//     return null; // Should not render if no customerId, as opening is prevented
+//     return null;
 //   }
 
 //   return (
 //     <div className="fixed inset-0 bg-black/50 z-50 flex justify-end" onClick={(e) => e.target === e.currentTarget && onClose()}>
 //       <div 
-//         className="bg-white w-full max-w-md lg:max-w-lg h-full p-6 overflow-y-auto relative"
+//         className="bg-white h-full p-6 overflow-y-auto relative shadow-2xl"
+//         style={{
+//           width: isMobile ? "90%" : "100%", // Leaves ~5% space on left in mobile
+//           maxWidth: isMobile ? "none" : "480px", // Removes max-width limit on mobile for consistency
+//         }}
 //         onClick={(e) => e.stopPropagation()}
 //       >
 //         {/* Header with X close */}
@@ -92,7 +106,7 @@
 //             <p className="text-red-500">Error: {error}</p>
 //           </div>
 //         ) : (
-//           <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+//           <div className="space-y-4">
 //             {wishlist.length === 0 ? (
 //               <p className="text-center text-gray-500 py-8">Your wishlist is empty. Start adding your favorites!</p>
 //             ) : (
@@ -112,7 +126,6 @@
 //                     <h3 className="font-medium text-sm text-gray-900 leading-tight line-clamp-2 mb-1">{item.name}</h3>
 //                     <p className="text-xs text-gray-500 mb-1">Category: {item.category_name}</p>
 //                     <p className="text-xs text-gray-500 mb-1">Stock: {item.stock_status_name}</p>
-                    
 //                     <p className="text-xs text-gray-400">Added: {new Date(item.added_at).toLocaleDateString()}</p>
 //                   </div>
 //                   <div
@@ -132,6 +145,13 @@
 // };
 
 // export default WishList;
+
+
+
+
+
+
+
 
 
 
@@ -226,60 +246,77 @@ const WishList = ({ onClose, customerId, onWishlistCountUpdate }) => {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex justify-end" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div 
+      className="fixed inset-0 bg-black/50 z-50 flex justify-end" 
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
       <div 
         className="bg-white h-full p-6 overflow-y-auto relative shadow-2xl"
         style={{
-          width: isMobile ? "90%" : "100%", // Leaves ~5% space on left in mobile
-          maxWidth: isMobile ? "none" : "480px", // Removes max-width limit on mobile for consistency
+          width: isMobile ? "94%" : "520px",     // ← increased width
+          maxWidth: isMobile ? "none" : "520px",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header with X close */}
-        <div className="flex justify-between items-center mb-6 pb-4 border-b">
+        <div className="flex justify-between items-center mb-6 pb-5 border-b">
           <h2 className="text-xl font-semibold" style={{ color: BRAND_SECONDARY }}>
             Your Wishlist ({totalWished})
           </h2>
-          <button onClick={onClose} className="p-1 hover:opacity-80 transition-opacity" style={{ color: BRAND_SECONDARY }}>
-            <X size={24} />
+          <button 
+            onClick={onClose} 
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors" 
+            style={{ color: BRAND_SECONDARY }}
+          >
+            <X size={26} />
           </button>
         </div>
 
         {/* Content */}
         {loading ? (
-          <div className="flex justify-center items-center py-8">
+          <div className="flex justify-center items-center py-10">
             <p className="text-gray-500">Loading your wishlist...</p>
           </div>
         ) : error ? (
-          <div className="text-center py-8">
+          <div className="text-center py-10">
             <p className="text-red-500">Error: {error}</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-5">
             {wishlist.length === 0 ? (
-              <p className="text-center text-gray-500 py-8">Your wishlist is empty. Start adding your favorites!</p>
+              <p className="text-center text-gray-600 py-12 font-medium">
+                Your wishlist is empty. Start adding your favorites!
+              </p>
             ) : (
               wishlist.map((item) => (
                 <div
                   key={item.id}
                   onClick={() => handleWishlistItemClick(item)}
-                  className="flex gap-4 p-3 border-b border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors rounded-lg"
+                  className="flex gap-5 p-4 border border-gray-200 hover:border-[#B6895B]/40 hover:bg-gray-50/60 cursor-pointer transition-all rounded-xl"
                 >
                   <img
                     src={`https://suyambuoils.com/api${item.thumbnail_url}`}
                     alt={item.name}
-                    className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
-                    onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/64"; }}
+                    className="w-20 h-20 object-cover rounded-lg flex-shrink-0 shadow-sm"   // ← larger image
+                    onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/80"; }}
                   />
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-sm text-gray-900 leading-tight line-clamp-2 mb-1">{item.name}</h3>
-                    <p className="text-xs text-gray-500 mb-1">Category: {item.category_name}</p>
-                    <p className="text-xs text-gray-500 mb-1">Stock: {item.stock_status_name}</p>
-                    <p className="text-xs text-gray-400">Added: {new Date(item.added_at).toLocaleDateString()}</p>
+                    <h3 className="font-medium text-base text-gray-900 leading-snug line-clamp-2 mb-2">
+                      {item.name}
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-1">
+                      Category: {item.category_name}
+                    </p>
+                    <p className="text-sm text-gray-600 mb-1">
+                      Stock: {item.stock_status_name}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Added: {new Date(item.added_at).toLocaleDateString()}
+                    </p>
                   </div>
                   <div
-                    className="flex-shrink-0 flex items-center ml-2"
-                    style={{ fontSize: '1.5em', color: '#e74c3c' }}
+                    className="flex-shrink-0 flex items-center ml-1"
+                    style={{ fontSize: '1.8em', color: '#e74c3c' }}
                   >
                     ❤️
                   </div>

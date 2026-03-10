@@ -6,8 +6,8 @@ import AdminLogin from "./components/Authentication/AdminLogin";
 import CustomerLogin from "./components/Authentication/CustomerLogin";
 import CustomerRegister from "./components/Authentication/CustomerRegister";
 import CheckOutPage from "./Pages/CheckOutPage";
-import Aboutus from "./components/CustomerComponents/AboutUs";
-import ContactUs from "./components/CustomerComponents/ContactUs";
+import Aboutus from "./Pages/AboutUsPage";
+import ContactUs from "./Pages/ContactUsPage";
 import { AdminProtectedRoute, CustomerProtectedRoute } from "./components/ProtectedRoutes/ProtectedRoutes";
 import LegalInfo from "./components/CustomerComponents/LegalInfo";
 

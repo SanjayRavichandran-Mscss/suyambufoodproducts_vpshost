@@ -15,6 +15,8 @@
 //   Maximize2,
 //   Minimize2,
 // } from "lucide-react";
+// import { useGesture } from "@use-gesture/react";
+// import { animated, useSpring } from "@react-spring/web";
 
 // import "react-quill-new/dist/quill.snow.css";
 
@@ -22,9 +24,10 @@
 
 // const magnifierStyles = `
 // .single-product-magnifier-container { position: relative; overflow: hidden; border-radius: 1rem; background: #ffffff; }
-// .single-product-magnifier-main-img { width: 100%; height: 28rem; object-fit: contain; display: block; }
+// .single-product-magnifier-inner { width: 100%; height: 28rem; display: flex; align-items: center; justify-content: center; } /* NEW: inner wrapper to zoom only image */
+// .single-product-magnifier-main-img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; } /* UPDATED: use max-width/max-height so only image scales */
 // @media (max-width: 768px) {
-//   .single-product-magnifier-main-img { height: 18rem; }
+//   .single-product-magnifier-inner { height: 18rem; } /* keep fixed area on mobile */
 // }
 // `;
 
@@ -51,6 +54,15 @@
 //   const [touchStartX, setTouchStartX] = useState(0);
 //   const [imageLoading, setImageLoading] = useState(true);
 //   const [imageError, setImageError] = useState(false);
+//   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+//   // Zoom state for mobile pinch/double-tap
+//   const [{ scale, x, y }, api] = useSpring(() => ({
+//     scale: 1,
+//     x: 0,
+//     y: 0,
+//     config: { tension: 300, friction: 30 },
+//   }));
 
 //   const normalizeImage = (img) => {
 //     if (!img) return "https://via.placeholder.com/600";
@@ -77,6 +89,47 @@
 //     }
 //   };
 
+//   // Double tap to toggle zoom
+//   const [lastTap, setLastTap] = useState(0);
+//   const handleDoubleTap = () => {
+//     const now = Date.now();
+//     const DOUBLE_TAP_DELAY = 300;
+//     if (now - lastTap < DOUBLE_TAP_DELAY) {
+//       api.start({ scale: scale.get() > 1.1 ? 1 : 2 });
+//     }
+//     setLastTap(now);
+//   };
+
+//   // Gesture binding for pinch + drag + double tap (applied only to image wrapper)
+//   const bind = useGesture(
+//     {
+//       onDrag: ({ offset: [dx, dy] }) => {
+//         if (scale.get() > 1) {
+//           api.start({ x: dx, y: dy });
+//         }
+//       },
+//       onPinch: ({ offset: [d] }) => {
+//         api.start({ scale: 1 + d / 100 });
+//       },
+//       onDoubleTap: handleDoubleTap,
+//     },
+//     {
+//       drag: { filterTaps: true },
+//       pinch: { distanceBounds: { min: 0 } },
+//     }
+//   );
+
+//   useEffect(() => {
+//     const handleResize = () => {
+//       setIsMobile(window.innerWidth < 768);
+//       if (window.innerWidth >= 768) {
+//         api.start({ scale: 1, x: 0, y: 0 });
+//       }
+//     };
+//     window.addEventListener("resize", handleResize);
+//     return () => window.removeEventListener("resize", handleResize);
+//   }, [api]);
+
 //   useEffect(() => {
 //     const searchParams = new URLSearchParams(location.search);
 //     const variantId = searchParams.get("variantId");
@@ -99,7 +152,7 @@
 
 //     axios
 //       .get(`https://suyambuoils.com/api/admin/products/${idNum}`, {
-//         headers: { Origin: "http://localhost:5173" },
+//         ,
 //       })
 //       .then((res) => {
 //         const data = res.data || {};
@@ -171,7 +224,7 @@
 
 //     const isFromAddToCart = change === 0;
 //     const newQuantity = isFromAddToCart ? 1 : Math.max(1, quantity + change);
-    
+
 //     if (product.stock_quantity != null && newQuantity > product.stock_quantity) {
 //       showMessage(`Only ${product.stock_quantity} items available in stock`);
 //       return;
@@ -192,7 +245,7 @@
 //     if (item) {
 //       axios
 //         .put("https://suyambuoils.com/api/customer/cart", body, {
-//           headers: { Origin: "http://localhost:5173" },
+//           ,
 //         })
 //         .then(() => {
 //           fetchCart();
@@ -205,7 +258,7 @@
 //     } else {
 //       axios
 //         .post("https://suyambuoils.com/api/customer/cart", body, {
-//           headers: { Origin: "http://localhost:5173" },
+//           ,
 //         })
 //         .then(() => {
 //           fetchCart();
@@ -253,7 +306,7 @@
 //     if (!item) {
 //       axios
 //         .post("https://suyambuoils.com/api/customer/cart", body, {
-//           headers: { Origin: "http://localhost:5173" },
+//           ,
 //         })
 //         .then(() => {
 //           fetchCart();
@@ -324,7 +377,7 @@
 //         </div>
 //         <button
 //           onClick={handleBack}
-//           className="mt-4 px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+//           className="mt-4 px-2 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
 //         >
 //           Back to Products
 //         </button>
@@ -334,7 +387,7 @@
 
 //   const allImages = [product.thumbnail_url, ...(product.additional_images || [])];
 //   const imgSrc = allImages[selectedImage] || "https://via.placeholder.com/600";
-//   const isLiked = wishlist.some(item => item.product_id === product.id);
+//   const isLiked = wishlist.some((item) => item.product_id === product.id);
 //   const isOutOfStock = product.stock_status_id === 2;
 //   const displayPrice =
 //     selectedVariant?.price != null
@@ -361,8 +414,8 @@
 //     <>
 //       <div className="container mx-auto px-4 py-2 max-w-6xl">
 //         <style>{magnifierStyles}</style>
-        
-//         <div className="mt-8 mb-10">
+
+//         <div className="mt-5 mb-4">
 //           <button
 //             onClick={handleBack}
 //             className="text-gray-600 hover:text-gray-900 font-medium flex items-center gap-1 transition-colors"
@@ -382,7 +435,7 @@
 //           {/* Product Images Section */}
 //           <div className="flex flex-col gap-4">
 //             <div
-//               className="single-product-magnifier-container group relative touch-pan-y"
+//               className="single-product-magnifier-container group relative touch-pan-y overflow-hidden"
 //               onTouchStart={allImages.length > 1 ? handleTouchStart : undefined}
 //               onTouchEnd={allImages.length > 1 ? handleTouchEnd : undefined}
 //             >
@@ -391,44 +444,95 @@
 //                   <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-600"></div>
 //                 </div>
 //               )}
-//               <img
-//                 src={imgSrc}
-//                 alt={product.name}
-//                 className={`single-product-magnifier-main-img ${imageLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
-//                 onLoad={handleImageLoad}
-//                 onError={handleImageError}
-//               />
-              
-//               {allImages.length > 1 && (
-//                 <div className="absolute inset-0 flex items-center justify-between px-2 md:px-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+
+//               {isMobile ? (
+//                 <div className="single-product-magnifier-inner">
+//                   {/* Zoom ONLY this wrapper/image */}
+//                   <animated.img
+//                     {...bind()}
+//                     src={imgSrc}
+//                     alt={product.name}
+//                     className={`single-product-magnifier-main-img ${
+//                       imageLoading ? "opacity-0" : "opacity-100"
+//                     } transition-opacity duration-300`}
+//                     style={{
+//                       scale,
+//                       x,
+//                       y,
+//                       touchAction: "none",
+//                       cursor: scale.get() > 1 ? "grab" : "default",
+//                     }}
+//                     onLoad={handleImageLoad}
+//                     onError={handleImageError}
+//                     draggable={false}
+//                   />
+//                 </div>
+//               ) : (
+//                 <div className="single-product-magnifier-inner">
+//                   <img
+//                     src={imgSrc}
+//                     alt={product.name}
+//                     className={`single-product-magnifier-main-img ${
+//                       imageLoading ? "opacity-0" : "opacity-100"
+//                     } transition-opacity duration-300`}
+//                     onLoad={handleImageLoad}
+//                     onError={handleImageError}
+//                   />
+//                 </div>
+//               )}
+
+//               {/* Desktop Only: Left/Right Arrows + Expand Button */}
+//               {!isMobile && allImages.length > 1 && (
+//                 <div className="absolute inset-0 flex items-center justify-between px-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
 //                   <button
 //                     onClick={() =>
-//                       setSelectedImage((i) => (i - 1 + allImages.length) % allImages.length)
+//                       setSelectedImage(
+//                         (i) => (i - 1 + allImages.length) % allImages.length
+//                       )
 //                     }
-//                     className="p-2 md:p-3 bg-white/80 md:bg-white/80 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-colors pointer-events-auto"
+//                     className="p-3 bg-white/80 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-colors pointer-events-auto"
 //                   >
-//                     <ChevronsLeft size={20} className="md:size-6 text-gray-700" />
+//                     <ChevronsLeft size={24} className="text-gray-700" />
 //                   </button>
 //                   <div className="flex-1" />
 //                   <button
 //                     onClick={() =>
 //                       setSelectedImage((i) => (i + 1) % allImages.length)
 //                     }
-//                     className="p-2 md:p-3 bg-white/80 md:bg-white/80 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-colors pointer-events-auto"
+//                     className="p-3 bg-white/80 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-colors pointer-events-auto"
 //                   >
-//                     <ChevronsRight size={20} className="md:size-6 text-gray-700" />
+//                     <ChevronsRight size={24} className="text-gray-700" />
 //                   </button>
 //                 </div>
 //               )}
 
-//               <button
-//                 onClick={() => setIsExpanded(true)}
-//                 className="absolute top-2 right-2 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-all duration-300 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:transform md:scale-0 md:group-hover:scale-100 z-10"
-//                 aria-label="View full-screen"
-//               >
-//                 <Maximize2 size={18} className="text-gray-700" />
-//               </button>
+//               {/* Desktop Only: Expand Button */}
+//               {!isMobile && (
+//                 <button
+//                   onClick={() => setIsExpanded(true)}
+//                   className="absolute top-2 right-2 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-all duration-300 opacity-0 group-hover:opacity-100 z-10"
+//                   aria-label="View full-screen"
+//                 >
+//                   <Maximize2 size={18} className="text-gray-700" />
+//                 </button>
+//               )}
 //             </div>
+
+//             {/* Mobile Only: Dots Indicator - moved BELOW container so they are always visible */}
+//             {isMobile && allImages.length > 1 && (
+//               <div className="flex justify-center gap-1.5">
+//                 {allImages.map((_, index) => (
+//                   <div
+//                     key={index}
+//                     className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+//                       index === selectedImage
+//                         ? "bg-gray-800 w-6"
+//                         : "bg-gray-400"
+//                     }`}
+//                   />
+//                 ))}
+//               </div>
+//             )}
 
 //             {/* Thumbnail Images */}
 //             <div className="flex gap-2 md:gap-3 overflow-x-auto pb-1 px-2 md:px-0">
@@ -436,7 +540,10 @@
 //                 <button
 //                   type="button"
 //                   key={index}
-//                   onClick={() => setSelectedImage(index)}
+//                   onClick={() => {
+//                     setSelectedImage(index);
+//                     api.start({ scale: 1, x: 0, y: 0 }); // Reset zoom on image change
+//                   }}
 //                   aria-label={`View image ${index + 1}`}
 //                   className={`h-14 w-14 md:h-16 md:w-16 rounded-md overflow-hidden border-2 transition flex-shrink-0 ${
 //                     selectedImage === index
@@ -457,30 +564,34 @@
 //             </div>
 //           </div>
 
-//           {/* Product Details Section */}
+//           {/* Product Details Section - Unchanged */}
 //           <div className="flex flex-col mt-4 md:mt-0">
 //             <span className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
 //               {product.category_name}
 //             </span>
-            
+
 //             <h1 className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-gray-900 mt-2 leading-tight">
 //               {product.name}
 //             </h1>
-            
-//             {/* Rich Text Description - Properly Rendered */}
+
 //             <div className="mt-4 prose prose-sm max-w-none text-gray-700 leading-relaxed">
-//               <div 
-//                 className="ql-editor p-0" 
-//                 dangerouslySetInnerHTML={{ 
-//                   __html: product.description || product.short_description || "No description available." 
-//                 }} 
+//               <div
+//                 className="ql-editor p-0"
+//                 dangerouslySetInnerHTML={{
+//                   __html:
+//                     product.description ||
+//                     product.short_description ||
+//                     "No description available.",
+//                 }}
 //               />
 //             </div>
 
 //             <div className="mt-4 flex items-center gap-3">
-//               <span className={`text-sm md:text-base ml-4 font-medium ${
-//                 isOutOfStock ? "text-red-700" : "text-green-700"
-//               }`}>
+//               <span
+//                 className={`text-sm md:text-base ml-4 font-medium ${
+//                   isOutOfStock ? "text-red-700" : "text-green-700"
+//                 }`}
+//               >
 //                 {isOutOfStock ? "Out of Stock" : "In Stock"}
 //               </span>
 //             </div>
@@ -493,7 +604,6 @@
 //               })}
 //             </div>
 
-//             {/* Variant Selection */}
 //             {product.variants && product.variants.length > 0 && (
 //               <div className="mt-6">
 //                 <label className="text-sm font-semibold text-gray-700 block mb-2">
@@ -532,9 +642,10 @@
 //               </div>
 //             )}
 
-//             {/* Quantity Selection */}
 //             <div className="mt-6">
-//               <h3 className="font-semibold text-gray-900 mb-2 text-sm">Quantity</h3>
+//               <h3 className="font-semibold text-gray-900 mb-2 text-sm">
+//                 Quantity
+//               </h3>
 //               <div className="flex items-center gap-3 md:gap-4">
 //                 <div className="flex items-center rounded-md border border-gray-300 bg-white">
 //                   <button
@@ -579,7 +690,6 @@
 //               </div>
 //             </div>
 
-//             {/* Action Buttons */}
 //             <div className="mt-6 flex flex-col gap-3 md:gap-4">
 //               <button
 //                 onClick={handleBuyNow}
@@ -592,7 +702,7 @@
 //               >
 //                 Buy Now
 //               </button>
-              
+
 //               <button
 //                 onClick={handleAddToCart}
 //                 disabled={inCart || isOutOfStock}
@@ -613,30 +723,29 @@
 //                 className={`
 //                   w-full py-3 px-6 rounded-md font-semibold transition-colors 
 //                   flex items-center justify-center gap-2 border text-sm md:text-base
-//                   ${isLiked
-//                     ? "bg-red-50 text-red-700 border-red-600 hover:bg-red-100"
-//                     : isOutOfStock
-//                     ? "bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed"
-//                     : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400"
+//                   ${
+//                     isLiked
+//                       ? "bg-red-50 text-red-700 border-red-600 hover:bg-red-100"
+//                       : isOutOfStock
+//                       ? "bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed"
+//                       : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400"
 //                   }
 //                 `}
 //               >
 //                 <Heart
 //                   size={18}
-//                   className={`
-//                     ${isLiked 
-//                       ? "fill-current text-red-500" 
-//                       : isOutOfStock 
-//                         ? "text-gray-400" 
-//                         : "text-gray-500"
-//                     }
-//                   `}
+//                   className={`${
+//                     isLiked
+//                       ? "fill-current text-red-500"
+//                       : isOutOfStock
+//                       ? "text-gray-400"
+//                       : "text-gray-500"
+//                   }`}
 //                 />
 //                 {isLiked ? "Added to wishlist" : "Add to wishlist"}
 //               </button>
 //             </div>
 
-//             {/* Features */}
 //             <div className="mt-8 grid grid-cols-3 gap-4 md:gap-6">
 //               <div className="text-center">
 //                 <Truck className="mx-auto text-green-700 mb-2" size={20} />
@@ -653,22 +762,17 @@
 //             </div>
 //           </div>
 //         </div>
-
-//         {/* REMOVED: Product Details Section (Specifications + Shipping & Returns) */}
-
 //       </div>
 
-//       {/* Full Screen Image Modal */}
-//       {isExpanded && (
+//       {/* Full Screen Modal - Desktop Only */}
+//       {!isMobile && isExpanded && (
 //         <div
 //           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
 //           onClick={() => setIsExpanded(false)}
 //         >
 //           <div
-//             className="relative w-full h-full max-w-6xl max-h-full p-2 md:p-4 flex items-center justify-center group touch-pan-y"
+//             className="relative w-full h-full max-w-6xl max-h-full p-4 flex items-center justify-center group touch-pan-y"
 //             onClick={(e) => e.stopPropagation()}
-//             onTouchStart={allImages.length > 1 ? handleTouchStart : undefined}
-//             onTouchEnd={allImages.length > 1 ? handleTouchEnd : undefined}
 //           >
 //             <img
 //               src={allImages[selectedImage] || "https://via.placeholder.com/600"}
@@ -678,33 +782,34 @@
 //                 (e.currentTarget.src = "https://via.placeholder.com/600")
 //               }
 //             />
-            
+
 //             {allImages.length > 1 && (
-//               <div className="absolute inset-0 flex items-center justify-between px-2 md:px-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+//               <div className="absolute inset-0 flex items-center justify-between px-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
 //                 <button
 //                   onClick={() =>
-//                     setSelectedImage((i) => (i - 1 + allImages.length) % allImages.length)
+//                     setSelectedImage(
+//                       (i) => (i - 1 + allImages.length) % allImages.length
+//                     )
 //                   }
-//                   className="p-3 md:p-4 bg-white/20 backdrop-blur-sm rounded-full shadow-lg hover:bg-white/30 transition-colors text-white pointer-events-auto"
+//                   className="p-4 bg-white/20 backdrop-blur-sm rounded-full shadow-lg hover:bg-white/30 transition-colors text-white pointer-events-auto"
 //                 >
-//                   <ChevronsLeft size={24} className="md:size-8" />
+//                   <ChevronsLeft size={32} />
 //                 </button>
 //                 <div className="flex-1" />
 //                 <button
 //                   onClick={() =>
 //                     setSelectedImage((i) => (i + 1) % allImages.length)
 //                   }
-//                   className="p-3 md:p-4 bg-white/20 backdrop-blur-sm rounded-full shadow-lg hover:bg-white/30 transition-colors text-white pointer-events-auto"
+//                   className="p-4 bg-white/20 backdrop-blur-sm rounded-full shadow-lg hover:bg-white/30 transition-colors text-white pointer-events-auto"
 //                 >
-//                   <ChevronsRight size={24} className="md:size-8" />
+//                   <ChevronsRight size={32} />
 //                 </button>
 //               </div>
 //             )}
-            
+
 //             <button
 //               onClick={() => setIsExpanded(false)}
-//               className="absolute top-4 right-4 p-3 bg-white/20 md:bg-white/20 md:hover:bg-white/30 backdrop-blur-sm rounded-full shadow-lg text-white transition-colors"
-//               aria-label="Close full-screen"
+//               className="absolute top-4 right-4 p-3 bg-white/20 backdrop-blur-sm rounded-full shadow-lg text-white hover:bg-white/30 transition-colors"
 //             >
 //               <Minimize2 size={24} />
 //             </button>
@@ -727,15 +832,22 @@
 
 
 
+
+
+
+
+
+
+
+
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
 import {
   ShoppingCart,
   Heart,
   Plus,
   Minus,
-  Star,
   Truck,
   Shield,
   RotateCcw,
@@ -743,6 +855,7 @@ import {
   ChevronsRight,
   Maximize2,
   Minimize2,
+  X,
 } from "lucide-react";
 import { useGesture } from "@use-gesture/react";
 import { animated, useSpring } from "@react-spring/web";
@@ -752,11 +865,30 @@ import "react-quill-new/dist/quill.snow.css";
 const IMAGE_BASE = "https://suyambuoils.com/api";
 
 const magnifierStyles = `
-.single-product-magnifier-container { position: relative; overflow: hidden; border-radius: 1rem; background: #ffffff; }
-.single-product-magnifier-inner { width: 100%; height: 28rem; display: flex; align-items: center; justify-content: center; } /* NEW: inner wrapper to zoom only image */
-.single-product-magnifier-main-img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; } /* UPDATED: use max-width/max-height so only image scales */
+.single-product-magnifier-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  background: #ffffff;
+}
+.single-product-magnifier-inner {
+  width: 100%;
+  height: 28rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.single-product-magnifier-main-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+  cursor: pointer;
+}
 @media (max-width: 768px) {
-  .single-product-magnifier-inner { height: 18rem; } /* keep fixed area on mobile */
+  .single-product-magnifier-inner {
+    height: 18rem;
+  }
 }
 `;
 
@@ -772,6 +904,7 @@ export default function SingleProduct({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
+
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -779,13 +912,14 @@ export default function SingleProduct({
   const [quantity, setQuantity] = useState(1);
   const [selectedVariantId, setSelectedVariantId] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState(null);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false); // desktop modal
+  const [isMobileModalOpen, setIsMobileModalOpen] = useState(false); // mobile full-screen
   const [touchStartX, setTouchStartX] = useState(0);
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
-  // Zoom state for mobile pinch/double-tap
+  // Zoom & pan animation
   const [{ scale, x, y }, api] = useSpring(() => ({
     scale: 1,
     x: 0,
@@ -799,6 +933,11 @@ export default function SingleProduct({
     if (img.startsWith("/")) return `${IMAGE_BASE}${img}`;
     return `${IMAGE_BASE}/${img}`;
   };
+
+  // Reset zoom when image changes
+  useEffect(() => {
+    api.start({ scale: 1, x: 0, y: 0 });
+  }, [selectedImage, api]);
 
   const handleTouchStart = (e) => {
     setTouchStartX(e.touches[0].clientX);
@@ -818,24 +957,23 @@ export default function SingleProduct({
     }
   };
 
-  // Double tap to toggle zoom
+  // Double-tap zoom toggle
   const [lastTap, setLastTap] = useState(0);
   const handleDoubleTap = () => {
     const now = Date.now();
     const DOUBLE_TAP_DELAY = 300;
     if (now - lastTap < DOUBLE_TAP_DELAY) {
-      api.start({ scale: scale.get() > 1.1 ? 1 : 2 });
+      api.start({ scale: scale.get() > 1.1 ? 1 : 2.5 });
     }
     setLastTap(now);
   };
 
-  // Gesture binding for pinch + drag + double tap (applied only to image wrapper)
+  // Gesture handler (pinch, drag, double-tap)
   const bind = useGesture(
     {
-      onDrag: ({ offset: [dx, dy] }) => {
-        if (scale.get() > 1) {
-          api.start({ x: dx, y: dy });
-        }
+      onDrag: ({ offset: [dx, dy], pinching }) => {
+        if (pinching || scale.get() <= 1) return;
+        api.start({ x: dx, y: dy });
       },
       onPinch: ({ offset: [d] }) => {
         api.start({ scale: 1 + d / 100 });
@@ -850,9 +988,11 @@ export default function SingleProduct({
 
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-      if (window.innerWidth >= 768) {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (!mobile) {
         api.start({ scale: 1, x: 0, y: 0 });
+        setIsMobileModalOpen(false);
       }
     };
     window.addEventListener("resize", handleResize);
@@ -880,9 +1020,7 @@ export default function SingleProduct({
     }
 
     axios
-      .get(`https://suyambuoils.com/api/admin/products/${idNum}`, {
-        headers: { Origin: "http://localhost:5173" },
-      })
+      .get(`https://suyambuoils.com/api/admin/products/${idNum}`)
       .then((res) => {
         const data = res.data || {};
         const variants = Array.isArray(data.variants)
@@ -891,8 +1029,7 @@ export default function SingleProduct({
               id: v.id,
               uom_id: v.uom_id != null ? String(v.uom_id) : undefined,
               price: v.price != null ? Number(v.price) : undefined,
-              variant_quantity:
-                v.quantity != null ? v.quantity : v.variant_quantity || "",
+              variant_quantity: v.quantity != null ? v.quantity : v.variant_quantity || "",
               uom_name: v.uom_name || v.uom_name,
             }))
           : [];
@@ -910,8 +1047,7 @@ export default function SingleProduct({
 
         const normalized = {
           ...data,
-          price:
-            data?.price != null ? Number(data.price) : chosenVariant?.price ?? 0,
+          price: data?.price != null ? Number(data.price) : chosenVariant?.price ?? 0,
           thumbnail_url: normalizeImage(data.thumbnail_url),
           additional_images: Array.isArray(data.additional_images)
             ? data.additional_images.map((img) => normalizeImage(img))
@@ -973,9 +1109,7 @@ export default function SingleProduct({
 
     if (item) {
       axios
-        .put("https://suyambuoils.com/api/customer/cart", body, {
-          headers: { Origin: "http://localhost:5173" },
-        })
+        .put("https://suyambuoils.com/api/customer/cart", body)
         .then(() => {
           fetchCart();
           showMessage("Cart updated successfully");
@@ -986,9 +1120,7 @@ export default function SingleProduct({
         });
     } else {
       axios
-        .post("https://suyambuoils.com/api/customer/cart", body, {
-          headers: { Origin: "http://localhost:5173" },
-        })
+        .post("https://suyambuoils.com/api/customer/cart", body)
         .then(() => {
           fetchCart();
           showMessage("Product added to cart");
@@ -1034,9 +1166,7 @@ export default function SingleProduct({
 
     if (!item) {
       axios
-        .post("https://suyambuoils.com/api/customer/cart", body, {
-          headers: { Origin: "http://localhost:5173" },
-        })
+        .post("https://suyambuoils.com/api/customer/cart", body)
         .then(() => {
           fetchCart();
           navigate(
@@ -1106,7 +1236,7 @@ export default function SingleProduct({
         </div>
         <button
           onClick={handleBack}
-          className="mt-4 px-2 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+          className="mt-4 px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
         >
           Back to Products
         </button>
@@ -1141,32 +1271,28 @@ export default function SingleProduct({
 
   return (
     <>
-      <div className="container mx-auto px-4 py-2 max-w-6xl">
-        <style>{magnifierStyles}</style>
+      <style>{magnifierStyles}</style>
 
+      <div className="container mx-auto px-4 py-2 max-w-6xl">
         <div className="mt-5 mb-4">
           <button
             onClick={handleBack}
             className="text-gray-600 hover:text-gray-900 font-medium flex items-center gap-1 transition-colors"
             aria-label="Back to products"
           >
-            <span
-              className="text-2xl font-extrabold text-black mr-1"
-              style={{ lineHeight: "1" }}
-            >
-              ←
-            </span>
+            <span className="text-2xl font-extrabold text-black mr-1">←</span>
             Back to Products
           </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 bg-white rounded-xl shadow-sm p-4 md:p-6">
-          {/* Product Images Section */}
+          {/* Image Section */}
           <div className="flex flex-col gap-4">
             <div
-              className="single-product-magnifier-container group relative touch-pan-y overflow-hidden"
+              className="single-product-magnifier-container group relative touch-pan-y overflow-hidden rounded-xl"
               onTouchStart={allImages.length > 1 ? handleTouchStart : undefined}
               onTouchEnd={allImages.length > 1 ? handleTouchEnd : undefined}
+              onClick={() => isMobile && setIsMobileModalOpen(true)}
             >
               {imageLoading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
@@ -1174,56 +1300,43 @@ export default function SingleProduct({
                 </div>
               )}
 
-              {isMobile ? (
-                <div className="single-product-magnifier-inner">
-                  {/* Zoom ONLY this wrapper/image */}
-                  <animated.img
-                    {...bind()}
-                    src={imgSrc}
-                    alt={product.name}
-                    className={`single-product-magnifier-main-img ${
-                      imageLoading ? "opacity-0" : "opacity-100"
-                    } transition-opacity duration-300`}
-                    style={{
-                      scale,
-                      x,
-                      y,
-                      touchAction: "none",
-                      cursor: scale.get() > 1 ? "grab" : "default",
-                    }}
-                    onLoad={handleImageLoad}
-                    onError={handleImageError}
-                    draggable={false}
-                  />
-                </div>
-              ) : (
-                <div className="single-product-magnifier-inner">
-                  <img
-                    src={imgSrc}
-                    alt={product.name}
-                    className={`single-product-magnifier-main-img ${
-                      imageLoading ? "opacity-0" : "opacity-100"
-                    } transition-opacity duration-300`}
-                    onLoad={handleImageLoad}
-                    onError={handleImageError}
-                  />
-                </div>
-              )}
+              <div className="single-product-magnifier-inner">
+                <animated.img
+                  {...(isMobile ? bind() : {})}
+                  src={imgSrc}
+                  alt={product.name}
+                  className={`single-product-magnifier-main-img transition-opacity duration-300 ${
+                    imageLoading ? "opacity-0" : "opacity-100"
+                  } ${isMobile ? "cursor-pointer" : ""}`}
+                  style={{
+                    scale: isMobile ? scale : 1,
+                    x: isMobile ? x : 0,
+                    y: isMobile ? y : 0,
+                    touchAction: "none",
+                  }}
+                  onLoad={handleImageLoad}
+                  onError={handleImageError}
+                  draggable={false}
+                />
+              </div>
 
-              {/* Desktop Only: Left/Right Arrows + Expand Button */}
+              {/* Desktop navigation & expand */}
               {!isMobile && allImages.length > 1 && (
                 <div className="absolute inset-0 flex items-center justify-between px-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
                   <button
                     onClick={() =>
-                      setSelectedImage(
-                        (i) => (i - 1 + allImages.length) % allImages.length
-                      )
+                      setSelectedImage((i) => (i - 1 + allImages.length) % allImages.length)
                     }
                     className="p-3 bg-white/80 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-colors pointer-events-auto"
                   >
                     <ChevronsLeft size={24} className="text-gray-700" />
                   </button>
-                  <div className="flex-1" />
+                  <button
+                    onClick={() => setIsExpanded(true)}
+                    className="p-3 bg-white/80 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-colors pointer-events-auto"
+                  >
+                    <Maximize2 size={24} className="text-gray-700" />
+                  </button>
                   <button
                     onClick={() =>
                       setSelectedImage((i) => (i + 1) % allImages.length)
@@ -1234,66 +1347,35 @@ export default function SingleProduct({
                   </button>
                 </div>
               )}
-
-              {/* Desktop Only: Expand Button */}
-              {!isMobile && (
-                <button
-                  onClick={() => setIsExpanded(true)}
-                  className="absolute top-2 right-2 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-all duration-300 opacity-0 group-hover:opacity-100 z-10"
-                  aria-label="View full-screen"
-                >
-                  <Maximize2 size={18} className="text-gray-700" />
-                </button>
-              )}
             </div>
 
-            {/* Mobile Only: Dots Indicator - moved BELOW container so they are always visible */}
-            {isMobile && allImages.length > 1 && (
-              <div className="flex justify-center gap-1.5">
-                {allImages.map((_, index) => (
-                  <div
-                    key={index}
-                    className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
-                      index === selectedImage
-                        ? "bg-gray-800 w-6"
-                        : "bg-gray-400"
-                    }`}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Thumbnail Images */}
+            {/* Thumbnails */}
             <div className="flex gap-2 md:gap-3 overflow-x-auto pb-1 px-2 md:px-0">
               {allImages.map((img, index) => (
                 <button
-                  type="button"
                   key={index}
                   onClick={() => {
                     setSelectedImage(index);
-                    api.start({ scale: 1, x: 0, y: 0 }); // Reset zoom on image change
+                    api.start({ scale: 1, x: 0, y: 0 });
                   }}
-                  aria-label={`View image ${index + 1}`}
-                  className={`h-14 w-14 md:h-16 md:w-16 rounded-md overflow-hidden border-2 transition flex-shrink-0 ${
+                  className={`h-14 w-14 md:h-16 md:w-16 rounded-md overflow-hidden border-2 flex-shrink-0 transition ${
                     selectedImage === index
-                      ? "border-[#B6895B]"
+                      ? "border-[#B6895B] shadow-sm"
                       : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
                   <img
                     src={img || "https://via.placeholder.com/150"}
-                    alt={`${product.name} view ${index + 1}`}
+                    alt={`Thumbnail ${index + 1}`}
                     className="h-full w-full object-cover"
-                    onError={(e) =>
-                      (e.currentTarget.src = "https://via.placeholder.com/150")
-                    }
+                    onError={(e) => (e.currentTarget.src = "https://via.placeholder.com/150")}
                   />
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Product Details Section - Unchanged */}
+          {/* Product Details */}
           <div className="flex flex-col mt-4 md:mt-0">
             <span className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
               {product.category_name}
@@ -1307,10 +1389,7 @@ export default function SingleProduct({
               <div
                 className="ql-editor p-0"
                 dangerouslySetInnerHTML={{
-                  __html:
-                    product.description ||
-                    product.short_description ||
-                    "No description available.",
+                  __html: product.description || product.short_description || "No description available.",
                 }}
               />
             </div>
@@ -1326,31 +1405,19 @@ export default function SingleProduct({
             </div>
 
             <div className="mt-5 text-3xl md:text-4xl font-extrabold text-[#B6895B]">
-              ₹
-              {Number(displayPrice).toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
+              ₹{Number(displayPrice).toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </div>
 
-            {product.variants && product.variants.length > 0 && (
+            {product.variants?.length > 0 && (
               <div className="mt-6">
                 <label className="text-sm font-semibold text-gray-700 block mb-2">
                   Select Variant
                 </label>
                 <select
                   value={currentValue}
-                  onChange={(e) =>
-                    handleUomChange(product.id, e.target.value, product.variants)
-                  }
-                  className="
-                    w-full appearance-none rounded-lg border border-gray-200
-                    bg-[#F3F5F7] text-gray-800 px-4 py-3 pr-10 shadow-inner text-sm
-                    focus:outline-none focus:ring-2 focus:ring-[#B6895B]/40 focus:border-[#B6895B]/50
-                  "
+                  onChange={(e) => handleUomChange(product.id, e.target.value, product.variants)}
+                  className="w-full rounded-lg border border-gray-200 bg-[#F3F5F7] text-gray-800 px-4 py-3 pr-10 shadow-inner text-sm focus:outline-none focus:ring-2 focus:ring-[#B6895B]/40"
                   style={{
-                    WebkitAppearance: "none",
-                    MozAppearance: "none",
                     backgroundImage:
                       "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none'><path d='M6 9l6 6 6-6' stroke='%23667788' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>\")",
                     backgroundRepeat: "no-repeat",
@@ -1358,13 +1425,10 @@ export default function SingleProduct({
                     backgroundSize: "18px",
                   }}
                 >
-                  {product.variants.map((variant) => (
-                    <option key={variant.id} value={variantKey(variant)}>
-                      {variant.variant_quantity || variant.quantity}{" "}
-                      {variant.uom_name || ""}
-                      {variant.price != null
-                        ? ` - ₹${Number(variant.price).toFixed(2)}`
-                        : ""}
+                  {product.variants.map((v) => (
+                    <option key={v.id} value={variantKey(v)}>
+                      {v.variant_quantity || v.quantity} {v.uom_name || ""}
+                      {v.price != null ? ` - ₹${Number(v.price).toFixed(2)}` : ""}
                     </option>
                   ))}
                 </select>
@@ -1372,20 +1436,13 @@ export default function SingleProduct({
             )}
 
             <div className="mt-6">
-              <h3 className="font-semibold text-gray-900 mb-2 text-sm">
-                Quantity
-              </h3>
+              <h3 className="font-semibold text-gray-900 mb-2 text-sm">Quantity</h3>
               <div className="flex items-center gap-3 md:gap-4">
                 <div className="flex items-center rounded-md border border-gray-300 bg-white">
                   <button
                     onClick={() => handleUpdateQuantity(-1)}
                     disabled={quantity <= 1 || isOutOfStock}
-                    aria-label="Decrease quantity"
-                    className={`px-3 py-2 text-gray-700 hover:bg-gray-100 ${
-                      quantity <= 1 || isOutOfStock
-                        ? "cursor-not-allowed opacity-50"
-                        : ""
-                    }`}
+                    className={`px-3 py-2 text-gray-700 hover:bg-gray-100 ${quantity <= 1 || isOutOfStock ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
                     <Minus size={16} />
                   </button>
@@ -1394,17 +1451,10 @@ export default function SingleProduct({
                   </span>
                   <button
                     onClick={() => handleUpdateQuantity(1)}
-                    disabled={
-                      isOutOfStock ||
-                      (product.stock_quantity != null &&
-                        quantity >= product.stock_quantity)
-                    }
-                    aria-label="Increase quantity"
+                    disabled={isOutOfStock || (product.stock_quantity != null && quantity >= product.stock_quantity)}
                     className={`px-3 py-2 text-gray-700 hover:bg-gray-100 ${
-                      isOutOfStock ||
-                      (product.stock_quantity != null &&
-                        quantity >= product.stock_quantity)
-                        ? "cursor-not-allowed opacity-50"
+                      isOutOfStock || (product.stock_quantity != null && quantity >= product.stock_quantity)
+                        ? "opacity-50 cursor-not-allowed"
                         : ""
                     }`}
                   >
@@ -1423,10 +1473,8 @@ export default function SingleProduct({
               <button
                 onClick={handleBuyNow}
                 disabled={isOutOfStock}
-                className={`w-full py-3 px-6 rounded-md font-semibold transition-colors text-sm md:text-base ${
-                  isOutOfStock
-                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                    : "bg-[#B6895B] text-white hover:bg-[#A7784D]"
+                className={`w-full py-3 px-6 rounded-md font-semibold text-sm md:text-base transition-colors ${
+                  isOutOfStock ? "bg-gray-400 text-gray-200 cursor-not-allowed" : "bg-[#B6895B] text-white hover:bg-[#A7784D]"
                 }`}
               >
                 Buy Now
@@ -1435,7 +1483,7 @@ export default function SingleProduct({
               <button
                 onClick={handleAddToCart}
                 disabled={inCart || isOutOfStock}
-                className={`w-full py-3 px-6 rounded-md font-semibold transition-colors flex items-center justify-center gap-2 border text-sm md:text-base ${
+                className={`w-full py-3 px-6 rounded-md font-semibold flex items-center justify-center gap-2 border text-sm md:text-base transition-colors ${
                   inCart
                     ? "bg-green-50 text-green-700 border-green-600 hover:bg-green-100 cursor-default"
                     : isOutOfStock
@@ -1446,105 +1494,145 @@ export default function SingleProduct({
                 <ShoppingCart size={18} />
                 {inCart ? "Added to Cart" : "Add to Cart"}
               </button>
+
               <button
                 onClick={() => handleToggleWishlist(product.id)}
                 disabled={isOutOfStock}
-                className={`
-                  w-full py-3 px-6 rounded-md font-semibold transition-colors 
-                  flex items-center justify-center gap-2 border text-sm md:text-base
-                  ${
-                    isLiked
-                      ? "bg-red-50 text-red-700 border-red-600 hover:bg-red-100"
-                      : isOutOfStock
-                      ? "bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed"
-                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400"
-                  }
-                `}
+                className={`w-full py-3 px-6 rounded-md font-semibold flex items-center justify-center gap-2 border text-sm md:text-base transition-colors ${
+                  isLiked
+                    ? "bg-red-50 text-red-700 border-red-600 hover:bg-red-100"
+                    : isOutOfStock
+                    ? "bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400"
+                }`}
               >
                 <Heart
                   size={18}
-                  className={`${
-                    isLiked
-                      ? "fill-current text-red-500"
-                      : isOutOfStock
-                      ? "text-gray-400"
-                      : "text-gray-500"
-                  }`}
+                  className={`${isLiked ? "fill-current text-red-500" : isOutOfStock ? "text-gray-400" : "text-gray-500"}`}
                 />
                 {isLiked ? "Added to wishlist" : "Add to wishlist"}
               </button>
             </div>
 
-            <div className="mt-8 grid grid-cols-3 gap-4 md:gap-6">
-              <div className="text-center">
+            <div className="mt-8 grid grid-cols-3 gap-4 md:gap-6 text-center">
+              <div>
                 <Truck className="mx-auto text-green-700 mb-2" size={20} />
                 <p className="text-xs text-gray-600">Free Shipping</p>
               </div>
-              <div className="text-center">
+              <div>
                 <Shield className="mx-auto text-green-700 mb-2" size={20} />
                 <p className="text-xs text-gray-600">Secure Payment</p>
               </div>
-              <div className="text-center">
+              <div>
                 <RotateCcw className="mx-auto text-green-700 mb-2" size={20} />
                 <p className="text-xs text-gray-600">Easy Returns</p>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Full Screen Modal - Desktop Only */}
-      {!isMobile && isExpanded && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-          onClick={() => setIsExpanded(false)}
-        >
+        {/* Mobile Full-Screen Modal */}
+        {isMobile && isMobileModalOpen && (
           <div
-            className="relative w-full h-full max-w-6xl max-h-full p-4 flex items-center justify-center group touch-pan-y"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+            onClick={() => {
+              setIsMobileModalOpen(false);
+              api.start({ scale: 1, x: 0, y: 0 });
+            }}
           >
-            <img
-              src={allImages[selectedImage] || "https://via.placeholder.com/600"}
-              alt={product.name}
-              className="max-w-full max-h-full object-contain"
-              onError={(e) =>
-                (e.currentTarget.src = "https://via.placeholder.com/600")
-              }
-            />
-
-            {allImages.length > 1 && (
-              <div className="absolute inset-0 flex items-center justify-between px-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-                <button
-                  onClick={() =>
-                    setSelectedImage(
-                      (i) => (i - 1 + allImages.length) % allImages.length
-                    )
-                  }
-                  className="p-4 bg-white/20 backdrop-blur-sm rounded-full shadow-lg hover:bg-white/30 transition-colors text-white pointer-events-auto"
-                >
-                  <ChevronsLeft size={32} />
-                </button>
-                <div className="flex-1" />
-                <button
-                  onClick={() =>
-                    setSelectedImage((i) => (i + 1) % allImages.length)
-                  }
-                  className="p-4 bg-white/20 backdrop-blur-sm rounded-full shadow-lg hover:bg-white/30 transition-colors text-white pointer-events-auto"
-                >
-                  <ChevronsRight size={32} />
-                </button>
-              </div>
-            )}
-
-            <button
-              onClick={() => setIsExpanded(false)}
-              className="absolute top-4 right-4 p-3 bg-white/20 backdrop-blur-sm rounded-full shadow-lg text-white hover:bg-white/30 transition-colors"
+            <div
+              className="relative w-full h-full flex items-center justify-center"
+              onClick={(e) => e.stopPropagation()}
             >
-              <Minimize2 size={24} />
-            </button>
+              <animated.img
+                {...bind()}
+                src={allImages[selectedImage] || "https://via.placeholder.com/600"}
+                alt={product.name}
+                className="max-w-[95%] max-h-[90%] object-contain touch-none"
+                style={{
+                  scale,
+                  x,
+                  y,
+                  touchAction: "none",
+                }}
+              />
+
+              {/* Close button */}
+              <button
+                onClick={() => {
+                  setIsMobileModalOpen(false);
+                  api.start({ scale: 1, x: 0, y: 0 });
+                }}
+                className="absolute top-4 right-4 p-3 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-colors"
+                aria-label="Close"
+              >
+                <X size={28} />
+              </button>
+
+              {/* Arrows in modal */}
+              {allImages.length > 1 && (
+                <>
+                  <button
+                    onClick={() => setSelectedImage((i) => (i - 1 + allImages.length) % allImages.length)}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 p-4 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40"
+                  >
+                    <ChevronsLeft size={32} />
+                  </button>
+                  <button
+                    onClick={() => setSelectedImage((i) => (i + 1) % allImages.length)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-4 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40"
+                  >
+                    <ChevronsRight size={32} />
+                  </button>
+                </>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Desktop Full-Screen Modal */}
+        {!isMobile && isExpanded && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+            onClick={() => setIsExpanded(false)}
+          >
+            <div
+              className="relative w-full h-full max-w-6xl max-h-full p-4 flex items-center justify-center group touch-pan-y"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={allImages[selectedImage] || "https://via.placeholder.com/600"}
+                alt={product.name}
+                className="max-w-full max-h-full object-contain"
+                onError={(e) => (e.currentTarget.src = "https://via.placeholder.com/600")}
+              />
+
+              {allImages.length > 1 && (
+                <div className="absolute inset-0 flex items-center justify-between px-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                  <button
+                    onClick={() => setSelectedImage((i) => (i - 1 + allImages.length) % allImages.length)}
+                    className="p-4 bg-white/20 backdrop-blur-sm rounded-full shadow-lg hover:bg-white/30 transition-colors text-white pointer-events-auto"
+                  >
+                    <ChevronsLeft size={32} />
+                  </button>
+                  <button
+                    onClick={() => setIsExpanded(false)}
+                    className="p-3 bg-white/20 backdrop-blur-sm rounded-full shadow-lg text-white hover:bg-white/30 transition-colors"
+                  >
+                    <Minimize2 size={24} />
+                  </button>
+                  <button
+                    onClick={() => setSelectedImage((i) => (i + 1) % allImages.length)}
+                    className="p-4 bg-white/20 backdrop-blur-sm rounded-full shadow-lg hover:bg-white/30 transition-colors text-white pointer-events-auto"
+                  >
+                    <ChevronsRight size={32} />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </>
   );
 }

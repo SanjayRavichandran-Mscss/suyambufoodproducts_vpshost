@@ -1,3 +1,749 @@
+// import React, { useEffect, useState } from "react";
+// import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+// import Swal from "sweetalert2";
+// import DeliveryAddress from "../components/CustomerComponents/DeliveryAddress";
+// import OrderSummary from "../components/CustomerComponents/OrderSummary";
+// import Header from "../components/CustomerComponents/Header";
+// import Cart from "../components/CustomerComponents/Cart";
+
+// // --- RAZORPAY INTEGRATION: START ---
+// const RAZORPAY_KEY_ID = 'rzp_live_RWp6XBrY1vkSS5';
+// // --- RAZORPAY INTEGRATION: END ---
+
+// function decodeCustomerId(encodedId) {
+//   try {
+//     return atob(encodedId);
+//   } catch {
+//     console.error("Error decoding customerId:", encodedId);
+//     return null;
+//   }
+// }
+
+// const CheckOutPage = () => {
+//   const { state } = useLocation();
+//   const [searchParams] = useSearchParams();
+//   const navigate = useNavigate();
+//   const encodedCustomerId = searchParams.get("customerId");
+//   const identifier = searchParams.get("identifier");
+//   const customerId = decodeCustomerId(encodedCustomerId);
+//   const [selectedAddressId, setSelectedAddressId] = useState(null);
+//   const [hasAgreedToTerms, setHasAgreedToTerms] = useState(false);
+//   const [customerData, setCustomerData] = useState(null);
+//   const [cartItems, setCartItems] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [showCartModal, setShowCartModal] = useState(false);
+//   const [cartAnimation, setCartAnimation] = useState("");
+//   const [showOrderSummary, setShowOrderSummary] = useState(false);
+//   const [deliveryFee, setDeliveryFee] = useState(0);
+//   const [buyNowItem, setBuyNowItem] = useState(state?.product || null);
+
+//   const isBuyNow = identifier === "buy_now";
+//   const isCartFlow = identifier === "cart";
+
+//   const fetchProductIfNeeded = async () => {
+//     if (!isBuyNow || !buyNowItem || (buyNowItem.tax_percentage && buyNowItem.tax_percentage > 0)) return;
+//     try {
+//       console.log("Fetching product details for tax_percentage:", buyNowItem.product_id || buyNowItem.id);
+//       const token = localStorage.getItem("customerToken");
+//       const productId = buyNowItem.product_id || buyNowItem.id;
+//       const response = await fetch(`https://suyambuoils.com/api/customer/product/${productId}`, {
+//         method: "GET",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${token}`,
+//           Origin: "http://localhost:5173",
+//         },
+//       });
+//       if (!response.ok) throw new Error("Failed to fetch product");
+//       const fetchedProduct = await response.json();
+//       console.log("Fetched product with tax:", fetchedProduct.tax_percentage);
+      
+//       const variant = fetchedProduct.variants.find(v => v.variant_id === buyNowItem.variant_id || v.id === buyNowItem.variant_id) || fetchedProduct.variants[0];
+//       setBuyNowItem({
+//         ...buyNowItem,
+//         tax_percentage: fetchedProduct.tax_percentage,
+//         price: variant?.price || buyNowItem.price,
+//         variant_quantity: variant?.variant_quantity || buyNowItem.variant_quantity,
+//         uom_name: variant?.uom_name || buyNowItem.uom_name,
+//       });
+//     } catch (error) {
+//       console.error("Error fetching product for tax:", error);
+//       Swal.fire({
+//         icon: "error",
+//         text: "Failed to load product tax details. Please go back and try again.",
+//         toast: true,
+//         position: "bottom-end",
+//         timer: 3000,
+//         showConfirmButton: false,
+//       });
+//     }
+//   };
+
+//   const items = isBuyNow
+//     ? buyNowItem
+//       ? [
+//           {
+//             variant_id: buyNowItem.variant_id || buyNowItem.variantId,
+//             product_id: buyNowItem.product_id || buyNowItem.id,
+//             product_name: buyNowItem.product_name || buyNowItem.name,
+//             price: parseFloat(buyNowItem.price),
+//             quantity: buyNowItem.quantity || 1,
+//             thumbnail_url: buyNowItem.thumbnail_url,
+//             stock_quantity: buyNowItem.stock_quantity,
+//             unit: buyNowItem.uom_name || buyNowItem.unit || "item",
+//             variant_quantity: buyNowItem.variant_quantity || "",
+//             uom_name: buyNowItem.uom_name || "",
+//             uom_id: buyNowItem.uom_id || 0,
+//             tax_percentage: parseFloat(buyNowItem.tax_percentage || 0),
+//           },
+//         ]
+//       : []
+//     : cartItems;
+
+//   const orderMethod = isBuyNow ? "buy_now" : "cart";
+
+//   const subtotal = items.reduce((sum, item) => sum + parseFloat(item.price) * item.quantity, 0);
+//   const totalTax = items.reduce((sum, item) => {
+//     const taxPerc = parseFloat(item.tax_percentage || 0);
+//     return sum + (parseFloat(item.price) * item.quantity * taxPerc / 100);
+//   }, 0);
+//   const total = subtotal + totalTax + deliveryFee;
+
+//   const computeDeliveryFee = async () => {
+//     if (!selectedAddressId || items.length === 0) {
+//       setDeliveryFee(0);
+//       return;
+//     }
+//     try {
+//       const token = localStorage.getItem("customerToken");
+//       const body = {
+//         customerId,
+//         addressId: selectedAddressId,
+//       };
+//       if (isBuyNow) {
+//         body.items = items.map((item) => ({
+//           variantId: item.variant_id || item.product_variant_id,
+//           quantity: item.quantity,
+//         }));
+//       }
+//       const response = await fetch(`https://suyambuoils.com/api/customer/calculate-delivery`, {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${token}`,
+//           Origin: "http://localhost:5173",
+//         },
+//         body: JSON.stringify(body),
+//       });
+//       if (!response.ok) throw new Error("Failed to compute delivery fee");
+//       const data = await response.json();
+//       setDeliveryFee(data.delivery_fee || 0);
+//     } catch (error) {
+//       console.error("Error computing delivery fee:", error);
+//       setDeliveryFee(0);
+//       Swal.fire({
+//         icon: "error",
+//         text: "Failed to compute delivery fee. Please try again.",
+//         toast: true,
+//         position: "bottom-end",
+//         timer: 2000,
+//         showConfirmButton: false,
+//       });
+//     }
+//   };
+
+//   useEffect(() => {
+//     computeDeliveryFee();
+//   }, [selectedAddressId, items, isBuyNow, isCartFlow]);
+
+//   useEffect(() => {
+//     const token = localStorage.getItem("customerToken");
+//     const storedCustomerId = localStorage.getItem("customerId");
+
+//     if (!token || !storedCustomerId || !customerId || !["buy_now", "cart"].includes(identifier)) {
+//       console.log("Invalid token, customerId, or identifier, redirecting to root");
+//       navigate("/", { replace: true });
+//       return;
+//     }
+
+//     if (customerId !== storedCustomerId) {
+//       console.log("CustomerId mismatch, updating URL");
+//       const correctEncodedId = btoa(storedCustomerId);
+//       navigate(`/checkout?customerId=${correctEncodedId}&identifier=${identifier}`, { replace: true });
+//       return;
+//     }
+
+//     if (isBuyNow && (!buyNowItem || !buyNowItem.variant_id)) {
+//       console.error("No product data or variant_id provided for buy_now flow");
+//       navigate("/", { replace: true });
+//       return;
+//     }
+
+//     const verifyCustomer = async () => {
+//       try {
+//         const response = await fetch(
+//           `https://suyambuoils.com/api/customer/profile?customerId=${storedCustomerId}`,
+//           {
+//             method: "GET",
+//             headers: {
+//               "Content-Type": "application/json",
+//               Authorization: `Bearer ${token}`,
+//               Origin: "http://localhost:5173",
+//             },
+//           }
+//         );
+//         if (response.ok) {
+//           const data = await response.json();
+//           setCustomerData(data);
+//           if (isBuyNow) {
+//             await fetchProductIfNeeded();
+//           }
+//           if (!isBuyNow) {
+//             await fetchCart();
+//           }
+//         } else {
+//           console.error("Token verification failed, clearing storage");
+//           localStorage.removeItem("customerToken");
+//           localStorage.removeItem("customerId");
+//           navigate("/", { replace: true });
+//         }
+//       } catch (error) {
+//         console.error("Verification error:", error);
+//         localStorage.removeItem("customerToken");
+//         localStorage.removeItem("customerId");
+//         navigate("/", { replace: true });
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+
+//     verifyCustomer();
+//   }, [customerId, identifier, navigate, isBuyNow, buyNowItem]);
+
+//   const fetchCart = async () => {
+//     if (!customerId) return;
+//     try {
+//       const token = localStorage.getItem("customerToken");
+//       const response = await fetch(`https://suyambuoils.com/api/customer/cart?customerId=${customerId}`, {
+//         headers: {
+//           "Content-Type": "application/json",
+//           Origin: "http://localhost:5173",
+//           Authorization: `Bearer ${token}`,
+//         },
+//       });
+//       if (!response.ok) throw new Error("Failed to fetch cart");
+//       const data = await response.json();
+//       const updatedData = data.map(item => ({
+//         ...item,
+//         tax_percentage: parseFloat(item.tax_percentage || 0),
+//       }));
+//       console.log("Cart items with tax:", updatedData);
+//       setCartItems(Array.isArray(updatedData) ? updatedData : []);
+//     } catch (error) {
+//       console.error("Failed to fetch cart:", error);
+//       setCartItems([]);
+//     }
+//   };
+
+//   const updateQuantity = async (variantId, change) => {
+//     const item = cartItems.find((item) => item.product_variant_id === variantId);
+//     if (!item) return;
+//     const newQuantity = Math.max(1, item.quantity + change);
+//     try {
+//       const token = localStorage.getItem("customerToken");
+//       const response = await fetch(`https://suyambuoils.com/api/customer/cart`, {
+//         method: "PUT",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Origin: "http://localhost:5173",
+//           Authorization: `Bearer ${token}`,
+//         },
+//         body: JSON.stringify({ customerId, variantId, quantity: newQuantity }),
+//       });
+//       if (response.ok) {
+//         await fetchCart();
+//         if (showOrderSummary && isCartFlow) {
+//           computeDeliveryFee();
+//         }
+//         Swal.fire({
+//           icon: "success",
+//           text: "Cart updated successfully",
+//           toast: true,
+//           position: "bottom-end",
+//           timer: 2000,
+//           showConfirmButton: false,
+//           showClass: { popup: "animate__animated animate__slideInUp" },
+//         });
+//       }
+//     } catch (err) {
+//       console.error("Failed to update quantity:", err);
+//     }
+//   };
+
+//   const handleRemoveItem = async (variantId) => {
+//     if (!customerId) return;
+//     try {
+//       const token = localStorage.getItem("customerToken");
+//       const response = await fetch(
+//         `https://suyambuoils.com/api/customer/cart?customerId=${customerId}&variantId=${variantId}`,
+//         {
+//           method: "DELETE",
+//           headers: {
+//             "Content-Type": "application/json",
+//             Origin: "http://localhost:5173",
+//             Authorization: `Bearer ${token}`,
+//           },
+//         }
+//       );
+//       if (response.ok) {
+//         await fetchCart();
+//         if (showOrderSummary && isCartFlow) {
+//           computeDeliveryFee();
+//         }
+//         Swal.fire({
+//           icon: "success",
+//           text: "Item removed from cart successfully",
+//           toast: true,
+//           position: "bottom-end",
+//           timer: 2000,
+//           showConfirmButton: false,
+//           showClass: { popup: "animate__animated animate__slideInUp" },
+//         });
+//       }
+//     } catch (err) {
+//       console.error("Failed to remove item:", err);
+//     }
+//   };
+
+//   const handleCartClick = () => {
+//     setCartAnimation("slide-in");
+//     setShowCartModal(true);
+//   };
+
+//   const handleCloseCart = () => {
+//     setCartAnimation("slide-out");
+//     setTimeout(() => {
+//       setShowCartModal(false);
+//       setCartAnimation("");
+//       fetchCart();
+//     }, 300);
+//   };
+
+//   const handleLoginClick = () => {
+//     navigate("/?auth=login");
+//   };
+
+//   const handleRegisterClick = () => {
+//     navigate("/?auth=register");
+//   };
+
+//   const handleContinueFromAddress = () => {
+//     if (!selectedAddressId) {
+//       Swal.fire({
+//         icon: "warning",
+//         text: "Please select a delivery address",
+//         toast: true,
+//         position: "bottom-end",
+//         timer: 2000,
+//         showConfirmButton: false,
+//         showClass: { popup: "animate__animated animate__slideInUp" },
+//       });
+//       return;
+//     }
+//     setShowOrderSummary(true);
+//   };
+
+//   const handleContinueToPayment = async () => {
+//     if (!hasAgreedToTerms) {
+//       Swal.fire({
+//         icon: "warning",
+//         text: "Please agree to the Terms & Conditions",
+//         toast: true,
+//         position: "bottom-end",
+//         timer: 2000,
+//         showConfirmButton: false,
+//         showClass: { popup: "animate__animated animate__slideInUp" },
+//       });
+//       return;
+//     }
+//     await initiateRazorpayPayment();
+//   };
+
+//   const handleBuyNowPayment = async () => {
+//     if (!selectedAddressId) {
+//       Swal.fire({
+//         icon: "warning",
+//         text: "Please select a delivery address",
+//         toast: true,
+//         position: "bottom-end",
+//         timer: 2000,
+//         showConfirmButton: false,
+//       });
+//       return;
+//     }
+//     if (!hasAgreedToTerms) {
+//       Swal.fire({
+//         icon: "warning",
+//         text: "Please agree to the Terms & Conditions",
+//         toast: true,
+//         position: "bottom-end",
+//         timer: 2000,
+//         showConfirmButton: false,
+//       });
+//       return;
+//     }
+//     await initiateRazorpayPayment();
+//   };
+
+//   const initiateRazorpayPayment = async () => {
+//     if (items.length === 0) {
+//       Swal.fire({
+//         icon: "error",
+//         title: "No Items",
+//         text: "No items to place order.",
+//         toast: true,
+//         position: "bottom-end",
+//         timer: 2000,
+//         showConfirmButton: false,
+//         showClass: { popup: "animate__animated animate__slideInUp" },
+//       });
+//       return;
+//     }
+
+//     const token = localStorage.getItem("customerToken");
+
+//     try {
+//       const createOrderResponse = await fetch(`https://suyambuoils.com/api/customer/payment/create-order`, {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${token}`,
+//           Origin: "http://localhost:5173",
+//         },
+//         body: JSON.stringify({ amount: total }),
+//       });
+
+//       if (!createOrderResponse.ok) throw new Error("Could not create payment order.");
+//       const order = await createOrderResponse.json();
+
+//       const options = {
+//         key: RAZORPAY_KEY_ID,
+//         amount: order.amount,
+//         currency: order.currency,
+//         name: "SS Food Products",
+//         description: "Order Payment",
+//         order_id: order.id,
+//         handler: async function (response) {
+//           const verifyResponse = await fetch(`https://suyambuoils.com/api/customer/payment/verify`, {
+//             method: "POST",
+//             headers: {
+//               "Content-Type": "application/json",
+//               Authorization: `Bearer ${token}`,
+//               Origin: "http://localhost:5173",
+//             },
+//             body: JSON.stringify({
+//               razorpay_payment_id: response.razorpay_payment_id,
+//               razorpay_order_id: response.razorpay_order_id,
+//               razorpay_signature: response.razorpay_signature,
+//             }),
+//           });
+
+//           const verification = await verifyResponse.json();
+//           if (verification.success) {
+//             const orderPayload = {
+//               customerId,
+//               addressId: selectedAddressId,
+//               paymentMethodId: 2,
+//               orderMethod,
+//               items: items.map((item) => ({
+//                 variantId: item.variant_id || item.product_variant_id,
+//                 quantity: item.quantity,
+//               })),
+//               totalAmount: total,
+//               paymentDetails: {
+//                 razorpay_payment_id: response.razorpay_payment_id,
+//                 razorpay_order_id: response.razorpay_order_id,
+//                 razorpay_signature: response.razorpay_signature,
+//               },
+//             };
+
+//             const placeOrderResponse = await fetch(`https://suyambuoils.com/api/customer/orders`, {
+//               method: "POST",
+//               headers: {
+//                 "Content-Type": "application/json",
+//                 Authorization: `Bearer ${token}`,
+//                 Origin: "http://localhost:5173",
+//               },
+//               body: JSON.stringify(orderPayload),
+//             });
+
+//             if (!placeOrderResponse.ok) throw new Error("Failed to save order.");
+
+//             if (!isBuyNow) await fetchCart();
+
+//             Swal.fire({
+//               icon: "success",
+//               title: "Payment Successful!",
+//               text: "Your order has been placed.",
+//             }).then(() => {
+//               navigate(`/customer?customerId=${btoa(customerId)}`);
+//             });
+//           } else {
+//             Swal.fire({ icon: "error", title: "Payment Failed", text: "Verification failed." });
+//           }
+//         },
+//         prefill: {
+//           name: customerData?.full_name || customerData?.name || "",
+//           email: customerData?.email || "",
+//           contact: customerData?.phone || "",
+//         },
+//         theme: { color: "#B6895B" },
+//       };
+
+//       if (!window.Razorpay) {
+//         Swal.fire({
+//           icon: "error",
+//           title: "Payment Gateway Error",
+//           text: "Razorpay script not loaded. Please try again.",
+//         });
+//         return;
+//       }
+
+//       const paymentObject = new window.Razorpay(options);
+//       paymentObject.open();
+
+//       paymentObject.on("payment.failed", function (response) {
+//         Swal.fire({
+//           icon: "error",
+//           title: "Payment Failed",
+//           text: response.error.description || "Something went wrong.",
+//         });
+//       });
+//     } catch (error) {
+//       console.error("Razorpay flow error:", error);
+//       Swal.fire({ icon: "error", text: `Error: ${error.message}` });
+//     }
+//   };
+
+//   const handleBack = () => {
+//     navigate(`/customer?customerId=${btoa(customerId)}`);
+//   };
+
+//   const handleOrdersClick = () => {
+//     navigate(`/customer?customerId=${btoa(customerId)}&showOrders=true`);
+//   };
+
+//   if (loading) {
+//     return (
+//       <div className="min-h-screen flex items-center justify-center bg-gray-50">
+//         <div className="flex flex-col items-center">
+//           <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+//           <p className="mt-4 text-gray-600">Loading checkout...</p>
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <div className="min-h-screen bg-gray-50 flex flex-col">
+//       <Header
+//         customerData={customerData}
+//         onLoginClick={handleLoginClick}
+//         onRegisterClick={handleRegisterClick}
+//         cartItems={cartItems}
+//         customerId={customerId}
+//         fetchCart={fetchCart}
+//         onCartClick={handleCartClick}
+//         onOrdersClick={handleOrdersClick}
+//       />
+      
+//       {/* Fixed: Added proper top padding so "Checkout" is fully visible */}
+//       <main className="flex-1 container mx-auto px-4 py-12 max-w-6xl pt-32 lg:pt-28">
+//         <h1 className="text-3xl font-bold text-gray-900 mb-8">Checkout</h1>
+
+//         {/* CART FLOW: STEP 1 - ONLY ADDRESS */}
+//         {isCartFlow && !showOrderSummary && (
+//           <div className="max-w-2xl mx-auto">
+//             <DeliveryAddress
+//               customerId={customerId}
+//               setSelectedAddressId={setSelectedAddressId}
+//               selectedAddressId={selectedAddressId}
+//             />
+//             <div className="mt-6 bg-gray-50 rounded-lg p-6">
+//               <div className="flex justify-end">
+//                 <button
+//                   onClick={handleContinueFromAddress}
+//                   disabled={!selectedAddressId}
+//                   className={`px-6 py-2 rounded-md font-medium transition-colors ${
+//                     !selectedAddressId
+//                       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+//                       : "bg-[#B6895B] text-white hover:bg-[#16A34A]"
+//                   }`}
+//                 >
+//                   Continue
+//                 </button>
+//               </div>
+//             </div>
+//           </div>
+//         )}
+
+//         {/* CART FLOW: STEP 2 - ORDER SUMMARY + T&C */}
+//         {isCartFlow && showOrderSummary && (
+//           <div className="max-w-4xl mx-auto space-y-6">
+//             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+//               <h2 className="text-xl font-semibold text-gray-900 mb-4">Order Summary</h2>
+//               <OrderSummary
+//                 items={items}
+//                 subtotal={subtotal}
+//                 tax={totalTax}
+//                 shipping={deliveryFee}
+//                 total={total}
+//                 updateQuantity={updateQuantity}
+//                 handleRemoveItem={handleRemoveItem}
+//                 isSidebar={false}
+//                 hideTaxPercentage={true}
+//                 hideItemTaxLine={true}   /* This removes "Tax (5.00%): ₹13.00" from each item */
+//               />
+//             </div>
+
+//             <div className="bg-gray-50 rounded-lg p-6 space-y-4">
+//               <label className="flex items-center gap-3 cursor-pointer select-none">
+//                 <input
+//                   type="checkbox"
+//                   checked={hasAgreedToTerms}
+//                   onChange={(e) => setHasAgreedToTerms(e.target.checked)}
+//                   className="w-5 h-5 text-[#B6895B] border-gray-300 rounded focus:ring-[#B6895B]"
+//                 />
+//                 <span className="text-sm text-gray-700">
+//                   I have read and agree to the{" "}
+//                   <a
+//                     href="/about#terms-and-conditions"
+//                     target="_blank"
+//                     rel="noopener noreferrer"
+//                     className="text-[#B6895B] font-medium hover:underline"
+//                   >
+//                     Terms & Conditions
+//                   </a>
+//                   .
+//                 </span>
+//               </label>
+
+//               <div className="flex justify-between pt-4">
+//                 <button
+//                   onClick={handleBack}
+//                   className="px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+//                 >
+//                   Back
+//                 </button>
+//                 <button
+//                   onClick={handleContinueToPayment}
+//                   disabled={!hasAgreedToTerms}
+//                   className={`px-6 py-2 rounded-md font-medium transition-colors ${
+//                     !hasAgreedToTerms
+//                       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+//                       : "bg-[#B6895B] text-white hover:bg-[#16A34A]"
+//                   }`}
+//                 >
+//                   Place Order
+//                 </button>
+//               </div>
+//             </div>
+//           </div>
+//         )}
+
+//         {/* BUY NOW: ALL AT ONCE */}
+//         {isBuyNow && (
+//           <div className="flex flex-col lg:flex-row gap-8">
+//             <div className="flex-1 space-y-6">
+//               <DeliveryAddress
+//                 customerId={customerId}
+//                 setSelectedAddressId={setSelectedAddressId}
+//                 selectedAddressId={selectedAddressId}
+//               />
+//               <div className="bg-gray-50 rounded-lg p-6 space-y-4">
+//                 <label className="flex items-center gap-3 cursor-pointer select-none">
+//                   <input
+//                     type="checkbox"
+//                     checked={hasAgreedToTerms}
+//                     onChange={(e) => setHasAgreedToTerms(e.target.checked)}
+//                     className="w-5 h-5 text-[#B6895B] border-gray-300 rounded focus:ring-[#B6895B]"
+//                   />
+//                   <span className="text-sm text-gray-700">
+//                     I have read and agree to the{" "}
+//                     <a
+//                       href="/about#terms-and-conditions"
+//                       target="_blank"
+//                       rel="noopener noreferrer"
+//                       className="text-[#B6895B] font-medium hover:underline"
+//                     >
+//                       Terms & Conditions
+//                     </a>
+//                     .
+//                   </span>
+//                 </label>
+//                 <div className="flex justify-between pt-4">
+//                   <button
+//                     onClick={handleBack}
+//                     className="px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+//                   >
+//                     Back
+//                   </button>
+//                   <button
+//                     onClick={handleBuyNowPayment}
+//                     disabled={!selectedAddressId || !hasAgreedToTerms}
+//                     className={`px-6 py-2 rounded-md font-medium transition-colors ${
+//                       !selectedAddressId || !hasAgreedToTerms
+//                         ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+//                         : "bg-[#B6895B] text-white hover:bg-[#16A34A]"
+//                     }`}
+//                   >
+//                     Place Order
+//                   </button>
+//                 </div>
+//               </div>
+//             </div>
+//             <div className="lg:w-1/3">
+//               <OrderSummary
+//                 items={items}
+//                 subtotal={subtotal}
+//                 tax={totalTax}
+//                 shipping={deliveryFee}
+//                 total={total}
+//                 updateQuantity={updateQuantity}
+//                 handleRemoveItem={handleRemoveItem}
+//                 isSidebar={true}
+//                 hideTaxPercentage={true}
+//                 hideItemTaxLine={true}   /* Removes per-item tax line in sidebar too */
+//               />
+//             </div>
+//           </div>
+//         )}
+//       </main>
+
+//       {showCartModal && (
+//         <Cart
+//           customerId={customerId}
+//           cartItems={cartItems}
+//           updateQuantity={updateQuantity}
+//           handleRemoveItem={handleRemoveItem}
+//           handleCloseCart={handleCloseCart}
+//           showCartModal={showCartModal}
+//           cartAnimation={cartAnimation}
+//         />
+//       )}
+//     </div>
+//   );
+// };
+
+// export default CheckOutPage;
+
+
+
+
+
+
+
+
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import Swal from "sweetalert2";
@@ -6,9 +752,8 @@ import OrderSummary from "../components/CustomerComponents/OrderSummary";
 import Header from "../components/CustomerComponents/Header";
 import Cart from "../components/CustomerComponents/Cart";
 
-// --- RAZORPAY INTEGRATION: START ---
+// Razorpay Key
 const RAZORPAY_KEY_ID = 'rzp_live_RWp6XBrY1vkSS5';
-// --- RAZORPAY INTEGRATION: END ---
 
 function decodeCustomerId(encodedId) {
   try {
@@ -23,9 +768,11 @@ const CheckOutPage = () => {
   const { state } = useLocation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
   const encodedCustomerId = searchParams.get("customerId");
   const identifier = searchParams.get("identifier");
   const customerId = decodeCustomerId(encodedCustomerId);
+
   const [selectedAddressId, setSelectedAddressId] = useState(null);
   const [hasAgreedToTerms, setHasAgreedToTerms] = useState(false);
   const [customerData, setCustomerData] = useState(null);
@@ -34,86 +781,69 @@ const CheckOutPage = () => {
   const [showCartModal, setShowCartModal] = useState(false);
   const [cartAnimation, setCartAnimation] = useState("");
   const [showOrderSummary, setShowOrderSummary] = useState(false);
-  const [deliveryFee, setDeliveryFee] = useState(0);
+  const [deliveryFee, setDeliveryFee] = useState(0); // will be overridden by logic
+  const [apiDeliveryFee, setApiDeliveryFee] = useState(0); // actual value from API
   const [buyNowItem, setBuyNowItem] = useState(state?.product || null);
 
   const isBuyNow = identifier === "buy_now";
   const isCartFlow = identifier === "cart";
 
+  // ─── Calculate Subtotal (exclusive of tax) ──────────────────────────
+  const subtotal = isBuyNow
+    ? buyNowItem
+      ? parseFloat(buyNowItem.price || 0) * (buyNowItem.quantity || 1)
+      : 0
+    : cartItems.reduce((sum, item) => sum + parseFloat(item.price || 0) * item.quantity, 0);
+
+  // ─── Tax calculation (unchanged) ────────────────────────────────────
+  const totalTax = isBuyNow
+    ? buyNowItem
+      ? (parseFloat(buyNowItem.price || 0) * (buyNowItem.quantity || 1) * parseFloat(buyNowItem.tax_percentage || 0)) / 100
+      : 0
+    : cartItems.reduce((sum, item) => {
+        const taxPerc = parseFloat(item.tax_percentage || 0);
+        return sum + (parseFloat(item.price || 0) * item.quantity * taxPerc / 100);
+      }, 0);
+
+  // Final delivery fee logic: free if subtotal >= 1499
+  const effectiveDeliveryFee = subtotal >= 1499 ? 0 : apiDeliveryFee;
+
+  const total = subtotal + totalTax + effectiveDeliveryFee;
+
+  // ─── Fetch product tax if missing in buy-now flow ───────────────────
   const fetchProductIfNeeded = async () => {
     if (!isBuyNow || !buyNowItem || (buyNowItem.tax_percentage && buyNowItem.tax_percentage > 0)) return;
     try {
-      console.log("Fetching product details for tax_percentage:", buyNowItem.product_id || buyNowItem.id);
       const token = localStorage.getItem("customerToken");
       const productId = buyNowItem.product_id || buyNowItem.id;
-      const response = await fetch(`https://suyambuoils.com/api/customer/product/${productId}`, {
-        method: "GET",
+      const res = await fetch(`https://suyambuoils.com/api/customer/product/${productId}`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
-          Origin: "http://localhost:5173",
         },
       });
-      if (!response.ok) throw new Error("Failed to fetch product");
-      const fetchedProduct = await response.json();
-      console.log("Fetched product with tax:", fetchedProduct.tax_percentage);
-      
-      const variant = fetchedProduct.variants.find(v => v.variant_id === buyNowItem.variant_id || v.id === buyNowItem.variant_id) || fetchedProduct.variants[0];
+      if (!res.ok) throw new Error("Failed to fetch product");
+      const data = await res.json();
+      const variant = data.variants.find(v => v.variant_id === buyNowItem.variant_id || v.id === buyNowItem.variant_id) || data.variants[0];
       setBuyNowItem({
         ...buyNowItem,
-        tax_percentage: fetchedProduct.tax_percentage,
+        tax_percentage: data.tax_percentage || 0,
         price: variant?.price || buyNowItem.price,
         variant_quantity: variant?.variant_quantity || buyNowItem.variant_quantity,
         uom_name: variant?.uom_name || buyNowItem.uom_name,
       });
-    } catch (error) {
-      console.error("Error fetching product for tax:", error);
-      Swal.fire({
-        icon: "error",
-        text: "Failed to load product tax details. Please go back and try again.",
-        toast: true,
-        position: "bottom-end",
-        timer: 3000,
-        showConfirmButton: false,
-      });
+    } catch (err) {
+      console.error("Failed to fetch tax:", err);
     }
   };
 
-  const items = isBuyNow
-    ? buyNowItem
-      ? [
-          {
-            variant_id: buyNowItem.variant_id || buyNowItem.variantId,
-            product_id: buyNowItem.product_id || buyNowItem.id,
-            product_name: buyNowItem.product_name || buyNowItem.name,
-            price: parseFloat(buyNowItem.price),
-            quantity: buyNowItem.quantity || 1,
-            thumbnail_url: buyNowItem.thumbnail_url,
-            stock_quantity: buyNowItem.stock_quantity,
-            unit: buyNowItem.uom_name || buyNowItem.unit || "item",
-            variant_quantity: buyNowItem.variant_quantity || "",
-            uom_name: buyNowItem.uom_name || "",
-            uom_id: buyNowItem.uom_id || 0,
-            tax_percentage: parseFloat(buyNowItem.tax_percentage || 0),
-          },
-        ]
-      : []
-    : cartItems;
-
-  const orderMethod = isBuyNow ? "buy_now" : "cart";
-
-  const subtotal = items.reduce((sum, item) => sum + parseFloat(item.price) * item.quantity, 0);
-  const totalTax = items.reduce((sum, item) => {
-    const taxPerc = parseFloat(item.tax_percentage || 0);
-    return sum + (parseFloat(item.price) * item.quantity * taxPerc / 100);
-  }, 0);
-  const total = subtotal + totalTax + deliveryFee;
-
+  // ─── Compute delivery fee from API (unchanged) ──────────────────────
   const computeDeliveryFee = async () => {
-    if (!selectedAddressId || items.length === 0) {
-      setDeliveryFee(0);
+    if (!selectedAddressId || (isBuyNow && !buyNowItem) || (!isBuyNow && cartItems.length === 0)) {
+      setApiDeliveryFee(0);
       return;
     }
+
     try {
       const token = localStorage.getItem("customerToken");
       const body = {
@@ -121,94 +851,72 @@ const CheckOutPage = () => {
         addressId: selectedAddressId,
       };
       if (isBuyNow) {
-        body.items = items.map((item) => ({
-          variantId: item.variant_id || item.product_variant_id,
-          quantity: item.quantity,
-        }));
+        body.items = [{
+          variantId: buyNowItem.variant_id || buyNowItem.variantId,
+          quantity: buyNowItem.quantity || 1,
+        }];
       }
-      const response = await fetch(`https://suyambuoils.com/api/customer/calculate-delivery`, {
+      const res = await fetch(`https://suyambuoils.com/api/customer/calculate-delivery`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
-          Origin: "http://localhost:5173",
         },
         body: JSON.stringify(body),
       });
-      if (!response.ok) throw new Error("Failed to compute delivery fee");
-      const data = await response.json();
-      setDeliveryFee(data.delivery_fee || 0);
-    } catch (error) {
-      console.error("Error computing delivery fee:", error);
-      setDeliveryFee(0);
-      Swal.fire({
-        icon: "error",
-        text: "Failed to compute delivery fee. Please try again.",
-        toast: true,
-        position: "bottom-end",
-        timer: 2000,
-        showConfirmButton: false,
-      });
+      if (!res.ok) throw new Error("Failed to get delivery fee");
+      const data = await res.json();
+      setApiDeliveryFee(data.delivery_fee || 0);
+    } catch (err) {
+      console.error("Delivery fee error:", err);
+      setApiDeliveryFee(0);
     }
   };
 
   useEffect(() => {
     computeDeliveryFee();
-  }, [selectedAddressId, items, isBuyNow, isCartFlow]);
+  }, [selectedAddressId, isBuyNow, buyNowItem, cartItems]);
 
+  // ─── Main checkout data loading ─────────────────────────────────────
   useEffect(() => {
     const token = localStorage.getItem("customerToken");
     const storedCustomerId = localStorage.getItem("customerId");
 
     if (!token || !storedCustomerId || !customerId || !["buy_now", "cart"].includes(identifier)) {
-      console.log("Invalid token, customerId, or identifier, redirecting to root");
       navigate("/", { replace: true });
       return;
     }
 
     if (customerId !== storedCustomerId) {
-      console.log("CustomerId mismatch, updating URL");
-      const correctEncodedId = btoa(storedCustomerId);
-      navigate(`/checkout?customerId=${correctEncodedId}&identifier=${identifier}`, { replace: true });
+      const correctEncoded = btoa(storedCustomerId);
+      navigate(`/checkout?customerId=${correctEncoded}&identifier=${identifier}`, { replace: true });
       return;
     }
 
     if (isBuyNow && (!buyNowItem || !buyNowItem.variant_id)) {
-      console.error("No product data or variant_id provided for buy_now flow");
       navigate("/", { replace: true });
       return;
     }
 
-    const verifyCustomer = async () => {
+    const verifyAndLoad = async () => {
       try {
-        const response = await fetch(
+        const profileRes = await fetch(
           `https://suyambuoils.com/api/customer/profile?customerId=${storedCustomerId}`,
           {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-              Origin: "http://localhost:5173",
-            },
+            headers: { Authorization: `Bearer ${token}` },
           }
         );
-        if (response.ok) {
-          const data = await response.json();
-          setCustomerData(data);
-          if (isBuyNow) {
-            await fetchProductIfNeeded();
-          }
-          if (!isBuyNow) {
-            await fetchCart();
-          }
+        if (!profileRes.ok) throw new Error("Profile fetch failed");
+        const profile = await profileRes.json();
+        setCustomerData(profile);
+
+        if (isBuyNow) {
+          await fetchProductIfNeeded();
         } else {
-          console.error("Token verification failed, clearing storage");
-          localStorage.removeItem("customerToken");
-          localStorage.removeItem("customerId");
-          navigate("/", { replace: true });
+          await fetchCart();
         }
-      } catch (error) {
-        console.error("Verification error:", error);
+      } catch (err) {
+        console.error("Checkout init error:", err);
         localStorage.removeItem("customerToken");
         localStorage.removeItem("customerId");
         navigate("/", { replace: true });
@@ -217,101 +925,73 @@ const CheckOutPage = () => {
       }
     };
 
-    verifyCustomer();
+    verifyAndLoad();
   }, [customerId, identifier, navigate, isBuyNow, buyNowItem]);
 
   const fetchCart = async () => {
     if (!customerId) return;
     try {
       const token = localStorage.getItem("customerToken");
-      const response = await fetch(`https://suyambuoils.com/api/customer/cart?customerId=${customerId}`, {
-        headers: {
-          "Content-Type": "application/json",
-          Origin: "http://localhost:5173",
-          Authorization: `Bearer ${token}`,
-        },
+      const res = await fetch(`https://suyambuoils.com/api/customer/cart?customerId=${customerId}`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
-      if (!response.ok) throw new Error("Failed to fetch cart");
-      const data = await response.json();
-      const updatedData = data.map(item => ({
-        ...item,
-        tax_percentage: parseFloat(item.tax_percentage || 0),
-      }));
-      console.log("Cart items with tax:", updatedData);
-      setCartItems(Array.isArray(updatedData) ? updatedData : []);
-    } catch (error) {
-      console.error("Failed to fetch cart:", error);
+      if (!res.ok) throw new Error("Cart fetch failed");
+      const data = await res.json();
+      setCartItems(
+        Array.isArray(data)
+          ? data.map(item => ({
+              ...item,
+              tax_percentage: parseFloat(item.tax_percentage || 0),
+            }))
+          : []
+      );
+    } catch (err) {
+      console.error("Cart fetch error:", err);
       setCartItems([]);
     }
   };
 
   const updateQuantity = async (variantId, change) => {
-    const item = cartItems.find((item) => item.product_variant_id === variantId);
+    const item = cartItems.find(i => i.product_variant_id === variantId);
     if (!item) return;
-    const newQuantity = Math.max(1, item.quantity + change);
+    const newQty = Math.max(1, item.quantity + change);
     try {
       const token = localStorage.getItem("customerToken");
-      const response = await fetch(`https://suyambuoils.com/api/customer/cart`, {
+      const res = await fetch("https://suyambuoils.com/api/customer/cart", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Origin: "http://localhost:5173",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ customerId, variantId, quantity: newQuantity }),
+        body: JSON.stringify({ customerId, variantId, quantity: newQty }),
       });
-      if (response.ok) {
+      if (res.ok) {
         await fetchCart();
-        if (showOrderSummary && isCartFlow) {
-          computeDeliveryFee();
-        }
-        Swal.fire({
-          icon: "success",
-          text: "Cart updated successfully",
-          toast: true,
-          position: "bottom-end",
-          timer: 2000,
-          showConfirmButton: false,
-          showClass: { popup: "animate__animated animate__slideInUp" },
-        });
+        if (showOrderSummary && isCartFlow) computeDeliveryFee();
+        Swal.fire({ icon: "success", text: "Cart updated", toast: true, timer: 2000 });
       }
     } catch (err) {
-      console.error("Failed to update quantity:", err);
+      console.error("Qty update error:", err);
     }
   };
 
   const handleRemoveItem = async (variantId) => {
-    if (!customerId) return;
     try {
       const token = localStorage.getItem("customerToken");
-      const response = await fetch(
+      const res = await fetch(
         `https://suyambuoils.com/api/customer/cart?customerId=${customerId}&variantId=${variantId}`,
         {
           method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            Origin: "http://localhost:5173",
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
-      if (response.ok) {
+      if (res.ok) {
         await fetchCart();
-        if (showOrderSummary && isCartFlow) {
-          computeDeliveryFee();
-        }
-        Swal.fire({
-          icon: "success",
-          text: "Item removed from cart successfully",
-          toast: true,
-          position: "bottom-end",
-          timer: 2000,
-          showConfirmButton: false,
-          showClass: { popup: "animate__animated animate__slideInUp" },
-        });
+        if (showOrderSummary && isCartFlow) computeDeliveryFee();
+        Swal.fire({ icon: "success", text: "Item removed", toast: true, timer: 2000 });
       }
     } catch (err) {
-      console.error("Failed to remove item:", err);
+      console.error("Remove error:", err);
     }
   };
 
@@ -324,30 +1004,13 @@ const CheckOutPage = () => {
     setCartAnimation("slide-out");
     setTimeout(() => {
       setShowCartModal(false);
-      setCartAnimation("");
       fetchCart();
     }, 300);
   };
 
-  const handleLoginClick = () => {
-    navigate("/?auth=login");
-  };
-
-  const handleRegisterClick = () => {
-    navigate("/?auth=register");
-  };
-
   const handleContinueFromAddress = () => {
     if (!selectedAddressId) {
-      Swal.fire({
-        icon: "warning",
-        text: "Please select a delivery address",
-        toast: true,
-        position: "bottom-end",
-        timer: 2000,
-        showConfirmButton: false,
-        showClass: { popup: "animate__animated animate__slideInUp" },
-      });
+      Swal.fire({ icon: "warning", text: "Select delivery address", toast: true, timer: 2000 });
       return;
     }
     setShowOrderSummary(true);
@@ -355,41 +1018,15 @@ const CheckOutPage = () => {
 
   const handleContinueToPayment = async () => {
     if (!hasAgreedToTerms) {
-      Swal.fire({
-        icon: "warning",
-        text: "Please agree to the Terms & Conditions",
-        toast: true,
-        position: "bottom-end",
-        timer: 2000,
-        showConfirmButton: false,
-        showClass: { popup: "animate__animated animate__slideInUp" },
-      });
+      Swal.fire({ icon: "warning", text: "Agree to Terms & Conditions", toast: true, timer: 2000 });
       return;
     }
     await initiateRazorpayPayment();
   };
 
   const handleBuyNowPayment = async () => {
-    if (!selectedAddressId) {
-      Swal.fire({
-        icon: "warning",
-        text: "Please select a delivery address",
-        toast: true,
-        position: "bottom-end",
-        timer: 2000,
-        showConfirmButton: false,
-      });
-      return;
-    }
-    if (!hasAgreedToTerms) {
-      Swal.fire({
-        icon: "warning",
-        text: "Please agree to the Terms & Conditions",
-        toast: true,
-        position: "bottom-end",
-        timer: 2000,
-        showConfirmButton: false,
-      });
+    if (!selectedAddressId || !hasAgreedToTerms) {
+      Swal.fire({ icon: "warning", text: "Select address and agree to T&C", toast: true, timer: 2000 });
       return;
     }
     await initiateRazorpayPayment();
@@ -397,49 +1034,39 @@ const CheckOutPage = () => {
 
   const initiateRazorpayPayment = async () => {
     if (items.length === 0) {
-      Swal.fire({
-        icon: "error",
-        title: "No Items",
-        text: "No items to place order.",
-        toast: true,
-        position: "bottom-end",
-        timer: 2000,
-        showConfirmButton: false,
-        showClass: { popup: "animate__animated animate__slideInUp" },
-      });
+      Swal.fire({ icon: "error", text: "No items in order", toast: true, timer: 2000 });
       return;
     }
 
     const token = localStorage.getItem("customerToken");
 
     try {
-      const createOrderResponse = await fetch(`https://suyambuoils.com/api/customer/payment/create-order`, {
+      // Create Razorpay order
+      const orderRes = await fetch("https://suyambuoils.com/api/customer/payment/create-order", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
-          Origin: "http://localhost:5173",
         },
-        body: JSON.stringify({ amount: total }),
+        body: JSON.stringify({ amount: total * 100 }), // Razorpay expects paise
       });
-
-      if (!createOrderResponse.ok) throw new Error("Could not create payment order.");
-      const order = await createOrderResponse.json();
+      if (!orderRes.ok) throw new Error("Failed to create order");
+      const order = await orderRes.json();
 
       const options = {
         key: RAZORPAY_KEY_ID,
         amount: order.amount,
         currency: order.currency,
-        name: "SS Food Products",
+        name: "Suyambu Food Products",
         description: "Order Payment",
         order_id: order.id,
         handler: async function (response) {
-          const verifyResponse = await fetch(`https://suyambuoils.com/api/customer/payment/verify`, {
+          // Verify payment
+          const verifyRes = await fetch("https://suyambuoils.com/api/customer/payment/verify", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
-              Origin: "http://localhost:5173",
             },
             body: JSON.stringify({
               razorpay_payment_id: response.razorpay_payment_id,
@@ -447,15 +1074,16 @@ const CheckOutPage = () => {
               razorpay_signature: response.razorpay_signature,
             }),
           });
+          const verify = await verifyRes.json();
 
-          const verification = await verifyResponse.json();
-          if (verification.success) {
+          if (verify.success) {
+            // Place order
             const orderPayload = {
               customerId,
               addressId: selectedAddressId,
               paymentMethodId: 2,
-              orderMethod,
-              items: items.map((item) => ({
+              orderMethod: isBuyNow ? "buy_now" : "cart",
+              items: items.map(item => ({
                 variantId: item.variant_id || item.product_variant_id,
                 quantity: item.quantity,
               })),
@@ -467,63 +1095,70 @@ const CheckOutPage = () => {
               },
             };
 
-            const placeOrderResponse = await fetch(`https://suyambuoils.com/api/customer/orders`, {
+            const placeRes = await fetch("https://suyambuoils.com/api/customer/orders", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${token}`,
-                Origin: "http://localhost:5173",
               },
               body: JSON.stringify(orderPayload),
             });
 
-            if (!placeOrderResponse.ok) throw new Error("Failed to save order.");
+            if (!placeRes.ok) throw new Error("Order placement failed");
 
             if (!isBuyNow) await fetchCart();
 
             Swal.fire({
               icon: "success",
-              title: "Payment Successful!",
-              text: "Your order has been placed.",
+              title: "Order Placed!",
+              text: "Thank you for shopping with us.",
+              timer: 3000,
             }).then(() => {
               navigate(`/customer?customerId=${btoa(customerId)}`);
             });
           } else {
-            Swal.fire({ icon: "error", title: "Payment Failed", text: "Verification failed." });
+            Swal.fire({ icon: "error", title: "Payment Failed", text: "Verification failed" });
           }
         },
         prefill: {
-          name: customerData?.full_name || customerData?.name || "",
+          name: customerData?.full_name || "",
           email: customerData?.email || "",
           contact: customerData?.phone || "",
         },
         theme: { color: "#B6895B" },
       };
 
-      if (!window.Razorpay) {
-        Swal.fire({
-          icon: "error",
-          title: "Payment Gateway Error",
-          text: "Razorpay script not loaded. Please try again.",
-        });
-        return;
-      }
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
 
-      const paymentObject = new window.Razorpay(options);
-      paymentObject.open();
-
-      paymentObject.on("payment.failed", function (response) {
+      razorpay.on("payment.failed", (response) => {
         Swal.fire({
           icon: "error",
           title: "Payment Failed",
-          text: response.error.description || "Something went wrong.",
+          text: response.error.description || "Payment failed",
         });
       });
-    } catch (error) {
-      console.error("Razorpay flow error:", error);
-      Swal.fire({ icon: "error", text: `Error: ${error.message}` });
+    } catch (err) {
+      console.error("Payment error:", err);
+      Swal.fire({ icon: "error", text: err.message || "Payment process failed" });
     }
   };
+
+  const items = isBuyNow && buyNowItem
+    ? [{
+        variant_id: buyNowItem.variant_id || buyNowItem.variantId,
+        product_id: buyNowItem.product_id || buyNowItem.id,
+        product_name: buyNowItem.product_name || buyNowItem.name,
+        price: parseFloat(buyNowItem.price || 0),
+        quantity: buyNowItem.quantity || 1,
+        thumbnail_url: buyNowItem.thumbnail_url,
+        stock_quantity: buyNowItem.stock_quantity,
+        unit: buyNowItem.uom_name || "item",
+        variant_quantity: buyNowItem.variant_quantity || "",
+        uom_name: buyNowItem.uom_name || "",
+        tax_percentage: parseFloat(buyNowItem.tax_percentage || 0),
+      }]
+    : cartItems;
 
   const handleBack = () => {
     navigate(`/customer?customerId=${btoa(customerId)}`);
@@ -548,20 +1183,19 @@ const CheckOutPage = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header
         customerData={customerData}
-        onLoginClick={handleLoginClick}
-        onRegisterClick={handleRegisterClick}
+        onLoginClick={() => navigate("/?auth=login")}
+        onRegisterClick={() => navigate("/?auth=register")}
         cartItems={cartItems}
         customerId={customerId}
         fetchCart={fetchCart}
         onCartClick={handleCartClick}
         onOrdersClick={handleOrdersClick}
       />
-      
-      {/* Fixed: Added proper top padding so "Checkout" is fully visible */}
+
       <main className="flex-1 container mx-auto px-4 py-12 max-w-6xl pt-32 lg:pt-28">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Checkout</h1>
 
-        {/* CART FLOW: STEP 1 - ONLY ADDRESS */}
+        {/* ─── CART FLOW ──────────────────────────────────────────────── */}
         {isCartFlow && !showOrderSummary && (
           <div className="max-w-2xl mx-auto">
             <DeliveryAddress
@@ -577,17 +1211,16 @@ const CheckOutPage = () => {
                   className={`px-6 py-2 rounded-md font-medium transition-colors ${
                     !selectedAddressId
                       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "bg-[#B6895B] text-white hover:bg-[#16A34A]"
+                      : "bg-[#B6895B] text-white hover:bg-[#A67C52]"
                   }`}
                 >
-                  Continue
+                  Continue to Summary
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* CART FLOW: STEP 2 - ORDER SUMMARY + T&C */}
         {isCartFlow && showOrderSummary && (
           <div className="max-w-4xl mx-auto space-y-6">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -596,13 +1229,13 @@ const CheckOutPage = () => {
                 items={items}
                 subtotal={subtotal}
                 tax={totalTax}
-                shipping={deliveryFee}
+                shipping={effectiveDeliveryFee}
                 total={total}
                 updateQuantity={updateQuantity}
                 handleRemoveItem={handleRemoveItem}
                 isSidebar={false}
                 hideTaxPercentage={true}
-                hideItemTaxLine={true}   /* This removes "Tax (5.00%): ₹13.00" from each item */
+                hideItemTaxLine={true}
               />
             </div>
 
@@ -615,16 +1248,14 @@ const CheckOutPage = () => {
                   className="w-5 h-5 text-[#B6895B] border-gray-300 rounded focus:ring-[#B6895B]"
                 />
                 <span className="text-sm text-gray-700">
-                  I have read and agree to the{" "}
+                  I agree to the{" "}
                   <a
                     href="/about#terms-and-conditions"
                     target="_blank"
-                    rel="noopener noreferrer"
                     className="text-[#B6895B] font-medium hover:underline"
                   >
                     Terms & Conditions
                   </a>
-                  .
                 </span>
               </label>
 
@@ -633,7 +1264,7 @@ const CheckOutPage = () => {
                   onClick={handleBack}
                   className="px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors"
                 >
-                  Back
+                  Back to Cart
                 </button>
                 <button
                   onClick={handleContinueToPayment}
@@ -641,17 +1272,17 @@ const CheckOutPage = () => {
                   className={`px-6 py-2 rounded-md font-medium transition-colors ${
                     !hasAgreedToTerms
                       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "bg-[#B6895B] text-white hover:bg-[#16A34A]"
+                      : "bg-[#B6895B] text-white hover:bg-[#A67C52]"
                   }`}
                 >
-                  Place Order
+                  Proceed to Payment
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* BUY NOW: ALL AT ONCE */}
+        {/* ─── BUY NOW FLOW ────────────────────────────────────────────── */}
         {isBuyNow && (
           <div className="flex flex-col lg:flex-row gap-8">
             <div className="flex-1 space-y-6">
@@ -669,16 +1300,14 @@ const CheckOutPage = () => {
                     className="w-5 h-5 text-[#B6895B] border-gray-300 rounded focus:ring-[#B6895B]"
                   />
                   <span className="text-sm text-gray-700">
-                    I have read and agree to the{" "}
+                    I agree to the{" "}
                     <a
                       href="/about#terms-and-conditions"
                       target="_blank"
-                      rel="noopener noreferrer"
                       className="text-[#B6895B] font-medium hover:underline"
                     >
                       Terms & Conditions
                     </a>
-                    .
                   </span>
                 </label>
                 <div className="flex justify-between pt-4">
@@ -694,7 +1323,7 @@ const CheckOutPage = () => {
                     className={`px-6 py-2 rounded-md font-medium transition-colors ${
                       !selectedAddressId || !hasAgreedToTerms
                         ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                        : "bg-[#B6895B] text-white hover:bg-[#16A34A]"
+                        : "bg-[#B6895B] text-white hover:bg-[#A67C52]"
                     }`}
                   >
                     Place Order
@@ -702,24 +1331,24 @@ const CheckOutPage = () => {
                 </div>
               </div>
             </div>
+
             <div className="lg:w-1/3">
               <OrderSummary
                 items={items}
                 subtotal={subtotal}
                 tax={totalTax}
-                shipping={deliveryFee}
+                shipping={effectiveDeliveryFee}
                 total={total}
-                updateQuantity={updateQuantity}
-                handleRemoveItem={handleRemoveItem}
                 isSidebar={true}
                 hideTaxPercentage={true}
-                hideItemTaxLine={true}   /* Removes per-item tax line in sidebar too */
+                hideItemTaxLine={true}
               />
             </div>
           </div>
         )}
       </main>
 
+      {/* Cart Modal */}
       {showCartModal && (
         <Cart
           customerId={customerId}
