@@ -321,7 +321,7 @@ export default function CustomerPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="flex flex-col items-center">
           <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
@@ -331,7 +331,7 @@ export default function CustomerPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col custom-scrollbar">
+    <div className="min-h-screen bg-white flex flex-col custom-scrollbar">
       <Header
         customerData={customerData}
         onLoginClick={handleLoginClick}
@@ -347,7 +347,7 @@ export default function CustomerPage() {
         onResetCategory={() => {}}
       />
 
-      <main className="flex-1 bg-gray-50 pt-20 pb-0 mb-0">
+      <main className="flex-1 bg-white pt-20 pb-0 mb-0">
         {productId ? (
           <div className="md:px-8">
             <SingleProduct
@@ -397,7 +397,7 @@ export default function CustomerPage() {
             } overflow-y-auto custom-scrollbar`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="h-full bg-gray-50 flex flex-col">
+            <div className="h-full bg-white flex flex-col">
               <div className={`transition-opacity duration-300 ${modalAnimation.includes("fade") ? (modalAnimation === "fade-in" ? "opacity-100" : "opacity-0") : "opacity-100"}`}>
                 {showAuthModal === "login" ? (
                   <CustomerLogin onRegisterClick={() => handleAuthSwitch("register")} onClose={handleCloseModal} />

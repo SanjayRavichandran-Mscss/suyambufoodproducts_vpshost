@@ -1088,7 +1088,7 @@ export default function Products({
 
   return (
     <div
-      className="container mx-auto px-4 md:px-6 lg:px-10"
+      className="container mx-auto px-4 md:px-6 lg:px-10 bg-white"
       style={{
         fontFamily: "Inter, system-ui, sans-serif",
         WebkitFontSmoothing: "antialiased",
