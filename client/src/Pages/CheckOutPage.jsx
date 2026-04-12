@@ -740,9 +740,6 @@
 
 
 
-
-
-
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import Swal from "sweetalert2";
@@ -785,7 +782,7 @@ const CheckOutPage = () => {
 
   // Coupon States
   const [couponCode, setCouponCode] = useState("");
-  const [appliedCoupon, setAppliedCoupon] = useState(null); // { code, discount_percentage }
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponError, setCouponError] = useState("");
 
   const isBuyNow = identifier === "buy_now";
@@ -800,25 +797,25 @@ const CheckOutPage = () => {
 
   // Coupon Discount - Applied ONLY on Subtotal
   const discountAmount = appliedCoupon
-    ? (subtotal * appliedCoupon.discount_percentage) / 100
+    ? Math.round((subtotal * appliedCoupon.discount_percentage) / 100) // Rounded to avoid floating point issues
     : 0;
 
   const discountedSubtotal = subtotal - discountAmount;
 
-  // Tax calculation (on original subtotal - not on discounted amount)
+  // Tax calculation (on original subtotal)
   const totalTax = isBuyNow
     ? buyNowItem
-      ? (parseFloat(buyNowItem.price || 0) * (buyNowItem.quantity || 1) * parseFloat(buyNowItem.tax_percentage || 0)) / 100
+      ? Math.round((parseFloat(buyNowItem.price || 0) * (buyNowItem.quantity || 1) * parseFloat(buyNowItem.tax_percentage || 0)) / 100)
       : 0
     : cartItems.reduce((sum, item) => {
         const taxPerc = parseFloat(item.tax_percentage || 0);
-        return sum + (parseFloat(item.price || 0) * item.quantity * taxPerc / 100);
+        return sum + Math.round((parseFloat(item.price || 0) * item.quantity * taxPerc) / 100);
       }, 0);
 
   // Delivery Fee: Free if subtotal >= 1499
   const effectiveDeliveryFee = subtotal >= 1499 ? 0 : apiDeliveryFee;
 
-  // Final Total
+  // Final Total (rounded to 2 decimals for display, but we'll use integer for Razorpay)
   const total = discountedSubtotal + totalTax + effectiveDeliveryFee;
 
   // Fetch product tax if missing in buy-now flow
@@ -963,54 +960,51 @@ const CheckOutPage = () => {
     }
   };
 
-  // Coupon Validation
-// Replace your current validateAndApplyCoupon with this improved version
-const validateAndApplyCoupon = async () => {
-  if (!couponCode.trim()) {
-    setCouponError("Please enter a coupon code");
-    return;
-  }
-
-  try {
-    const token = localStorage.getItem("customerToken");
-    const res = await fetch("https://suyambuoils.com/api/admin/coupons-validate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ code: couponCode.trim().toUpperCase() }),
-    });
-
-    // Important: Check if response is ok BEFORE trying to parse JSON
-    if (!res.ok) {
-      let errorData;
-      try {
-        errorData = await res.json();
-      } catch {
-        // If even json() fails, it's probably HTML (404 page)
-        throw new Error(`Server error: ${res.status} ${res.statusText}`);
-      }
-      setCouponError(errorData.error || "Invalid or inactive coupon code");
-      setAppliedCoupon(null);
+  // Improved Coupon Validation
+  const validateAndApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError("Please enter a coupon code");
       return;
     }
 
-    const data = await res.json();
+    try {
+      const token = localStorage.getItem("customerToken");
+      const res = await fetch("https://suyambuoils.com/api/admin/coupons-validate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ code: couponCode.trim().toUpperCase() }),
+      });
 
-    setAppliedCoupon({
-      code: data.code,
-      discount_percentage: parseFloat(data.discount_percentage),
-    });
-    setCouponError("");
+      if (!res.ok) {
+        let errorData;
+        try {
+          errorData = await res.json();
+        } catch {
+          throw new Error(`Server error: ${res.status} ${res.statusText}`);
+        }
+        setCouponError(errorData.error || "Invalid or inactive coupon code");
+        setAppliedCoupon(null);
+        return;
+      }
 
-     
-  } catch (err) {
-    console.error("Coupon validation error:", err);
-    setCouponError(err.message || "Failed to validate coupon. Please try again.");
-    setAppliedCoupon(null);
-  }
-};
+      const data = await res.json();
+
+      setAppliedCoupon({
+        code: data.code,
+        discount_percentage: parseFloat(data.discount_percentage),
+      });
+      setCouponError("");
+
+    
+    } catch (err) {
+      console.error("Coupon validation error:", err);
+      setCouponError(err.message || "Failed to validate coupon. Please try again.");
+      setAppliedCoupon(null);
+    }
+  };
 
   const removeCoupon = () => {
     setAppliedCoupon(null);
@@ -1099,117 +1093,114 @@ const validateAndApplyCoupon = async () => {
     await initiateRazorpayPayment();
   };
 
-  // Updated Payment Initiation with Coupon Support
-  const initiateRazorpayPayment = async () => {
-    if (items.length === 0) {
-      Swal.fire({ icon: "error", text: "No items in order", toast: true, timer: 2000 });
-      return;
-    }
+// Replace your current initiateRazorpayPayment with this corrected version
 
-    const token = localStorage.getItem("customerToken");
+const initiateRazorpayPayment = async () => {
+  if (items.length === 0) {
+    Swal.fire({ icon: "error", text: "No items in order", toast: true, timer: 2000 });
+    return;
+  }
 
-    try {
-      const orderRes = await fetch("https://suyambuoils.com/api/customer/payment/create-order", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ amount: Math.round(total * 100) }),
-      });
-      if (!orderRes.ok) throw new Error("Failed to create order");
-      const order = await orderRes.json();
+  const token = localStorage.getItem("customerToken");
 
-      const options = {
-        key: RAZORPAY_KEY_ID,
-        amount: order.amount,
-        currency: order.currency,
-        name: "Suyambu Food Products",
-        description: "Order Payment",
-        order_id: order.id,
-        handler: async function (response) {
-          const verifyRes = await fetch("https://suyambuoils.com/api/customer/payment/verify", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
+  try {
+    // ✅ CRITICAL: Convert rupees to paise
+    const amountInPaise = Math.round(total * 100);
+
+    // Debug log (remove after testing)
+    console.log(`Total in Rupees: ₹${total} | Sending to Razorpay: ${amountInPaise} paise`);
+
+    const orderRes = await fetch("https://suyambuoils.com/api/customer/payment/create-order", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ amount: amountInPaise }),   // ← Send paise here too
+    });
+
+    if (!orderRes.ok) throw new Error("Failed to create order");
+    const order = await orderRes.json();
+
+    const options = {
+      key: RAZORPAY_KEY_ID,
+      amount: amountInPaise,          // ← Must be in paise (this is the main fix)
+      currency: "INR",
+      name: "Suyambu Food Products",
+      description: "Order Payment",
+      order_id: order.id,
+      handler: async function (response) {
+        // Verification code remains same...
+        const verifyRes = await fetch("https://suyambuoils.com/api/customer/payment/verify", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_signature: response.razorpay_signature,
+          }),
+        });
+
+        const verify = await verifyRes.json();
+
+        if (verify.success) {
+          const orderPayload = {
+            customerId,
+            addressId: selectedAddressId,
+            paymentMethodId: 2,
+            orderMethod: isBuyNow ? "buy_now" : "cart",
+            items: items.map(item => ({
+              variantId: item.variant_id || item.product_variant_id,
+              quantity: item.quantity,
+            })),
+            totalAmount: Math.round(total),        // Save in rupees
+            couponCode: appliedCoupon?.code || null,
+            discountAmount: Math.round(discountAmount),
+            paymentDetails: {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_order_id: response.razorpay_order_id,
               razorpay_signature: response.razorpay_signature,
-            }),
+            },
+          };
+
+          // Place order...
+          const placeRes = await fetch("https://suyambuoils.com/api/customer/orders", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify(orderPayload),
           });
-          const verify = await verifyRes.json();
 
-          if (verify.success) {
-            const orderPayload = {
-              customerId,
-              addressId: selectedAddressId,
-              paymentMethodId: 2,
-              orderMethod: isBuyNow ? "buy_now" : "cart",
-              items: items.map(item => ({
-                variantId: item.variant_id || item.product_variant_id,
-                quantity: item.quantity,
-              })),
-              totalAmount: total,
-              couponCode: appliedCoupon?.code || null,
-              discountAmount: parseFloat(discountAmount.toFixed(2)),
-              paymentDetails: {
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_signature: response.razorpay_signature,
-              },
-            };
+          if (!placeRes.ok) throw new Error("Order placement failed");
 
-            const placeRes = await fetch("https://suyambuoils.com/api/customer/orders", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify(orderPayload),
-            });
+          if (!isBuyNow) await fetchCart();
 
-            if (!placeRes.ok) throw new Error("Order placement failed");
+          Swal.fire({
+            icon: "success",
+            title: "Order Placed!",
+            text: "Thank you for shopping with us.",
+            timer: 3000,
+          }).then(() => navigate(`/customer?customerId=${btoa(customerId)}`));
+        }
+      },
+      prefill: {
+        name: customerData?.full_name || "",
+        email: customerData?.email || "",
+        contact: customerData?.phone || "",
+      },
+      theme: { color: "#B6895B" },
+    };
 
-            if (!isBuyNow) await fetchCart();
+    const razorpay = new window.Razorpay(options);
+    razorpay.open();
 
-            Swal.fire({
-              icon: "success",
-              title: "Order Placed!",
-              text: "Thank you for shopping with us.",
-              timer: 3000,
-            }).then(() => {
-              navigate(`/customer?customerId=${btoa(customerId)}`);
-            });
-          } else {
-            Swal.fire({ icon: "error", title: "Payment Failed", text: "Verification failed" });
-          }
-        },
-        prefill: {
-          name: customerData?.full_name || "",
-          email: customerData?.email || "",
-          contact: customerData?.phone || "",
-        },
-        theme: { color: "#B6895B" },
-      };
-
-      const razorpay = new window.Razorpay(options);
-      razorpay.open();
-
-      razorpay.on("payment.failed", (response) => {
-        Swal.fire({
-          icon: "error",
-          title: "Payment Failed",
-          text: response.error.description || "Payment failed",
-        });
-      });
-    } catch (err) {
-      console.error("Payment error:", err);
-      Swal.fire({ icon: "error", text: err.message || "Payment process failed" });
-    }
-  };
+  } catch (err) {
+    console.error("Payment error:", err);
+    Swal.fire({ icon: "error", text: err.message || "Payment process failed" });
+  }
+};
 
   // Items for OrderSummary
   const items = isBuyNow && buyNowItem

@@ -1062,15 +1062,19 @@ exports.getInvoiceData = async (req, res) => {
 };
 
 exports.createPaymentOrder = async (req, res) => {
-    const { amount } = req.body;
+    const { amount } = req.body;   // This amount is already in paise from frontend
+
+    // Do NOT multiply by 100 again
     const options = {
-        amount: Math.round(Number(amount) * 100),
+        amount: Math.round(Number(amount)),   // Just ensure it's a clean integer
         currency: 'INR',
         receipt: `receipt_order_${new Date().getTime()}`,
     };
+
     try {
         const order = await razorpayInstance.orders.create(options);
         if (!order) return res.status(500).send('Error creating order');
+        
         res.json(order);
     } catch (error) {
         console.error("Error creating Razorpay order:", error);
