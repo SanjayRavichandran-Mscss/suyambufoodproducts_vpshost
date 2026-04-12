@@ -4,7 +4,7 @@
   const path = require("path");
   const fs = require("fs");
 
-  const IMAGE_BASE = "https://suyambuoils.com/api";
+  const IMAGE_BASE = "https://suyambuoils.com/api/";
 
   /* ----------------------- AUTH ----------------------- */
   exports.login = async (req, res) => {
@@ -202,8 +202,8 @@ const productUploadWrapper = (req, res, next) => {
     next();
   });
 };
-/* ----------------------- PRODUCTS ----------------------- */
-// Updated addProduct module
+
+
 exports.addProduct = [
   productUploadWrapper,
   async (req, res) => {
@@ -211,13 +211,15 @@ exports.addProduct = [
       const { name, description, category_id, stock_status_id, isBanner = "0", tax_percentage = "0" } = req.body;
       const quantities = req.body.quantity || [];
       const uom_ids = req.body.uom_id || [];
+      const actual_prices = req.body.actual_price || [];           // NEW
+      const discount_percentages = req.body.discount_percentage || []; // NEW
       const prices = req.body.price || [];
 
       if (!name || !category_id || !stock_status_id) {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
-      // NEW: Validate and parse tax_percentage
+      // Validate tax_percentage
       const taxPerc = parseFloat(tax_percentage);
       if (isNaN(taxPerc) || taxPerc < 0 || taxPerc > 100) {
         return res.status(400).json({ error: "tax_percentage must be a valid decimal between 0 and 100" });
@@ -226,10 +228,12 @@ exports.addProduct = [
       // Ensure arrays
       const qArr = Array.isArray(quantities) ? quantities : quantities ? [quantities] : [];
       const uArr = Array.isArray(uom_ids) ? uom_ids : uom_ids ? [uom_ids] : [];
+      const actualArr = Array.isArray(actual_prices) ? actual_prices : actual_prices ? [actual_prices] : [];
+      const discArr = Array.isArray(discount_percentages) ? discount_percentages : discount_percentages ? [discount_percentages] : [];
       const pArr = Array.isArray(prices) ? prices : prices ? [prices] : [];
 
       // Validate at least one variant
-      if (qArr.length === 0 || uArr.length === 0 || pArr.length === 0) {
+      if (qArr.length === 0 || uArr.length === 0 || actualArr.length === 0 || pArr.length === 0) {
         return res.status(400).json({ error: "At least one valid variant is required" });
       }
 
@@ -247,32 +251,43 @@ exports.addProduct = [
         thumbnail_url,
         stringifyAdditionalImages(additional_images),
         category_id,
-        1, // admin_id, ideally from JWT
+        1, // admin_id
         stock_status_id,
         isBanner === "true" ? 1 : 0,
         bannerimg,
-        taxPerc, // NEW
+        taxPerc,
       ]);
 
       const productId = result.insertId;
 
-      // Handle variants - insert only valid ones
+      // Handle variants with actual_price and discount_percentage
       let validVariants = 0;
-      for (let i = 0; i < Math.max(qArr.length, uArr.length, pArr.length); i++) {
+      for (let i = 0; i < Math.max(qArr.length, uArr.length, actualArr.length, pArr.length); i++) {
         const qty = qArr[i];
         const uom = uArr[i];
+        const actual = actualArr[i];
+        const disc = discArr[i] || 0;
         const prc = pArr[i];
-        if (qty && qty.trim() !== '' && uom && uom.trim() !== '' && prc && prc.trim() !== '' && !isNaN(Number(qty)) && Number(qty) > 0 && !isNaN(Number(prc)) && Number(prc) >= 0) {
+
+        if (qty && qty.trim() !== '' && 
+            uom && uom.trim() !== '' && 
+            actual && actual.trim() !== '' && 
+            prc && prc.trim() !== '' && 
+            !isNaN(Number(qty)) && Number(qty) > 0 && 
+            !isNaN(Number(actual)) && Number(actual) > 0 && 
+            !isNaN(Number(prc)) && Number(prc) >= 0 && Number(prc) <= Number(actual)) {
+
           await db.query(
-            "INSERT INTO product_variants (product_id, variant_quantity, uom_id, price, created_at, updated_at) VALUES (?, ?, ?, ?, NOW(), NOW())",
-            [productId, parseFloat(qty), parseInt(uom), parseFloat(prc)]
+            `INSERT INTO product_variants 
+             (product_id, variant_quantity, actual_price, price, discount_percentage, uom_id, created_at, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+            [productId, parseFloat(qty), parseFloat(actual), parseFloat(prc), parseFloat(disc), parseInt(uom)]
           );
           validVariants++;
         }
       }
 
       if (validVariants === 0) {
-        // Optionally delete the product if no valid variants
         await db.query("DELETE FROM products WHERE id = ?", [productId]);
         return res.status(400).json({ error: "No valid variants provided" });
       }
@@ -293,15 +308,18 @@ exports.updateProduct = [
     try {
       const { id } = req.params;
       const { name, description, category_id, stock_status_id, isBanner = "0", tax_percentage = "0", existing_additional_images } = req.body;
+      
       const quantities = req.body.quantity || [];
       const uom_ids = req.body.uom_id || [];
+      const actual_prices = req.body.actual_price || [];           // NEW
+      const discount_percentages = req.body.discount_percentage || []; // NEW
       const prices = req.body.price || [];
 
       if (!name || !category_id || !stock_status_id) {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
-      // NEW: Validate and parse tax_percentage
+      // Validate tax_percentage
       const taxPerc = parseFloat(tax_percentage);
       if (isNaN(taxPerc) || taxPerc < 0 || taxPerc > 100) {
         return res.status(400).json({ error: "tax_percentage must be a valid decimal between 0 and 100" });
@@ -319,14 +337,13 @@ exports.updateProduct = [
       if (existing_additional_images) {
         try {
           const parsedExisting = JSON.parse(existing_additional_images);
-          // Strip IMAGE_BASE if present to get relative paths
           const strippedExisting = parsedExisting.map(img => {
             if (img && img.startsWith(IMAGE_BASE)) {
               return img.replace(IMAGE_BASE, '');
             }
             return img;
           }).filter(Boolean);
-          existingAdditional = strippedExisting; // Replace, not append, assuming frontend sends existing ones to keep
+          existingAdditional = strippedExisting;
         } catch (parseErr) {
           console.error("Error parsing existing_additional_images:", parseErr);
         }
@@ -345,33 +362,47 @@ exports.updateProduct = [
           stock_status_id,
           isBanner === "true" ? 1 : 0,
           bannerimg,
-          taxPerc, // NEW
+          taxPerc,
           id,
         ]
       );
 
-      // Reset and insert variants
+      // Reset and re-insert variants
       await db.query("DELETE FROM product_variants WHERE product_id=?", [id]);
 
       // Ensure arrays
       const qArr = Array.isArray(quantities) ? quantities : quantities ? [quantities] : [];
       const uArr = Array.isArray(uom_ids) ? uom_ids : uom_ids ? [uom_ids] : [];
+      const actualArr = Array.isArray(actual_prices) ? actual_prices : actual_prices ? [actual_prices] : [];
+      const discArr = Array.isArray(discount_percentages) ? discount_percentages : discount_percentages ? [discount_percentages] : [];
       const pArr = Array.isArray(prices) ? prices : prices ? [prices] : [];
 
       // Validate at least one variant
-      if (qArr.length === 0 || uArr.length === 0 || pArr.length === 0) {
+      if (qArr.length === 0 || uArr.length === 0 || actualArr.length === 0 || pArr.length === 0) {
         return res.status(400).json({ error: "At least one valid variant is required" });
       }
 
       let validVariants = 0;
-      for (let i = 0; i < Math.max(qArr.length, uArr.length, pArr.length); i++) {
+      for (let i = 0; i < Math.max(qArr.length, uArr.length, actualArr.length, pArr.length); i++) {
         const qty = qArr[i];
         const uom = uArr[i];
+        const actual = actualArr[i];
+        const disc = discArr[i] || 0;
         const prc = pArr[i];
-        if (qty && qty.trim() !== '' && uom && uom.trim() !== '' && prc && prc.trim() !== '' && !isNaN(Number(qty)) && Number(qty) > 0 && !isNaN(Number(prc)) && Number(prc) >= 0) {
+
+        if (qty && qty.trim() !== '' && 
+            uom && uom.trim() !== '' && 
+            actual && actual.trim() !== '' && 
+            prc && prc.trim() !== '' && 
+            !isNaN(Number(qty)) && Number(qty) > 0 && 
+            !isNaN(Number(actual)) && Number(actual) > 0 && 
+            !isNaN(Number(prc)) && Number(prc) >= 0 && Number(prc) <= Number(actual)) {
+
           await db.query(
-            "INSERT INTO product_variants (product_id, variant_quantity, uom_id, price, created_at, updated_at) VALUES (?, ?, ?, ?, NOW(), NOW())",
-            [id, parseFloat(qty), parseInt(uom), parseFloat(prc)]
+            `INSERT INTO product_variants 
+             (product_id, variant_quantity, actual_price, price, discount_percentage, uom_id, created_at, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+            [id, parseFloat(qty), parseFloat(actual), parseFloat(prc), parseFloat(disc), parseInt(uom)]
           );
           validVariants++;
         }
@@ -388,10 +419,10 @@ exports.updateProduct = [
       res.status(500).json({ error: "Internal server error", details: error.message });
     }
   },
-];  
+];
 
 
-  exports.deleteProduct = async (req, res) => {
+exports.deleteProduct = async (req, res) => {
     console.log("🟢 deleteProduct called with params:", req.params);
     try {
       const { id } = req.params;
@@ -403,7 +434,6 @@ exports.updateProduct = [
       return res.status(500).json({ error: "Internal server error" });
     }
   };
-
 exports.viewProducts = async (req, res) => {
   try {
     const [rows] = await db.query(
@@ -412,8 +442,13 @@ exports.viewProducts = async (req, res) => {
         p.bannerimg, p.isBanner,
         p.category_id, c.name AS category_name,
         s.status AS stock_status, s.id AS stock_status_id,
-        pv.id AS variant_id, pv.variant_quantity, pv.price AS variant_price, 
-        u.id AS variant_uom_id, u.uom_name
+        pv.id AS variant_id, 
+        pv.variant_quantity, 
+        pv.actual_price,           -- NEW
+        pv.price AS variant_price, 
+        pv.discount_percentage,    -- NEW
+        u.id AS variant_uom_id, 
+        u.uom_name
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN stock_statuses s ON p.stock_status_id = s.id
@@ -435,17 +470,19 @@ exports.viewProducts = async (req, res) => {
         } else if (Array.isArray(r.additional_images)) {
           additionalImages = r.additional_images;
         }
-        // Prepend IMAGE_BASE to image URLs for consistency
+
         const fullThumbnailUrl = r.thumbnail_url && r.thumbnail_url.startsWith("/")
           ? `${IMAGE_BASE}${r.thumbnail_url}`
           : r.thumbnail_url || null;
+
         const fullAdditionalImages = additionalImages.map((img) =>
           img && img.startsWith("/") ? `${IMAGE_BASE}${img}` : img || null
         );
-        // Compute full banner_url
+
         const fullBannerUrl = r.bannerimg && r.bannerimg.startsWith("/")
           ? `${IMAGE_BASE}${r.bannerimg}`
           : r.bannerimg || null;
+
         productsMap[r.id] = {
           id: r.id,
           name: r.name,
@@ -454,7 +491,7 @@ exports.viewProducts = async (req, res) => {
           additional_images: fullAdditionalImages,
           banner_url: fullBannerUrl,
           isBanner: r.isBanner,
-          tax_percentage: r.tax_percentage || 0, // Default to 0 if null
+          tax_percentage: r.tax_percentage || 0,
           category_id: r.category_id,
           category_name: r.category_name,
           stock_status_id: r.stock_status_id,
@@ -462,11 +499,14 @@ exports.viewProducts = async (req, res) => {
           variants: [],
         };
       }
+
       if (r.variant_id) {
         productsMap[r.id].variants.push({
           id: r.variant_id,
           quantity: r.variant_quantity,
+          actual_price: r.actual_price,           // NEW
           price: r.variant_price,
+          discount_percentage: r.discount_percentage, // NEW
           uom_id: r.variant_uom_id,
           uom_name: r.uom_name,
         });
@@ -490,8 +530,13 @@ exports.getProductById = async (req, res) => {
         p.bannerimg, p.isBanner,
         p.category_id, c.name AS category_name,
         s.status AS stock_status, s.id AS stock_status_id,
-        pv.id AS variant_id, pv.variant_quantity, pv.price AS variant_price, 
-        u.id AS variant_uom_id, u.uom_name
+        pv.id AS variant_id, 
+        pv.variant_quantity, 
+        pv.actual_price,           -- NEW
+        pv.price AS variant_price, 
+        pv.discount_percentage,    -- NEW
+        u.id AS variant_uom_id, 
+        u.uom_name
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN stock_statuses s ON p.stock_status_id = s.id
@@ -504,7 +549,6 @@ exports.getProductById = async (req, res) => {
     if (rows.length === 0)
       return res.status(404).json({ error: "Product not found" });
 
-    // Inline parsing for additional_images (consistent with viewProducts)
     let additionalImages = [];
     if (typeof rows[0].additional_images === "string") {
       try {
@@ -515,14 +559,15 @@ exports.getProductById = async (req, res) => {
     } else if (Array.isArray(rows[0].additional_images)) {
       additionalImages = rows[0].additional_images;
     }
-    // Prepend IMAGE_BASE to image URLs for consistency
+
     const fullThumbnailUrl = rows[0].thumbnail_url && rows[0].thumbnail_url.startsWith("/")
       ? `${IMAGE_BASE}${rows[0].thumbnail_url}`
       : rows[0].thumbnail_url || null;
+
     const fullAdditionalImages = additionalImages.map((img) =>
       img && img.startsWith("/") ? `${IMAGE_BASE}${img}` : img || null
     );
-    // Compute full banner_url
+
     const fullBannerUrl = rows[0].bannerimg && rows[0].bannerimg.startsWith("/")
       ? `${IMAGE_BASE}${rows[0].bannerimg}`
       : rows[0].bannerimg || null;
@@ -535,7 +580,7 @@ exports.getProductById = async (req, res) => {
       additional_images: fullAdditionalImages,
       banner_url: fullBannerUrl,
       isBanner: rows[0].isBanner,
-      tax_percentage: rows[0].tax_percentage || 0, // Default to 0 if null
+      tax_percentage: rows[0].tax_percentage || 0,
       category_id: rows[0].category_id,
       category_name: rows[0].category_name,
       stock_status_id: rows[0].stock_status_id,
@@ -548,7 +593,9 @@ exports.getProductById = async (req, res) => {
         product.variants.push({
           id: r.variant_id,
           quantity: r.variant_quantity,
+          actual_price: r.actual_price,           // NEW
           price: r.variant_price,
+          discount_percentage: r.discount_percentage, // NEW
           uom_id: r.variant_uom_id,
           uom_name: r.uom_name,
         });
@@ -1124,6 +1171,159 @@ exports.deleteDeliveryCharge = async (req, res) => {
     return res.status(200).json({ message: "Delivery charge deleted" });
   } catch (error) {
     console.error("❌ Error deleting delivery charge:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+
+
+
+
+
+
+
+/* ----------------------- COUPON CODES ----------------------- */
+
+// Get all coupons
+exports.getCoupons = async (req, res) => {
+  console.log("🟢 getCoupons called");
+  try {
+    const [rows] = await db.query(
+      "SELECT id, code, discount_percentage, is_active, created_at, updated_at FROM coupon_codes ORDER BY created_at DESC"
+    );
+    return res.status(200).json(rows);
+  } catch (error) {
+    console.error("❌ Error fetching coupons:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Create new coupon
+exports.createCoupon = async (req, res) => {
+  console.log("🟢 createCoupon called with body:", req.body);
+  try {
+    const { code, discount_percentage, is_active = true } = req.body;
+
+    if (!code || !discount_percentage) {
+      return res.status(400).json({ error: "Code and discount percentage are required" });
+    }
+
+    if (isNaN(discount_percentage) || discount_percentage < 0 || discount_percentage > 100) {
+      return res.status(400).json({ error: "Discount percentage must be between 0 and 100" });
+    }
+
+    const [result] = await db.query(
+      `INSERT INTO coupon_codes (code, discount_percentage, is_active, created_at, updated_at) 
+       VALUES (?, ?, ?, NOW(), NOW())`,
+      [code.trim(), parseFloat(discount_percentage), is_active ? 1 : 0]
+    );
+
+    return res.status(201).json({ 
+      message: "Coupon created successfully", 
+      id: result.insertId 
+    });
+  } catch (error) {
+    console.error("❌ Error creating coupon:", error);
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ error: "Coupon code already exists" });
+    }
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Update coupon
+exports.updateCoupon = async (req, res) => {
+  console.log("🟢 updateCoupon called with params:", req.params, "body:", req.body);
+  try {
+    const { id } = req.params;
+    const { code, discount_percentage, is_active } = req.body;
+
+    if (!code || !discount_percentage) {
+      return res.status(400).json({ error: "Code and discount percentage are required" });
+    }
+
+    if (isNaN(discount_percentage) || discount_percentage < 0 || discount_percentage > 100) {
+      return res.status(400).json({ error: "Discount percentage must be between 0 and 100" });
+    }
+
+    const [result] = await db.query(
+      `UPDATE coupon_codes 
+       SET code = ?, discount_percentage = ?, is_active = ?, updated_at = NOW() 
+       WHERE id = ?`,
+      [code.trim(), parseFloat(discount_percentage), is_active ? 1 : 0, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Coupon not found" });
+    }
+
+    return res.status(200).json({ message: "Coupon updated successfully" });
+  } catch (error) {
+    console.error("❌ Error updating coupon:", error);
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ error: "Coupon code already exists" });
+    }
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Toggle active status
+exports.toggleCouponStatus = async (req, res) => {
+  console.log("🟢 toggleCouponStatus called with params:", req.params);
+  try {
+    const { id } = req.params;
+
+    const [result] = await db.query(
+      `UPDATE coupon_codes 
+       SET is_active = NOT is_active, updated_at = NOW() 
+       WHERE id = ?`,
+      [id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Coupon not found" });
+    }
+
+    return res.status(200).json({ message: "Coupon status toggled successfully" });
+  } catch (error) {
+    console.error("❌ Error toggling coupon status:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+
+
+
+// Validate coupon for customer use
+exports.validateCoupon = async (req, res) => {
+  console.log("🟢 validateCoupon called with code:", req.body.code);
+  try {
+    const { code } = req.body;
+
+    if (!code) {
+      return res.status(400).json({ error: "Coupon code is required" });
+    }
+
+    const [rows] = await db.query(
+      `SELECT code, discount_percentage, is_active 
+       FROM coupon_codes 
+       WHERE code = ? AND is_active = 1`,
+      [code.trim().toUpperCase()]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Invalid or inactive coupon code" });
+    }
+
+    const coupon = rows[0];
+
+    return res.status(200).json({
+      code: coupon.code,
+      discount_percentage: parseFloat(coupon.discount_percentage),
+      message: "Coupon applied successfully"
+    });
+  } catch (error) {
+    console.error("❌ Error validating coupon:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 };

@@ -16,7 +16,7 @@ app.use('/productImages', express.static(path.join(__dirname, 'public/productIma
 app.use(cors({
   origin: [
     'http://localhost:5173',
-    'https://suyambuoils.com/api',
+    'https://suyambuoils.com/api/',
     'https://suyambuoils.com',
     'https://www.suyambuoils.com',
   ],

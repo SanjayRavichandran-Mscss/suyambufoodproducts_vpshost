@@ -12,7 +12,7 @@
 //   showCartModal,
 //   cartAnimation,
 // }) => {
-//   const baseUrl = "https://suyambuoils.com/api";
+//   const baseUrl = "https://suyambuoils.com/api/";
 //   const navigate = useNavigate();
 
 //   const totalItems = Array.isArray(cartItems)
@@ -273,7 +273,7 @@ const Cart = ({
   showCartModal,
   cartAnimation,
 }) => {
-  const baseUrl = "https://suyambuoils.com/api";
+  const baseUrl = "https://suyambuoils.com/api/";
   const navigate = useNavigate();
 
   const totalItems = Array.isArray(cartItems)

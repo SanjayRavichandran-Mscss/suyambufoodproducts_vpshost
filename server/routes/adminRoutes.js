@@ -54,4 +54,12 @@ router.post('/delivery-charges', adminController.addDeliveryCharge);
 router.put('/delivery-charges/:id', adminController.updateDeliveryCharge);
 router.delete('/delivery-charges/:id', adminController.deleteDeliveryCharge);
 
+/* -------------------- COUPON CODES -------------------- */
+router.get('/coupons', adminController.getCoupons);
+router.post('/coupons', adminController.createCoupon);
+router.put('/coupons/:id', adminController.updateCoupon);
+router.patch('/coupons/:id/toggle', adminController.toggleCouponStatus);
+// Add this line with other coupon routes
+router.post('/coupons-validate', adminController.validateCoupon);   // or couponController
+
 module.exports = router;

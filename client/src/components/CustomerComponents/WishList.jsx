@@ -117,7 +117,7 @@
 //                   className="flex gap-4 p-3 border-b border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors rounded-lg"
 //                 >
 //                   <img
-//                     src={`https://suyambuoils.com/api${item.thumbnail_url}`}
+//                     src={`https://suyambuoils.com/api/${item.thumbnail_url}`}
 //                     alt={item.name}
 //                     className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
 //                     onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/64"; }}
@@ -295,7 +295,7 @@ const WishList = ({ onClose, customerId, onWishlistCountUpdate }) => {
                   className="flex gap-5 p-4 border border-gray-200 hover:border-[#B6895B]/40 hover:bg-gray-50/60 cursor-pointer transition-all rounded-xl"
                 >
                   <img
-                    src={`https://suyambuoils.com/api${item.thumbnail_url}`}
+                    src={`https://suyambuoils.com/api/${item.thumbnail_url}`}
                     alt={item.name}
                     className="w-20 h-20 object-cover rounded-lg flex-shrink-0 shadow-sm"   // ← larger image
                     onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/80"; }}

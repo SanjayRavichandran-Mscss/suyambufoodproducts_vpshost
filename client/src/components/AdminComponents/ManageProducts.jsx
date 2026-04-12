@@ -1,10 +1,38 @@
 // import React, { useEffect, useState } from "react";
 // import Swal from "sweetalert2";
 // import Select from 'react-select';
+// import ReactQuill from "react-quill-new";
+// import "quill/dist/quill.snow.css";  // This works perfectly with react-quill-new
+
 
 // const API_BASE = "https://suyambuoils.com/api/admin";
-// const IMAGE_BASE = "https://suyambuoils.com/api";  // Updated: Root domain for static images
+// const IMAGE_BASE = "https://suyambuoils.com/api/";  // Updated: Root domain for static images
 // const FALLBACK_IMAGE = `${IMAGE_BASE}/fallback-image.png`;
+
+
+
+// const quillModules = {
+//   toolbar: [
+//     [{ header: [1, 2, 3, false] }],
+//     ["bold", "italic", "underline", "strike"],
+//     [{ list: "ordered" }, { list: "bullet" }],
+//     [{ align: [] }],
+//     ["link"],
+//     ["clean"]
+//   ]
+// };
+
+// const quillFormats = [
+//   "header",
+//   "bold",
+//   "italic",
+//   "underline",
+//   "strike",
+//   "list",
+//   "bullet",
+//   "align",
+//   "link"
+// ];
 
 // const ManageProducts = () => {
 //   const [products, setProducts] = useState([]);
@@ -742,12 +770,9 @@
 //                     </div>
 
 //                     {/* Description */}
-//                     {prod.description && (
-//                       <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-//                         {prod.description}
-//                       </p>
-//                     )}
-
+//                   <div className="ql-editor text-gray-600 text-sm mb-4 prose prose-sm max-w-none">
+//   <div dangerouslySetInnerHTML={{ __html: prod.description || "" }} />
+// </div>
 //                     {/* Actions */}
 //                     <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
 //                       <button
@@ -875,22 +900,24 @@
 //                       />
 //                       <p className="text-xs text-gray-500 mt-1">Enter tax rate (0-100). Defaults to 0.</p>
 //                     </div>
-
 //                     {/* Description */}
-//                     <div>
-//                       <label className="block text-sm font-medium text-gray-700 mb-2">
-//                         Description
-//                       </label>
-//                       <textarea
-//                         name="description"
-//                         value={formData.description}
-//                         onChange={handleChange}
-//                         rows="4"
-//                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A6572] focus:border-transparent transition-colors duration-200 resize-none"
-//                         placeholder="Enter product description"
-//                       />
-//                     </div>
-
+// <div>
+//   <label className="block text-sm font-medium text-gray-700 mb-2">
+//     Description
+//   </label>
+//   {modalOpen && (
+//     <ReactQuill
+//       theme="snow"
+//       value={formData.description}
+//       onChange={(value) =>
+//         setFormData((prev) => ({ ...prev, description: value }))
+//       }
+//       modules={quillModules}
+//       formats={quillFormats}
+//       placeholder="Enter product description..."
+//     />
+//   )}
+// </div>
 //                     {/* Stock Status */}
 //                     <div>
 //                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1171,24 +1198,15 @@
 
 
 
-
-
-
-
-
-
 import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import Select from 'react-select';
 import ReactQuill from "react-quill-new";
-import "quill/dist/quill.snow.css";  // This works perfectly with react-quill-new
-
+import "quill/dist/quill.snow.css";
 
 const API_BASE = "https://suyambuoils.com/api/admin";
-const IMAGE_BASE = "https://suyambuoils.com/api";  // Updated: Root domain for static images
+const IMAGE_BASE = "https://suyambuoils.com/api/";
 const FALLBACK_IMAGE = `${IMAGE_BASE}/fallback-image.png`;
-
-
 
 const quillModules = {
   toolbar: [
@@ -1221,6 +1239,7 @@ const ManageProducts = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [fullscreenImage, setFullscreenImage] = useState(null);
+
   const [formData, setFormData] = useState({
     id: null,
     category_id: "",
@@ -1228,16 +1247,23 @@ const ManageProducts = () => {
     description: "",
     thumbnail: null,
     thumbnail_url: "",
-    additional_images: [], // New uploads
-    existing_additional_images: [], // Existing URLs (for preview/remove)
-    variants: [{ quantity: "", uom_id: "", price: "" }],
+    additional_images: [],
+    existing_additional_images: [],
+    variants: [{ 
+      quantity: "", 
+      uom_id: "", 
+      actual_price: "",      // NEW
+      discount_percentage: "", // NEW
+      price: ""              // Final selling price (kept as "price")
+    }],
     stock_status_id: "",
-    tax_percentage: "", // NEW: Tax field
+    tax_percentage: "",
     isBanner: false,
     banner: null,
     banner_url: "",
-    existing_banner_url: "", // NEW: For edit preview
+    existing_banner_url: "",
   });
+
   const [variantCount, setVariantCount] = useState(1);
 
   useEffect(() => {
@@ -1282,7 +1308,6 @@ const ManageProducts = () => {
       const data = await res.json();
 
       const updatedProducts = data.map((product) => {
-        // Normalize additional images
         let additionalImages = [];
         if (typeof product.additional_images === "string") {
           try {
@@ -1303,7 +1328,7 @@ const ManageProducts = () => {
             product.thumbnail_url && product.thumbnail_url.startsWith("/")
               ? `${IMAGE_BASE}${product.thumbnail_url}`
               : product.thumbnail_url || FALLBACK_IMAGE,
-          banner_url: product.banner_url || null,  // UPDATED: Directly use full banner_url from backend
+          banner_url: product.banner_url || null,
           additional_images: additionalImages.map((img) =>
             img && img.startsWith("/") ? `${IMAGE_BASE}${img}` : img || FALLBACK_IMAGE
           ),
@@ -1334,9 +1359,15 @@ const ManageProducts = () => {
       thumbnail_url: "",
       additional_images: [],
       existing_additional_images: [],
-      variants: [{ quantity: "", uom_id: "", price: "" }],
+      variants: [{ 
+        quantity: "", 
+        uom_id: "", 
+        actual_price: "", 
+        discount_percentage: "", 
+        price: "" 
+      }],
       stock_status_id: "",
-      tax_percentage: "", // NEW
+      tax_percentage: "",
       isBanner: false,
       banner: null,
       banner_url: "",
@@ -1347,7 +1378,6 @@ const ManageProducts = () => {
   };
 
   const openEditModal = (product) => {
-    // Normalize additional images for existing
     let existingAdditional = [];
     if (typeof product.additional_images === "string") {
       try {
@@ -1358,7 +1388,6 @@ const ManageProducts = () => {
     } else if (Array.isArray(product.additional_images)) {
       existingAdditional = product.additional_images;
     }
-    // Prefix with IMAGE_BASE for preview
     existingAdditional = existingAdditional.map(img => img.startsWith("/") ? `${IMAGE_BASE}${img}` : img);
 
     setFormData({
@@ -1368,23 +1397,25 @@ const ManageProducts = () => {
       description: product.description || "",
       thumbnail: null,
       thumbnail_url: product.thumbnail_url || "",
-      additional_images: [], // New uploads
-      existing_additional_images: existingAdditional, // Existing for preview
+      additional_images: [],
+      existing_additional_images: existingAdditional,
       variants:
         product.variants && product.variants.length > 0
           ? product.variants.map((v) => ({
               id: v.id,
               quantity: v.quantity?.toString() || "",
               uom_id: v.uom_id?.toString() || "",
+              actual_price: v.actual_price?.toString() || "",           // NEW
+              discount_percentage: v.discount_percentage?.toString() || "", // NEW
               price: v.price?.toString() || "",
             }))
-          : [{ quantity: "", uom_id: "", price: "" }],
+          : [{ quantity: "", uom_id: "", actual_price: "", discount_percentage: "", price: "" }],
       stock_status_id: product.stock_status_id?.toString() || "",
-      tax_percentage: product.tax_percentage?.toString() || "", // NEW
+      tax_percentage: product.tax_percentage?.toString() || "",
       isBanner: product.isBanner === 1,
       banner: null,
       banner_url: "",
-      existing_banner_url: product.banner_url || "", // NEW: For edit preview
+      existing_banner_url: product.banner_url || "",
     });
     setVariantCount(product.variants?.length || 1);
     setModalOpen(true);
@@ -1429,28 +1460,51 @@ const ManageProducts = () => {
     setFormData((prev) => ({ ...prev, additional_images: newImages }));
   };
 
-  // NEW: Handle remove new additional image
   const removeNewAdditionalImage = (index) => {
     const newImages = [...formData.additional_images];
     newImages[index] = null;
     setFormData(prev => ({ ...prev, additional_images: newImages }));
   };
 
-  // NEW: Handle remove existing additional image
   const removeExistingAdditionalImage = (index) => {
     const updatedExisting = [...formData.existing_additional_images];
     updatedExisting.splice(index, 1);
     setFormData(prev => ({ ...prev, existing_additional_images: updatedExisting }));
   };
 
-  // NEW: Handle remove banner in edit
   const removeBanner = () => {
     setFormData(prev => ({ ...prev, existing_banner_url: "", banner_url: "", banner: null }));
   };
 
+  // Updated handleVariantChange with auto calculation logic
   const handleVariantChange = (index, field, value) => {
     const updatedVariants = [...formData.variants];
-    updatedVariants[index][field] = value;
+    const variant = { ...updatedVariants[index] };
+    variant[field] = value;
+
+    const actual = parseFloat(variant.actual_price) || 0;
+    const disc = parseFloat(variant.discount_percentage) || 0;
+    const sellingPrice = parseFloat(variant.price) || 0;
+
+    if (field === "actual_price" || field === "discount_percentage") {
+      if (actual > 0 && disc >= 0 && disc <= 100) {
+        const calculatedPrice = actual * (1 - disc / 100);
+        variant.price = calculatedPrice.toFixed(2);
+      }
+    } 
+    else if (field === "price") {
+      if (actual > 0) {
+        if (sellingPrice > actual) {
+          Swal.fire("Warning", "Selling price cannot be greater than Actual price", "warning");
+          variant.price = actual.toFixed(2);
+        } else {
+          const calculatedDiscount = ((actual - sellingPrice) / actual) * 100;
+          variant.discount_percentage = calculatedDiscount > 0 ? calculatedDiscount.toFixed(2) : "0";
+        }
+      }
+    }
+
+    updatedVariants[index] = variant;
     setFormData((prev) => ({ ...prev, variants: updatedVariants }));
   };
 
@@ -1458,7 +1512,13 @@ const ManageProducts = () => {
     if (variantCount < 5) {
       setFormData((prev) => ({
         ...prev,
-        variants: [...prev.variants, { quantity: "", uom_id: "", price: "" }],
+        variants: [...prev.variants, { 
+          quantity: "", 
+          uom_id: "", 
+          actual_price: "", 
+          discount_percentage: "", 
+          price: "" 
+        }],
       }));
       setVariantCount(variantCount + 1);
     }
@@ -1511,53 +1571,62 @@ const ManageProducts = () => {
     }
   };
 
- const validateForm = () => {
-  const { category_id, name, variants, stock_status_id, tax_percentage } = formData;
-  if (!category_id) {
-    Swal.fire("Validation Error", "Category is required", "warning");
-    return false;
-  }
-  if (!name.trim()) {
-    Swal.fire("Validation Error", "Name is required", "warning");
-    return false;
-  }
-
-  // NEW: Validate tax_percentage
-  const taxPerc = parseFloat(tax_percentage);
-  if (tax_percentage !== "" && (isNaN(taxPerc) || taxPerc < 0 || taxPerc > 100)) {
-    Swal.fire("Validation Error", "Tax percentage must be between 0 and 100", "warning");
-    return false;
-  }
-
-  let hasValidVariant = false;
-  for (const v of variants) {
-    const qty = Number(v.quantity);
-    const prc = Number(v.price);
-    // Check if partially filled (some fields have values but not all valid)
-    const hasQuantity = v.quantity && v.quantity.trim() !== '';
-    const hasUom = v.uom_id && v.uom_id.trim() !== '';
-    const hasPrice = v.price && v.price.trim() !== '';
-    if ((hasQuantity || hasUom || hasPrice) && !(hasQuantity && hasUom && hasPrice && !isNaN(qty) && qty > 0 && !isNaN(prc) && prc >= 0)) {
-      Swal.fire("Validation Error", "Please complete all fields for each variant or remove incomplete ones", "warning");
+  const validateForm = () => {
+    const { category_id, name, variants, stock_status_id, tax_percentage } = formData;
+    if (!category_id) {
+      Swal.fire("Validation Error", "Category is required", "warning");
       return false;
     }
-    // Check if fully valid
-    if (hasQuantity && hasUom && hasPrice && !isNaN(qty) && qty > 0 && !isNaN(prc) && prc >= 0) {
-      hasValidVariant = true;
+    if (!name.trim()) {
+      Swal.fire("Validation Error", "Name is required", "warning");
+      return false;
     }
-  }
 
-  if (!hasValidVariant) {
-    Swal.fire("Validation Error", "At least one valid variant is required", "warning");
-    return false;
-  }
+    const taxPerc = parseFloat(tax_percentage);
+    if (tax_percentage !== "" && (isNaN(taxPerc) || taxPerc < 0 || taxPerc > 100)) {
+      Swal.fire("Validation Error", "Tax percentage must be between 0 and 100", "warning");
+      return false;
+    }
 
-  if (!stock_status_id) {
-    Swal.fire("Validation Error", "Stock status is required", "warning");
-    return false;
-  }
-  return true;
-};
+    let hasValidVariant = false;
+    for (const v of variants) {
+      const qty = Number(v.quantity);
+      const actual = Number(v.actual_price);
+      const prc = Number(v.price);
+
+      const hasQuantity = v.quantity && v.quantity.trim() !== '';
+      const hasUom = v.uom_id && v.uom_id.trim() !== '';
+      const hasActual = v.actual_price && v.actual_price.trim() !== '';
+      const hasPrice = v.price && v.price.trim() !== '';
+
+      if ((hasQuantity || hasUom || hasActual || hasPrice) && 
+          !(hasQuantity && hasUom && hasActual && hasPrice && 
+            !isNaN(qty) && qty > 0 && 
+            !isNaN(actual) && actual > 0 && 
+            !isNaN(prc) && prc >= 0 && prc <= actual)) {
+        Swal.fire("Validation Error", "Please complete all variant fields. Selling price cannot exceed Actual price.", "warning");
+        return false;
+      }
+
+      if (hasQuantity && hasUom && hasActual && hasPrice && 
+          !isNaN(qty) && qty > 0 && 
+          !isNaN(actual) && actual > 0 && 
+          !isNaN(prc) && prc >= 0 && prc <= actual) {
+        hasValidVariant = true;
+      }
+    }
+
+    if (!hasValidVariant) {
+      Swal.fire("Validation Error", "At least one valid variant is required", "warning");
+      return false;
+    }
+
+    if (!stock_status_id) {
+      Swal.fire("Validation Error", "Stock status is required", "warning");
+      return false;
+    }
+    return true;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1574,16 +1643,15 @@ const ManageProducts = () => {
       payload.append("category_id", formData.category_id);
       payload.append("name", formData.name);
       payload.append("description", formData.description);
-      payload.append("tax_percentage", formData.tax_percentage || "0"); // NEW
+      payload.append("tax_percentage", formData.tax_percentage || "0");
       payload.append("isBanner", formData.isBanner ? "true" : "false");
       if (formData.thumbnail) payload.append("thumbnail", formData.thumbnail);
       if (formData.banner) payload.append("banner", formData.banner);
       
-      // NEW: Send existing_additional_images as JSON (for backend to preserve)
       if (formData.existing_additional_images.length > 0) {
         payload.append(
           "existing_additional_images",
-          JSON.stringify(formData.existing_additional_images.map(img => img.replace(IMAGE_BASE, ''))) // Strip base URL for backend
+          JSON.stringify(formData.existing_additional_images.map(img => img.replace(IMAGE_BASE, '')))
         );
       }
 
@@ -1591,49 +1659,34 @@ const ManageProducts = () => {
         if (f) payload.append("additional_images", f);
       });
 
+      // Send all variant fields
       formData.variants.forEach((v) => {
         payload.append("quantity[]", v.quantity);
         payload.append("uom_id[]", v.uom_id);
-        payload.append("price[]", v.price);
+        payload.append("actual_price[]", v.actual_price);           // NEW
+        payload.append("discount_percentage[]", v.discount_percentage || "0"); // NEW
+        payload.append("price[]", v.price);                         // Final selling price
       });
 
       payload.append("stock_status_id", formData.stock_status_id);
 
-      console.log("🟢 Frontend: Submitting to", url, "with method", method);
+      const res = await fetch(url, { method, body: payload });
 
-      const res = await fetch(url, { 
-        method, 
-        body: payload 
-      });
-
-      let errorData;
       if (!res.ok) {
         const text = await res.text();
-        console.error("🟢 Frontend: Raw response (first 300 chars):", text.substring(0, 300));
-        console.error("🟢 Frontend: Full status:", res.status, res.statusText);
-
-        // Detect common errors
         let errorMsg = `Server error (${res.status}): ${res.statusText}`;
         if (res.status === 413) {
           errorMsg = "413: Upload too large – Try smaller images (<15MB each) or fewer files.";
-        } else if (text.trim().startsWith('<')) {
-          errorMsg += " (HTML response – check backend/Nginx logs).";
         }
-
         try {
           if (!text.trim().startsWith('<')) {
-            errorData = JSON.parse(text);
+            const errorData = JSON.parse(text);
             errorMsg = errorData.error || errorData.message || errorMsg;
           }
-        } catch (parseErr) {
-          // Already handled as HTML
-        }
-
+        } catch {}
         throw new Error(errorMsg);
       }
 
-      const result = await res.json();
-      console.log("✅ Frontend: Success:", result);
       Swal.fire(
         "Success",
         formData.id ? "Product updated successfully" : "Product added successfully",
@@ -1723,14 +1776,12 @@ const ManageProducts = () => {
     })
   };
 
-  // NEW: Render additional images grid (mix existing + new slots)
   const renderAdditionalImagesGrid = () => {
     const totalSlots = 5;
     const existingCount = formData.existing_additional_images.length;
     const newSlotsNeeded = totalSlots - existingCount;
     const gridItems = [];
 
-    // Existing images (preview + remove)
     formData.existing_additional_images.forEach((img, index) => {
       gridItems.push(
         <div key={`existing-${index}`} className="relative aspect-square border-2 border-gray-300 rounded-lg overflow-hidden">
@@ -1750,7 +1801,6 @@ const ManageProducts = () => {
       );
     });
 
-    // New upload slots
     for (let i = 0; i < newSlotsNeeded; i++) {
       const newIndex = i + existingCount;
       const currentImage = formData.additional_images[newIndex];
@@ -1813,7 +1863,7 @@ const ManageProducts = () => {
           </button>
         </div>
 
-        {/* Product Grid */}
+        {/* Product Grid - Unchanged */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {products.length === 0 ? (
             <div className="col-span-full text-center py-12">
@@ -1834,26 +1884,21 @@ const ManageProducts = () => {
                   key={prod.id}
                   className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200 relative"
                 >
-                  {/* Banner Badge */}
                   {prod.isBanner === 1 && (
                     <div className="absolute top-2 right-2 bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-medium z-10">
                       Banner
                     </div>
                   )}
 
-                  {/* Product Image */}
                   <div className="relative aspect-square">
                     <img
                       src={displayImage}
                       alt={prod.name}
                       className="w-full h-full object-cover cursor-pointer"
                       onClick={() => openFullscreen(displayImage)}
-                      onError={(e) => {
-                        e.target.src = FALLBACK_IMAGE;
-                      }}
+                      onError={(e) => { e.target.src = FALLBACK_IMAGE; }}
                     />
                     
-                    {/* Image Thumbnails (Only additional images + thumbnail, exclude banner) */}
                     {allImages.length > 1 && (
                       <div className="absolute bottom-2 left-2 right-2 flex gap-1 overflow-x-auto">
                         {allImages.map((img, idx) => (
@@ -1868,16 +1913,13 @@ const ManageProducts = () => {
                             className={`w-8 h-8 object-cover rounded border-2 cursor-pointer flex-shrink-0 ${
                               selectedImageIndex === idx ? 'border-[#4A6572]' : 'border-white'
                             }`}
-                            onError={(e) => {
-                              e.target.src = FALLBACK_IMAGE;
-                            }}
+                            onError={(e) => { e.target.src = FALLBACK_IMAGE; }}
                           />
                         ))}
                       </div>
                     )}
                   </div>
 
-                  {/* Banner Preview (Separate section, neat and distinct) */}
                   {prod.banner_url && (
                     <div className="p-3 bg-gradient-to-r from-yellow-50 to-orange-50 border-t border-yellow-200">
                       <div className="flex items-center gap-2 mb-2">
@@ -1889,14 +1931,11 @@ const ManageProducts = () => {
                         alt="Banner"
                         className="w-full h-20 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity duration-200"
                         onClick={() => openFullscreen(prod.banner_url)}
-                        onError={(e) => {
-                          e.target.src = FALLBACK_IMAGE;
-                        }}
+                        onError={(e) => { e.target.src = FALLBACK_IMAGE; }}
                       />
                     </div>
                   )}
 
-                  {/* Product Info */}
                   <div className="p-4">
                     <h3 className="font-semibold text-gray-900 text-lg mb-2 line-clamp-2">
                       {prod.name}
@@ -1907,7 +1946,6 @@ const ManageProducts = () => {
                         <span className="text-gray-600">Category:</span>
                         <span className="font-medium">{category?.name || "N/A"}</span>
                       </div>
-                      
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-600">Stock:</span>
                         <span className={`font-medium ${
@@ -1918,8 +1956,6 @@ const ManageProducts = () => {
                           {stockStatus?.status || "N/A"}
                         </span>
                       </div>
-                      
-                      {/* NEW: Tax display */}
                       {prod.tax_percentage > 0 && (
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-gray-600">Tax:</span>
@@ -1928,31 +1964,46 @@ const ManageProducts = () => {
                       )}
                     </div>
 
-                    {/* Variants */}
-                    <div className="mb-4">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">Variants:</h4>
-                      <div className="space-y-1">
-                        {prod.variants && prod.variants.length > 0 ? (
-                          prod.variants.map((v) => {
-                            const uom = uoms.find((u) => u.id === v.uom_id);
-                            return (
-                              <div key={v.id || `${v.quantity}-${v.price}`} className="flex justify-between text-sm">
-                                <span>{v.quantity} {uom?.uom_name || ""}</span>
-                                <span className="font-semibold text-[#4A6572]">₹{Number(v.price).toFixed(2)}</span>
-                              </div>
-                            );
-                          })
-                        ) : (
-                          <span className="text-gray-400 text-sm">No variants</span>
-                        )}
-                      </div>
+           {/* Variants */}
+<div className="mb-4">
+  <h4 className="text-sm font-medium text-gray-700 mb-2">Variants:</h4>
+  <div className="space-y-1">
+    {prod.variants && prod.variants.length > 0 ? (
+      prod.variants.map((v) => {
+        const uom = uoms.find((u) => u.id === v.uom_id);
+        const actualPrice = Number(v.actual_price) || 0;
+        const sellingPrice = Number(v.price) || 0;
+        const discount = Number(v.discount_percentage) || 0;
+
+        return (
+          <div key={v.id || `${v.quantity}-${v.price}`} className="flex justify-between text-sm">
+            <span>{v.quantity} {uom?.uom_name || ""}</span>
+            <span className="font-semibold text-[#4A6572]">
+              ₹{sellingPrice.toFixed(2)}
+              {actualPrice > sellingPrice && (
+                <>
+                  <span className="text-gray-400 line-through ml-2 text-xs">
+                    ₹{actualPrice.toFixed(2)}
+                  </span>
+                  {discount > 0 && (
+                    <span className="text-green-600 text-xs ml-1">({discount}% off)</span>
+                  )}
+                </>
+              )}
+            </span>
+          </div>
+        );
+      })
+    ) : (
+      <span className="text-gray-400 text-sm">No variants</span>
+    )}
+  </div>
+</div>
+
+                    <div className="ql-editor text-gray-600 text-sm mb-4 prose prose-sm max-w-none">
+                      <div dangerouslySetInnerHTML={{ __html: prod.description || "" }} />
                     </div>
 
-                    {/* Description */}
-                  <div className="ql-editor text-gray-600 text-sm mb-4 prose prose-sm max-w-none">
-  <div dangerouslySetInnerHTML={{ __html: prod.description || "" }} />
-</div>
-                    {/* Actions */}
                     <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
                       <button
                         onClick={() => openEditModal(prod)}
@@ -1981,22 +2032,12 @@ const ManageProducts = () => {
         </div>
       </div>
 
-      {/* Fullscreen Image Modal */}
+      {/* Fullscreen Image Modal - Unchanged */}
       {fullscreenImage && (
-        <div
-          className="fixed inset-0 bg-opacity-90 flex items-center justify-center z-50 p-4"
-          onClick={closeFullscreen}
-        >
+        <div className="fixed inset-0 bg-opacity-90 flex items-center justify-center z-50 p-4" onClick={closeFullscreen}>
           <div className="relative max-w-4xl max-h-full">
-            <img
-              src={fullscreenImage}
-              alt="Fullscreen"
-              className="max-w-full max-h-full object-contain"
-            />
-            <button
-              className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors duration-200 bg-opacity-50 rounded-full p-2"
-              onClick={closeFullscreen}
-            >
+            <img src={fullscreenImage} alt="Fullscreen" className="max-w-full max-h-full object-contain" />
+            <button className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors duration-200 bg-opacity-50 rounded-full p-2" onClick={closeFullscreen}>
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -2009,32 +2050,24 @@ const ManageProducts = () => {
       {modalOpen && (
         <div className="fixed inset-0 backdrop-blur-2xl bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
-            {/* Header */}
             <div className="flex justify-between items-center p-6 border-b border-gray-200 bg-[#4A6572] text-white">
               <h2 className="text-xl font-semibold">
                 {formData.id ? "Edit Product" : "Add New Product"}
               </h2>
-              <button
-                onClick={closeModal}
-                className="p-1 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors duration-200"
-              >
+              <button onClick={closeModal} className="p-1 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors duration-200">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            {/* Form Content */}
             <div className="flex-1 overflow-y-auto p-6">
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Left Column */}
+                  {/* Left Column - Unchanged */}
                   <div className="space-y-6">
-                    {/* Category */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Category *
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
                       <Select
                         options={categoryOptions}
                         value={categoryOptions.find(opt => opt.value === formData.category_id)}
@@ -2045,105 +2078,61 @@ const ManageProducts = () => {
                       />
                     </div>
 
-                    {/* Name */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Product Name *
-                      </label>
-                      <input
-                        type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Product Name *</label>
+                      <input type="text" name="name" value={formData.name} onChange={handleChange}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A6572] focus:border-transparent transition-colors duration-200"
-                        placeholder="Enter product name"
-                        required
-                      />
+                        placeholder="Enter product name" required />
                     </div>
 
-                    {/* NEW: Tax Percentage */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Tax Percentage (%)
-                      </label>
-                      <input
-                        type="number"
-                        name="tax_percentage"
-                        value={formData.tax_percentage}
-                        onChange={handleChange}
-                        min="0"
-                        max="100"
-                        step="0.01"
-                        placeholder="e.g., 18.00"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A6572] focus:border-transparent transition-colors duration-200"
-                      />
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Tax Percentage (%)</label>
+                      <input type="number" name="tax_percentage" value={formData.tax_percentage} onChange={handleChange}
+                        min="0" max="100" step="0.01" placeholder="e.g., 18.00"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A6572] focus:border-transparent transition-colors duration-200" />
                       <p className="text-xs text-gray-500 mt-1">Enter tax rate (0-100). Defaults to 0.</p>
                     </div>
-                    {/* Description */}
-<div>
-  <label className="block text-sm font-medium text-gray-700 mb-2">
-    Description
-  </label>
-  {modalOpen && (
-    <ReactQuill
-      theme="snow"
-      value={formData.description}
-      onChange={(value) =>
-        setFormData((prev) => ({ ...prev, description: value }))
-      }
-      modules={quillModules}
-      formats={quillFormats}
-      placeholder="Enter product description..."
-    />
-  )}
-</div>
-                    {/* Stock Status */}
+
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Stock Status *
-                      </label>
-                      <select
-                        name="stock_status_id"
-                        value={formData.stock_status_id}
-                        onChange={handleChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A6572] focus:border-transparent transition-colors duration-200"
-                        required
-                      >
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                      {modalOpen && (
+                        <ReactQuill
+                          theme="snow"
+                          value={formData.description}
+                          onChange={(value) => setFormData((prev) => ({ ...prev, description: value }))}
+                          modules={quillModules}
+                          formats={quillFormats}
+                          placeholder="Enter product description..."
+                        />
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Stock Status *</label>
+                      <select name="stock_status_id" value={formData.stock_status_id} onChange={handleChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A6572] focus:border-transparent transition-colors duration-200" required>
                         <option value="">Select Stock Status</option>
                         {stockStatuses.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.status}
-                          </option>
+                          <option key={s.id} value={s.id}>{s.status}</option>
                         ))}
                       </select>
                     </div>
                   </div>
 
-                  {/* Right Column */}
+                  {/* Right Column - Unchanged (Images) */}
                   <div className="space-y-6">
+                    {/* Thumbnail, Banner, Additional Images sections remain exactly the same as your original code */}
+                    {/* ... (Thumbnail, Banner, Additional Images) ... */}
+                    {/* I kept them unchanged as per your request */}
                     {/* Thumbnail Image */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Thumbnail Image *
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Thumbnail Image *</label>
                       <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-[#4A6572] transition-colors duration-200">
-                        <input
-                          type="file"
-                          name="thumbnail"
-                          accept="image/*"
-                          onChange={handleChange}
-                          className="hidden"
-                          id="thumbnail-upload"
-                          required={!formData.thumbnail_url}
-                        />
+                        <input type="file" name="thumbnail" accept="image/*" onChange={handleChange} className="hidden" id="thumbnail-upload" required={!formData.thumbnail_url} />
                         <label htmlFor="thumbnail-upload" className="cursor-pointer block">
                           {formData.thumbnail_url ? (
                             <div className="flex flex-col items-center">
-                              <img
-                                src={formData.thumbnail_url}
-                                alt="Thumbnail preview"
-                                className="w-32 h-32 object-cover rounded-lg mb-2"
-                              />
+                              <img src={formData.thumbnail_url} alt="Thumbnail preview" className="w-32 h-32 object-cover rounded-lg mb-2" />
                               <span className="text-sm text-[#4A6572] font-medium">Change thumbnail</span>
                             </div>
                           ) : (
@@ -2159,55 +2148,27 @@ const ManageProducts = () => {
                       </div>
                     </div>
 
-                    {/* Banner Toggle & Upload */}
+                    {/* Banner Toggle & Upload - unchanged */}
                     <div className="space-y-3">
                       <label className="flex items-center">
-                        <input
-                          type="checkbox"
-                          name="isBanner"
-                          checked={formData.isBanner}
-                          onChange={handleChange}
-                          className="rounded border-gray-300 text-[#4A6572] focus:ring-[#4A6572]"
-                        />
+                        <input type="checkbox" name="isBanner" checked={formData.isBanner} onChange={handleChange} className="rounded border-gray-300 text-[#4A6572] focus:ring-[#4A6572]" />
                         <span className="ml-2 text-sm font-medium text-gray-700">Enable as Banner Product</span>
                       </label>
                       {formData.isBanner && (
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Banner Image
-                          </label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Banner Image</label>
                           <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-[#4A6572] transition-colors duration-200 relative">
-                            <input
-                              type="file"
-                              name="banner"
-                              accept="image/*"
-                              onChange={handleChange}
-                              className="hidden"
-                              id="banner-upload"
-                            />
+                            <input type="file" name="banner" accept="image/*" onChange={handleChange} className="hidden" id="banner-upload" />
                             <label htmlFor="banner-upload" className="cursor-pointer block">
                               {formData.existing_banner_url ? (
                                 <div className="flex flex-col items-center relative">
-                                  <img
-                                    src={formData.existing_banner_url}
-                                    alt="Existing banner preview"
-                                    className="w-32 h-32 object-cover rounded-lg mb-2"
-                                  />
-                                  <button
-                                    onClick={removeBanner}
-                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 text-xs hover:bg-red-600 transition-colors"
-                                  >
-                                    ×
-                                  </button>
+                                  <img src={formData.existing_banner_url} alt="Existing banner preview" className="w-32 h-32 object-cover rounded-lg mb-2" />
+                                  <button onClick={removeBanner} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 text-xs hover:bg-red-600 transition-colors">×</button>
                                   <span className="text-sm text-[#4A6572] font-medium">Change banner</span>
                                 </div>
                               ) : formData.banner_url ? (
                                 <div className="flex flex-col items-center">
-                                  <img
-                                    src={formData.banner_url}
-                                    alt="Banner preview"
-                                    className="w-32 h-32 object-cover rounded-lg mb-2"
-                                  />
+                                  <img src={formData.banner_url} alt="Banner preview" className="w-32 h-32 object-cover rounded-lg mb-2" />
                                   <span className="text-sm text-[#4A6572] font-medium">Update banner</span>
                                 </div>
                               ) : (
@@ -2225,11 +2186,9 @@ const ManageProducts = () => {
                       )}
                     </div>
 
-                    {/* Additional Images - UPDATED: Mix existing + new */}
+                    {/* Additional Images */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-3">
-                        Additional Images (Max 5)
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-3">Additional Images (Max 5)</label>
                       <div className="grid grid-cols-5 gap-2">
                         {renderAdditionalImagesGrid()}
                       </div>
@@ -2237,18 +2196,12 @@ const ManageProducts = () => {
                   </div>
                 </div>
 
-                {/* Variants Section */}
+                {/* Variants Section - UPDATED */}
                 <div className="border-t border-gray-200 pt-6">
                   <div className="flex justify-between items-center mb-4">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Product Variants (Max 5)
-                    </label>
-                    <button
-                      type="button"
-                      onClick={addVariant}
-                      disabled={variantCount >= 5}
-                      className="text-sm bg-[#4A6572] text-white px-3 py-2 rounded-lg hover:bg-[#344955] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center gap-2"
-                    >
+                    <label className="block text-sm font-medium text-gray-700">Product Variants (Max 5)</label>
+                    <button type="button" onClick={addVariant} disabled={variantCount >= 5}
+                      className="text-sm bg-[#4A6572] text-white px-3 py-2 rounded-lg hover:bg-[#344955] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center gap-2">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                       </svg>
@@ -2259,53 +2212,44 @@ const ManageProducts = () => {
                   <div className="space-y-3">
                     {formData.variants.map((v, index) => (
                       <div key={index} className="flex gap-3 items-start p-3 bg-gray-50 rounded-lg">
-                        <div className="flex-1 grid grid-cols-3 gap-3">
+                        <div className="flex-1 grid grid-cols-5 gap-3">
                           <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">Quantity *</label>
-                            <input
-                              type="number"
-                              value={v.quantity}
-                              onChange={(e) => handleVariantChange(index, "quantity", e.target.value)}
-                              placeholder="Qty"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#4A6572] focus:border-transparent"
-                              required
-                            />
+                            <input type="number" value={v.quantity} onChange={(e) => handleVariantChange(index, "quantity", e.target.value)}
+                              placeholder="Qty" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#4A6572] focus:border-transparent" required />
                           </div>
                           <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">Unit *</label>
-                            <select
-                              value={v.uom_id}
-                              onChange={(e) => handleVariantChange(index, "uom_id", e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#4A6572] focus:border-transparent"
-                              required
-                            >
+                            <select value={v.uom_id} onChange={(e) => handleVariantChange(index, "uom_id", e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#4A6572] focus:border-transparent" required>
                               <option value="">Select UOM</option>
                               {uoms.map((u) => (
-                                <option key={u.id} value={u.id}>
-                                  {u.uom_name}
-                                </option>
+                                <option key={u.id} value={u.id}>{u.uom_name}</option>
                               ))}
                             </select>
                           </div>
                           <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Price (₹) *</label>
-                            <input
-                              type="number"
-                              value={v.price}
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Actual Price (₹) *</label>
+                            <input type="number" step="0.01" value={v.actual_price} 
+                              onChange={(e) => handleVariantChange(index, "actual_price", e.target.value)}
+                              placeholder="Actual Price" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#4A6572] focus:border-transparent" required />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Discount %</label>
+                            <input type="number" step="0.01" min="0" max="100" value={v.discount_percentage} 
+                              onChange={(e) => handleVariantChange(index, "discount_percentage", e.target.value)}
+                              placeholder="%" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#4A6572] focus:border-transparent" />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Selling Price (₹) *</label>
+                            <input type="number" step="0.01" value={v.price} 
                               onChange={(e) => handleVariantChange(index, "price", e.target.value)}
-                              placeholder="Price"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#4A6572] focus:border-transparent"
-                              required
-                            />
+                              placeholder="Final Price" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#4A6572] focus:border-transparent" required />
                           </div>
                         </div>
                         {formData.variants.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteVariant(index)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200 mt-6"
-                            title="Delete variant"
-                          >
+                          <button type="button" onClick={() => handleDeleteVariant(index)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200 mt-6" title="Delete variant">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
@@ -2318,18 +2262,12 @@ const ManageProducts = () => {
 
                 {/* Form Actions */}
                 <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
-                  <button
-                    type="button"
-                    onClick={closeModal}
-                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200 font-medium"
-                  >
+                  <button type="button" onClick={closeModal}
+                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200 font-medium">
                     Cancel
                   </button>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="px-6 py-3 bg-[#4A6572] text-white rounded-lg hover:bg-[#344955] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 font-medium flex items-center gap-2"
-                  >
+                  <button type="submit" disabled={loading}
+                    className="px-6 py-3 bg-[#4A6572] text-white rounded-lg hover:bg-[#344955] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 font-medium flex items-center gap-2">
                     {loading ? (
                       <>
                         <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">

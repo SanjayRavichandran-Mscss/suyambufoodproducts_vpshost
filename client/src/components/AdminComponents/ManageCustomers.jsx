@@ -436,7 +436,7 @@
 //                               className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 lg:space-x-4"
 //                             >
 //                               <img
-//                                 src={`https://suyambuoils.com/api${item.thumbnail_url || ""}`}
+//                                 src={`https://suyambuoils.com/api/${item.thumbnail_url || ""}`}
 //                                 alt={item.name || "Product"}
 //                                 className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-md flex-shrink-0"
 //                                 onError={(e) => {
@@ -926,7 +926,7 @@ const ManageCustomers = () => {
                               className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 lg:space-x-4"
                             >
                               <img
-                                src={`https://suyambuoils.com/api${item.thumbnail_url || ""}`}
+                                src={`https://suyambuoils.com/api/${item.thumbnail_url || ""}`}
                                 alt={item.name || "Product"}
                                 className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-md flex-shrink-0"
                                 onError={(e) => {

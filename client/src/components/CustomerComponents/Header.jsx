@@ -143,7 +143,7 @@
 //         name: p.name,
 //         category_name: p.category_name || "Uncategorized",
 //         thumbnail_url: p.thumbnail_url
-//           ? (p.thumbnail_url.startsWith("http") ? p.thumbnail_url : `https://suyambuoils.com/api${p.thumbnail_url}`)
+//           ? (p.thumbnail_url.startsWith("http") ? p.thumbnail_url : `https://suyambuoils.com/api/${p.thumbnail_url}`)
 //           : "https://via.placeholder.com/100",
 //         variants: p.variants || [],
 //         price: (p.variants && p.variants.length > 0 ? p.variants[0].price : p.price) || 0,
@@ -881,7 +881,7 @@ export default function Header({
           name: p.name,
           category_name: p.category_name || "Uncategorized",
           thumbnail_url: p.thumbnail_url
-            ? (p.thumbnail_url.startsWith("http") ? p.thumbnail_url : `https://suyambuoils.com/api${p.thumbnail_url}`)
+            ? (p.thumbnail_url.startsWith("http") ? p.thumbnail_url : `https://suyambuoils.com/api/${p.thumbnail_url}`)
             : "https://via.placeholder.com/100",
           variants: p.variants || [],
           price: (p.variants && p.variants.length > 0 ? p.variants[0].price : p.price) || 0,

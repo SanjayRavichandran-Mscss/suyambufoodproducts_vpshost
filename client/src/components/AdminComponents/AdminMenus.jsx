@@ -1,6 +1,6 @@
-// import React, { useState, useEffect, useMemo } from 'react';
+// import React, { useEffect, useState, useMemo } from 'react';
 // import { NavLink, useNavigate } from 'react-router-dom';
-// import { LayoutDashboard, Users, Boxes, Archive, ShoppingCart, LogOut } from 'lucide-react';
+// import { LayoutDashboard, Users, Boxes, Archive, ShoppingCart, Package, LogOut } from 'lucide-react';
 
 // const menus = [
 //   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "dashboard" },
@@ -8,6 +8,7 @@
 //   { key: "categories", label: "Categories", icon: Boxes, path: "categories" },
 //   { key: "products", label: "Products", icon: Archive, path: "products" },
 //   { key: "orders", label: "Orders", icon: ShoppingCart, path: "orders" },
+//   { key: "delivery-charges", label: "Delivery Charge", icon: Package, path: "delivery-charges" },
 // ];
 
 // const menuActive = "bg-[#69D84F] text-white shadow font-semibold";
@@ -74,7 +75,7 @@
 //       <nav className="fixed top-0 left-0 w-full bg-white flex items-center justify-between px-2 sm:px-4 lg:px-6 py-3 sm:py-4 border-b border-[#E3E8EE] z-50">
 //         <div className="flex items-center">
 //           <img
-//             src="/Assets/Suyambu_Eng_logo.png"
+//             src="/Assets/suyambulogo.png"
 //             alt="Suyambu Stores Logo"
 //             className="h-10 sm:h-12 w-auto object-contain"
 //           />
@@ -154,12 +155,9 @@
 
 
 
-
-
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Boxes, Archive, ShoppingCart, Package, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, Boxes, Archive, ShoppingCart, Package, Tag, LogOut } from 'lucide-react';
 
 const menus = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "dashboard" },
@@ -167,6 +165,7 @@ const menus = [
   { key: "categories", label: "Categories", icon: Boxes, path: "categories" },
   { key: "products", label: "Products", icon: Archive, path: "products" },
   { key: "orders", label: "Orders", icon: ShoppingCart, path: "orders" },
+  { key: "coupons", label: "Manage Coupons", icon: Tag, path: "coupons" },   // ← NEW
   { key: "delivery-charges", label: "Delivery Charge", icon: Package, path: "delivery-charges" },
 ];
 
@@ -180,10 +179,9 @@ export default function AdminMenus({ adminId }) {
   const [profile, setProfile] = useState({ id: '', full_name: '', email: '' });
   const [showLogout, setShowLogout] = useState(false);
 
-  // Decode the encoded adminId to plain ID safely
   const plainId = useMemo(() => {
     if (!adminId) return null;
-    if (/^\d+$/.test(adminId)) return adminId; // If already numeric, use as is
+    if (/^\d+$/.test(adminId)) return adminId;
     try {
       const decoded = atob(adminId);
       const num = parseInt(decoded, 10);
@@ -195,7 +193,6 @@ export default function AdminMenus({ adminId }) {
     }
   }, [adminId]);
 
-  // Fetch admin profile
   useEffect(() => {
     if (!plainId) return;
     const fetchProfile = async () => {
@@ -204,8 +201,6 @@ export default function AdminMenus({ adminId }) {
         const data = await response.json();
         if (response.ok) {
           setProfile(data);
-        } else {
-          console.error('Error fetching profile:', data.error);
         }
       } catch (error) {
         console.error('Error fetching profile:', error);
@@ -221,11 +216,10 @@ export default function AdminMenus({ adminId }) {
   };
 
   if (!plainId) {
-    // Optionally redirect to login if no valid ID
     useEffect(() => {
       navigate("/adminlogin", { replace: true });
     }, []);
-    return null; // or handle error state
+    return null;
   }
 
   return (
@@ -299,4 +293,4 @@ export default function AdminMenus({ adminId }) {
       </div>
     </>
   );
-};
+}

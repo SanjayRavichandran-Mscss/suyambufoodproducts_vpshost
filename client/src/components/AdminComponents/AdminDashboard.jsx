@@ -373,7 +373,7 @@ const locationData = {
               {topProducts.map((product, index) => (
                 <div key={product.id} className="flex items-center space-x-3 sm:space-x-4 p-3 bg-gradient-to-r from-pink-50 to-rose-50 rounded-lg border border-pink-200">
                   <img
-                    src={`https://suyambuoils.com/api${product.thumbnail_url}`}
+                    src={`https://suyambuoils.com/api/${product.thumbnail_url}`}
                     alt={product.name}
                     className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded-lg flex-shrink-0"
                     onError={(e) => {

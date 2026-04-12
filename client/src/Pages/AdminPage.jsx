@@ -1,5 +1,3 @@
-
-
 // import React, { useEffect, useState } from "react";
 // import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 // import AdminMenus from "../components/AdminComponents/AdminMenus";
@@ -8,6 +6,7 @@
 // import ManageCustomers from "../components/AdminComponents/ManageCustomers";
 // import ManageCategories from "../components/AdminComponents/ManageCategories";
 // import ManageProducts from "../components/AdminComponents/ManageProducts";
+// import DeliveryCharge from "../components/AdminComponents/DeliveryCharge";
 
 // function decodeAdminId(encodedId) {
 //   try { return atob(encodedId); } catch { return null; }
@@ -93,6 +92,7 @@
 //             <Route path="categories" element={<ManageCategories />} />
 //             <Route path="products" element={<ManageProducts />} />
 //             <Route path="orders" element={<ManageOrders />} />
+//             <Route path="delivery-charges" element={<DeliveryCharge />} />
 //             <Route path="/" element={<Navigate to={`dashboard?adminId=${btoa(storedAdminId)}`} replace />} />
 //             <Route path="*" element={<Navigate to={`dashboard?adminId=${btoa(storedAdminId)}`} replace />} />
 //           </Routes>
@@ -101,6 +101,7 @@
 //     </div>
 //   );
 // }
+
 
 
 
@@ -121,6 +122,7 @@ import ManageCustomers from "../components/AdminComponents/ManageCustomers";
 import ManageCategories from "../components/AdminComponents/ManageCategories";
 import ManageProducts from "../components/AdminComponents/ManageProducts";
 import DeliveryCharge from "../components/AdminComponents/DeliveryCharge";
+import ManageCoupenCode from "../components/AdminComponents/ManageCoupenCode";   // ← NEW IMPORT
 
 function decodeAdminId(encodedId) {
   try { return atob(encodedId); } catch { return null; }
@@ -139,7 +141,6 @@ export default function AdminPages() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // If no token, redirect to login
     if (!token) {
       localStorage.removeItem("adminToken");
       localStorage.removeItem("adminId");
@@ -147,7 +148,6 @@ export default function AdminPages() {
       return;
     }
 
-    // If adminId in URL doesn't match stored adminId, redirect to correct adminId
     if (adminId && adminId !== storedAdminId) {
       navigate(`${location.pathname}?adminId=${btoa(storedAdminId)}`, { replace: true });
       return;
@@ -206,7 +206,9 @@ export default function AdminPages() {
             <Route path="categories" element={<ManageCategories />} />
             <Route path="products" element={<ManageProducts />} />
             <Route path="orders" element={<ManageOrders />} />
+            <Route path="coupons" element={<ManageCoupenCode />} />     {/* ← NEW ROUTE */}
             <Route path="delivery-charges" element={<DeliveryCharge />} />
+            
             <Route path="/" element={<Navigate to={`dashboard?adminId=${btoa(storedAdminId)}`} replace />} />
             <Route path="*" element={<Navigate to={`dashboard?adminId=${btoa(storedAdminId)}`} replace />} />
           </Routes>

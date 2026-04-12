@@ -333,7 +333,7 @@ const ManageOrders = () => {
                       {order.items.map(item => (
                         <div key={item.product_variant_id} className="flex items-start space-x-4 p-3 bg-gray-50 rounded-lg">
                           <img
-                            src={`https://suyambuoils.com/api${item.thumbnail_url}`}
+                            src={`https://suyambuoils.com/api/${item.thumbnail_url}`}
                             alt={item.name}
                             className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
                             onError={(e) => {

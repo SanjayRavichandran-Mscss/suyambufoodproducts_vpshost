@@ -743,7 +743,6 @@
 
 
 
-
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import Swal from "sweetalert2";
@@ -781,21 +780,32 @@ const CheckOutPage = () => {
   const [showCartModal, setShowCartModal] = useState(false);
   const [cartAnimation, setCartAnimation] = useState("");
   const [showOrderSummary, setShowOrderSummary] = useState(false);
-  const [deliveryFee, setDeliveryFee] = useState(0); // will be overridden by logic
-  const [apiDeliveryFee, setApiDeliveryFee] = useState(0); // actual value from API
+  const [apiDeliveryFee, setApiDeliveryFee] = useState(0);
   const [buyNowItem, setBuyNowItem] = useState(state?.product || null);
+
+  // Coupon States
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState(null); // { code, discount_percentage }
+  const [couponError, setCouponError] = useState("");
 
   const isBuyNow = identifier === "buy_now";
   const isCartFlow = identifier === "cart";
 
-  // ─── Calculate Subtotal (exclusive of tax) ──────────────────────────
+  // Subtotal (before any discount)
   const subtotal = isBuyNow
     ? buyNowItem
       ? parseFloat(buyNowItem.price || 0) * (buyNowItem.quantity || 1)
       : 0
     : cartItems.reduce((sum, item) => sum + parseFloat(item.price || 0) * item.quantity, 0);
 
-  // ─── Tax calculation (unchanged) ────────────────────────────────────
+  // Coupon Discount - Applied ONLY on Subtotal
+  const discountAmount = appliedCoupon
+    ? (subtotal * appliedCoupon.discount_percentage) / 100
+    : 0;
+
+  const discountedSubtotal = subtotal - discountAmount;
+
+  // Tax calculation (on original subtotal - not on discounted amount)
   const totalTax = isBuyNow
     ? buyNowItem
       ? (parseFloat(buyNowItem.price || 0) * (buyNowItem.quantity || 1) * parseFloat(buyNowItem.tax_percentage || 0)) / 100
@@ -805,12 +815,13 @@ const CheckOutPage = () => {
         return sum + (parseFloat(item.price || 0) * item.quantity * taxPerc / 100);
       }, 0);
 
-  // Final delivery fee logic: free if subtotal >= 1499
+  // Delivery Fee: Free if subtotal >= 1499
   const effectiveDeliveryFee = subtotal >= 1499 ? 0 : apiDeliveryFee;
 
-  const total = subtotal + totalTax + effectiveDeliveryFee;
+  // Final Total
+  const total = discountedSubtotal + totalTax + effectiveDeliveryFee;
 
-  // ─── Fetch product tax if missing in buy-now flow ───────────────────
+  // Fetch product tax if missing in buy-now flow
   const fetchProductIfNeeded = async () => {
     if (!isBuyNow || !buyNowItem || (buyNowItem.tax_percentage && buyNowItem.tax_percentage > 0)) return;
     try {
@@ -825,6 +836,7 @@ const CheckOutPage = () => {
       if (!res.ok) throw new Error("Failed to fetch product");
       const data = await res.json();
       const variant = data.variants.find(v => v.variant_id === buyNowItem.variant_id || v.id === buyNowItem.variant_id) || data.variants[0];
+      
       setBuyNowItem({
         ...buyNowItem,
         tax_percentage: data.tax_percentage || 0,
@@ -837,7 +849,7 @@ const CheckOutPage = () => {
     }
   };
 
-  // ─── Compute delivery fee from API (unchanged) ──────────────────────
+  // Compute Delivery Fee
   const computeDeliveryFee = async () => {
     if (!selectedAddressId || (isBuyNow && !buyNowItem) || (!isBuyNow && cartItems.length === 0)) {
       setApiDeliveryFee(0);
@@ -877,7 +889,7 @@ const CheckOutPage = () => {
     computeDeliveryFee();
   }, [selectedAddressId, isBuyNow, buyNowItem, cartItems]);
 
-  // ─── Main checkout data loading ─────────────────────────────────────
+  // Main checkout data loading
   useEffect(() => {
     const token = localStorage.getItem("customerToken");
     const storedCustomerId = localStorage.getItem("customerId");
@@ -949,6 +961,61 @@ const CheckOutPage = () => {
       console.error("Cart fetch error:", err);
       setCartItems([]);
     }
+  };
+
+  // Coupon Validation
+// Replace your current validateAndApplyCoupon with this improved version
+const validateAndApplyCoupon = async () => {
+  if (!couponCode.trim()) {
+    setCouponError("Please enter a coupon code");
+    return;
+  }
+
+  try {
+    const token = localStorage.getItem("customerToken");
+    const res = await fetch("https://suyambuoils.com/api/admin/coupons-validate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ code: couponCode.trim().toUpperCase() }),
+    });
+
+    // Important: Check if response is ok BEFORE trying to parse JSON
+    if (!res.ok) {
+      let errorData;
+      try {
+        errorData = await res.json();
+      } catch {
+        // If even json() fails, it's probably HTML (404 page)
+        throw new Error(`Server error: ${res.status} ${res.statusText}`);
+      }
+      setCouponError(errorData.error || "Invalid or inactive coupon code");
+      setAppliedCoupon(null);
+      return;
+    }
+
+    const data = await res.json();
+
+    setAppliedCoupon({
+      code: data.code,
+      discount_percentage: parseFloat(data.discount_percentage),
+    });
+    setCouponError("");
+
+     
+  } catch (err) {
+    console.error("Coupon validation error:", err);
+    setCouponError(err.message || "Failed to validate coupon. Please try again.");
+    setAppliedCoupon(null);
+  }
+};
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    setCouponError("");
   };
 
   const updateQuantity = async (variantId, change) => {
@@ -1032,6 +1099,7 @@ const CheckOutPage = () => {
     await initiateRazorpayPayment();
   };
 
+  // Updated Payment Initiation with Coupon Support
   const initiateRazorpayPayment = async () => {
     if (items.length === 0) {
       Swal.fire({ icon: "error", text: "No items in order", toast: true, timer: 2000 });
@@ -1041,14 +1109,13 @@ const CheckOutPage = () => {
     const token = localStorage.getItem("customerToken");
 
     try {
-      // Create Razorpay order
       const orderRes = await fetch("https://suyambuoils.com/api/customer/payment/create-order", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ amount: total * 100 }), // Razorpay expects paise
+        body: JSON.stringify({ amount: Math.round(total * 100) }),
       });
       if (!orderRes.ok) throw new Error("Failed to create order");
       const order = await orderRes.json();
@@ -1061,7 +1128,6 @@ const CheckOutPage = () => {
         description: "Order Payment",
         order_id: order.id,
         handler: async function (response) {
-          // Verify payment
           const verifyRes = await fetch("https://suyambuoils.com/api/customer/payment/verify", {
             method: "POST",
             headers: {
@@ -1077,7 +1143,6 @@ const CheckOutPage = () => {
           const verify = await verifyRes.json();
 
           if (verify.success) {
-            // Place order
             const orderPayload = {
               customerId,
               addressId: selectedAddressId,
@@ -1088,6 +1153,8 @@ const CheckOutPage = () => {
                 quantity: item.quantity,
               })),
               totalAmount: total,
+              couponCode: appliedCoupon?.code || null,
+              discountAmount: parseFloat(discountAmount.toFixed(2)),
               paymentDetails: {
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_order_id: response.razorpay_order_id,
@@ -1144,6 +1211,7 @@ const CheckOutPage = () => {
     }
   };
 
+  // Items for OrderSummary
   const items = isBuyNow && buyNowItem
     ? [{
         variant_id: buyNowItem.variant_id || buyNowItem.variantId,
@@ -1195,7 +1263,7 @@ const CheckOutPage = () => {
       <main className="flex-1 container mx-auto px-4 py-12 max-w-6xl pt-32 lg:pt-28">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Checkout</h1>
 
-        {/* ─── CART FLOW ──────────────────────────────────────────────── */}
+        {/* CART FLOW */}
         {isCartFlow && !showOrderSummary && (
           <div className="max-w-2xl mx-auto">
             <DeliveryAddress
@@ -1231,11 +1299,19 @@ const CheckOutPage = () => {
                 tax={totalTax}
                 shipping={effectiveDeliveryFee}
                 total={total}
+                discountAmount={discountAmount}
+                appliedCoupon={appliedCoupon}
+                couponCode={couponCode}
+                setCouponCode={setCouponCode}
+                validateAndApplyCoupon={validateAndApplyCoupon}
+                removeCoupon={removeCoupon}
+                couponError={couponError}
                 updateQuantity={updateQuantity}
                 handleRemoveItem={handleRemoveItem}
                 isSidebar={false}
                 hideTaxPercentage={true}
                 hideItemTaxLine={true}
+                orderMethod="cart"
               />
             </div>
 
@@ -1282,7 +1358,7 @@ const CheckOutPage = () => {
           </div>
         )}
 
-        {/* ─── BUY NOW FLOW ────────────────────────────────────────────── */}
+        {/* BUY NOW FLOW */}
         {isBuyNow && (
           <div className="flex flex-col lg:flex-row gap-8">
             <div className="flex-1 space-y-6">
@@ -1339,9 +1415,17 @@ const CheckOutPage = () => {
                 tax={totalTax}
                 shipping={effectiveDeliveryFee}
                 total={total}
+                discountAmount={discountAmount}
+                appliedCoupon={appliedCoupon}
+                couponCode={couponCode}
+                setCouponCode={setCouponCode}
+                validateAndApplyCoupon={validateAndApplyCoupon}
+                removeCoupon={removeCoupon}
+                couponError={couponError}
                 isSidebar={true}
                 hideTaxPercentage={true}
                 hideItemTaxLine={true}
+                orderMethod="buy_now"
               />
             </div>
           </div>
